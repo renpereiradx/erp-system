@@ -1,0 +1,12 @@
+# Subrepos independientes (cada uno tiene su propio git — no versionar acá)
+/business_management/
+/erp-webapp/
+
+# Tooling / estado local
+/.zcode/
+/.agents/
+/.hermes/
+/.vscode/
+
+# Artefactos
+*.tar.gz
