@@ -63,3 +63,19 @@
 
 - Repos backend/frontend: sin cambios de código en esta auditoría (solo lectura + gates).
 - Esta auditoría y los fixes documentales viven en `conductor/` raíz (repo wrapper del workspace, subrepos excluidos por `.gitignore`).
+
+## 7. Epílogo (2026-09-07): divergencia del entorno dev + bug latente en §7.1
+
+Al validar el fix del vendor en la DB dev local (login como `hercortes`/VNDR01 → 403 en dashboard, branches, tax_rate; solo `/settings` 200) se encontraron dos capas:
+
+1. **Entorno desactualizado:** `schema_migrations` en `20260901084522` — las 9 migraciones del plan nunca se aplicaron localmente. Además VNDR01 nunca recibió el set moderno: `20260519112753` otorga por IDs 106-140, pero esta topología siembra los permisos en 147-185 (semillas gitignored), y una migración marcada como aplicada nunca re-ejecuta.
+2. **Bug latente en `20260905134351` (§7.1):** el rename SUPLR1→SUPLR01 falla en cualquier esquema con `roles.id varchar(6)` — Postgres valida la coerción del literal `'SUPLR01'` a varchar(6) en **tiempo de planificación**, incluso cuando el `INSERT...SELECT` procesa 0 filas. En esta DB además el rol proveedor histórico es `SUPL01` (= `RoleInventory`, correcto), no `SUPLR1`. La migración nunca se había ejecutado en ningún entorno: los gates del plan no incluyen `migrate-up` (lección: agregarlo al flujo de deploy).
+
+**Fixes aplicados (backend `32d382d`, frontend `f91f7e3`):**
+- `20260905134350_widen_role_id_columns` (nueva, sloteada antes del rename): `users.roles.id` y `users.role_permissions.role_id` → varchar(7). El rename pasa a ejecutarse (no-op donde no existe SUPLR1).
+- `20260907104324_vndr01_by_name_grants` (data-fix): perfil §4.1 otorgado **por nombre** (converge en ambas topologías de IDs) + `tax:read` (adición post-auditoría: el Dashboard del POS llama `/tax_rate/default`, que exige `tax:read`; sin él el home del vendor quedaría con un 403). Sin `reports/analytics` (decisión B.1) ni perms 186-188.
+- Frontend: `useDashboardStore.fetchDashboardData` disparaba 8 requests incondicionales; 3 exigen permisos que VNDR01 no tiene (`/profitability/trends` y `/sales-analytics/performance` → `analytics:read`; `/payables/overview` → `payables:read`) → 403 con toasts desde Dashboard, POS (`SalesNew`), caja y compras. Ahora el store gatea por permiso mediante `src/utils/userPermissions.ts` (permisos persistidos en localStorage desde login y `/me`, limpiados en logout; fail-open si no hay lista — comportamiento previo). 9 tests nuevos.
+
+**Estado final:** DB dev al día (`20260907104324`, limpia); backfill de accesos completo (0 usuarios sin sucursal); `devices`/`sale_cancellation_requests`/CAJA01/DEPO01/perms 186-188 presentes. Gates verdes (backend build+34 paquetes+lint; frontend vitest 555/555, tsc 0, build, lint:design limpio). **Acción requerida por el usuario: re-login del vendor** (los permisos del frontend viajan en el login/`/me`, no se recalculan mid-sesión).
+
+**Deuda registrada (no bloqueante):** BUYR01 y CLNT01 tienen el mismo problema latente de permisos legacy en esta topología (sus sets modernos no están definidos en ningún plan — definirlos antes de migrarlos por nombre).
