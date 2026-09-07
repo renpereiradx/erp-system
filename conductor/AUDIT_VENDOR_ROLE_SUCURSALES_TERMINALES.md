@@ -53,6 +53,8 @@
 
 **Nota:** la pantalla de emparejamiento `/configuracion/terminal` (D.3, gated `branches:switch`) es COHERENTE como está: es la que el Encargado usa físicamente en el POS para vincular la terminal; el endpoint `pair` es auth-only por diseño.
 
+**✅ DECISIÓN (2026-09-06): opción (b)** — elegida por el usuario por consistencia con el patrón de permisos del sistema. Implementada en frontend `erp-webapp@dev d4cf88c`: guard de ruta `/configuracion/terminales` (`App.tsx`) y entrada en Settings (`Settings.tsx`) pasan a `branches:write`; comentario de cabecera de `DevicesPage.tsx` actualizado; pantalla de emparejamiento D.3 intacta. Gates verdes tras el cambio (vitest 546/546, tsc 0, build, lint:design limpio). Efecto: la administración de terminales queda solo para roles con `branches:write` (hoy, admin) — alineada con el split por método del backend; ENCR01/DEPO01 dejan de ver la pantalla con botones que caían en 403.
+
 ## 5. Nota de higiene (fuera de alcance del plan)
 
 `bin/business_management` (binario de build) está trackeado en git y sucio en el working tree del backend. Convendría gitignoringarlo.
