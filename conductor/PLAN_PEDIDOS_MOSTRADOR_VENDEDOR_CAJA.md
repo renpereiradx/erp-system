@@ -38,6 +38,13 @@ VENDEDOR (VNDR01)                          CAJERO (CAJA01/ENCR01)
 
 El carrito **no toca stock ni pagos**: es un pedido pre-venta. El stock se compromete recién al procesar la venta (validación hard ya existente). El vendedor jamás cobra.
 
+> **Clarificación del owner (2026-09-07):** el cajero no requiere cambio alguno — usa `/ventas`
+> directamente con el flujo de siempre, y que una venta quede pendiente es decisión exclusiva del
+> cajero. El vendedor solo registra la pre-venta (análoga a un presupuesto). El plan ya está alineado
+> con esto: FASE 3 no modifica el flujo de caja (solo agrega la sección de pedidos al paso de
+> pendientes del wizard) y FASE 4 no restringe a CAJA01/ENCR01, que conservan `sales:write` +
+> `cash:write` — pueden crear, cobrar y dejar pendientes igual que hoy.
+
 ## 2. Estado actual verificado (referencia)
 
 ### Backend (`business_management`)
@@ -194,7 +201,7 @@ CREATE TABLE transactions.counter_order_details (
 
 1. **Feature-sliced** `src/features/counterorders/` (patrón `transfers/`):
    - `components/OrdersBoard.tsx`: bandeja con filtros por estado (badge OPEN), búsqueda por cliente/código, sucursal activa + toggle "ver todas" (`branches:switch`), acciones por estado (editar/cancelar con motivo; "Procesar en caja" gated `sales:write` — hasta FASE 4, luego `cash:write`).
-   - `components/OrderBuilder.tsx`: carrito del vendedor — búsqueda de productos (debounce, variantes, barcode vía `useBarcodeScanner`), cantidades/unidades, cliente (`useClientStore` + `QuickClientModal`), notas, totales **resueltos por el backend** (detalle preview), guardar. Guard con ítems sin salvar al salir.
+   - `components/OrderBuilder.tsx`: carrito del vendedor — búsqueda de productos (debounce, variantes, barcode vía `useBarcodeScanner`), cantidades/unidades, cliente (`useClientStore` + `QuickClientModal`), notas, totales **resueltos por el backend** (detalle preview), guardar. Guard con ítems sin salvar al salir. Si `PLAN_CATALOGO_VENDEDOR` ya está implementado, reusar sus tarjetas/picker (`src/features/catalog/`).
    - `components/OrderDetailModal.tsx` + `OrderStatusBadge.tsx`: detalle resuelto (precios, IVA, stock warnings) + link a venta si CONVERTED.
    - `hooks/useCounterOrders.ts` (react-query, invalidación `['counter-orders']`) y `hooks/useOrderCart.ts` (estado local: add/remove/qty, agrupación por producto+variante — espejo de `addProductToCart` de SalesNew).
    - `types.ts`: `CounterOrder`, `CounterOrderItem`, `COUNTER_ORDER_STATUSES`, DTOs resueltos.
