@@ -222,3 +222,74 @@ Deploy seguro de A: migración primero (A.1) → backend (A.2-A.4) → frontend 
 | Transferencia enviada a sucursal equivocada | El workflow exige receive explícito en destino; revertir con transferencia de vuelta (tipo RETURN) |
 | Doble carga de stock en compras del depósito | `register_purchase_order` y `process_complete_purchase_order` cada uno suma stock (son caminos alternativos, no secuencia); F.5 usa el mismo endpoint que ya usa el wizard — no encadenar |
 | Rollback | Migraciones nuevas tienen `.down.sql`; no se modifican existentes |
+
+---
+
+## Addendum 2026-09-07 — Perfil vendedor puro (VNDR01 v2)
+
+Prueba de usuario con el rol VENDOR: el set §4.1 que dejó B.1 se percibía como
+perfil de **cajero** (Caja, cobros, impresoras visibles). Decisión del owner:
+VNDR01 queda como **vendedor puro**; lo de cobranza/caja es territorio de
+CAJA01 (que sí conserva todo ese set de F.1).
+
+**Acceso del vendedor: solo Ventas (con detalle acotado), Presupuestos y
+Directorio (pestaña Clientes).**
+
+### A.1 Revocación de permisos (migración `20260907121941_vndr01_pure_vendor_profile`, por nombre)
+
+| Permiso revocado | Motivo |
+| :--- | :--- |
+| `cash:read`, `cash:write` | Caja y cobros → CAJA01 |
+| `receivables:read` | Cuentas por cobrar (BI/finanzas) |
+| `parties:read` | Directorio completo; activa el gating D1 (solo pestaña Clientes; el POS usa `/api/v1/clients` = `clients:*`) |
+| `reserves:read`, `reserves:write` | Agenda y Reservas |
+| `documents:read`, `documents:write` | Impresoras de tickets / impresión |
+| `view_products`, `view_sales`, `create_sales` | Limpieza: nombres legacy que ningún gate del backend consulta |
+
+Set final VNDR01 (12): `sales:read/write`, `budgets:read/write`,
+`clients:read/write`, `products:read` (búsqueda POS), `payments:read`
+(**se conserva**: `/payment-methods` del checkout está gateado `payments:read`),
+`tax:read` (`/tax_rate/default`), `branches:read` (switcher/contexto),
+`dashboard:read` (home, §5.1), `settings:read` (boot `/settings`).
+
+### A.2 Detalle de venta acotado (frontend, `SalesOrderDetail`)
+
+En el detalle (`/cobros-ventas/:saleId`, abierto desde Historial) el vendedor
+ve **solo**: estado/fecha/ID, datos del cliente, productos (precio/IVA/total)
+y resumen de totales. Se gatea por permiso:
+
+| Sección | Gate |
+| :--- | :--- |
+| Botón "Registrar Cobro", campo "Método de Pago", KPI "Saldo Pendiente", card "Historial de Cobros" | `cash:write` |
+| Botón "Anular Venta" | `sales:cancel` (ya alineado al gate del backend B.2) |
+| Panel fiscal SIFEN (`SaleFiscalPanel`) | `sifen:read` (sus endpoints ya lo exigen) |
+| Ruta `/cobros-ventas/:saleId/pagos` | `cash:write` (PermissionGuard nuevo) |
+
+`CollectionStep` del checkout deja de disparar `GET /cash-registers*` sin
+`cash:read` (patrón `hasStoredPermission` de f91f7e3); el checkout del vendedor
+usa `pos-checkout` (`sales:write`) sin caja.
+
+### A.3 Nav "Configuración y Sistema" alineada a acceso real
+
+La ruta de Sucursales ya era admin-only (RoleGuard) pero el nav se mostraba con
+`branches:read`; igual pasaba con Config. Financiera (`tax:read`) y Ajustes
+Generales (sin gate) frente a páginas de administración. Alineación:
+
+- Sucursales: `branches:read` → `branches:write`
+- Config. Financiera: `tax:read` → `tax:write`
+- Ajustes Generales: sin gate → `settings:write`
+- Sección: `anyOf ['branches:write','documents:read','tax:write','users:read','settings:write']`
+  — si el rol no califica a ningún hijo, la sección desaparece (VNDR01 v2 no la ve).
+
+Efecto en otros roles: ENCR01/CAJA01 dejan de ver Sucursales/Config. Financiera/
+Ajustes Generales (sus rutas ya los bloqueaban o son de administración);
+CAJA01 conserva Impresoras (documents:read) y ENCR01 Usuarios y Seguridad
+(users:read, con Mi Perfil).
+
+### A.4 Estado
+
+- [x] Migración up/down por nombre (`20260907121941`) aplicada en dev
+- [x] `SalesOrderDetail` con gates `cash:write` / `sales:cancel` / `sifen:read`
+- [x] Nav Configuración alineada + guard `/pagos`
+- [x] `CollectionStep` sin requests de caja sin permiso
+- [x] Tests: `SalesOrderDetail.page.test.tsx` (vendedor vs cajero), nav del perfil vendedor
