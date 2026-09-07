@@ -1,7 +1,7 @@
 # PLAN: Catálogo del Vendedor — Productos sin Información Sensible
 
 **Fecha:** 2026-09-07
-**Estado:** 📝 PLAN (pendiente de implementación)
+**Estado:** 🚧 FASES 1+2 IMPLEMENTADAS (2026-09-07; backend commit `676509d`, ver §9). FASE 3 diferida hasta que exista `/pedidos`.
 **Alcance:** Cross-repo (backend `business_management` + frontend `erp-webapp`) → este plan vive en `conductor/` raíz
 **Origen:** Pedido del owner: nueva UI para el usuario vendedor que NO lo exponga a la página de productos (que muestra precio de costo); el vendedor solo debe ver precio de venta y detalles no sensibles.
 **Verificación:** Todas las afirmaciones de §2 fueron verificadas contra el código el 2026-09-07 (exploración de ambos repos con evidencia file:line).
@@ -98,7 +98,7 @@ Feature-sliced `src/features/catalog/` (patrón `transfers/`), route `/catalogo`
 
 | # | Pregunta | Recomación | Bloquea |
 |:-:|:---------|:-----------|:--------|
-| 5.1 | ¿ID del permiso? | Siguiente libre según orden de implementación de los dos planes (§3.1) — documentar el ID final en ambos planes | Migración |
+| 5.1 | ¿ID del permiso? | **RESUELTO: products:cost = 189** (se implementó primero; `PLAN_PEDIDOS_MOSTRADOR` pasa a 190/191 para counterorders:*) | Migración |
 | 5.2 | ¿CAJA01 ve costos? | No (no los usa en ningún flujo; hoy tampoco los ve en UI). Reversible por datos si la operación lo pide | Grants |
 | 5.3 | ¿Se strippea `target_margin_percent` (objetivo de margen configurado)? | No en v1 (es parámetro de estrategia, no costo real; lo consulta la UI de pricing). Revisar si se considera comercialmente sensible | Nada |
 | 5.4 | ¿Las páginas de metadatos (categorías/marcas/atributos/balanzas/conversiones) pasan a `products:write`? | Sí como ride-along (§3.4); sin urgencia | Nada |
@@ -148,3 +148,32 @@ FASE 1 (backend, sola)  ──>  FASE 2 (frontend catálogo + re-gating)  ──
 ```
 
 Independiente del plan de pedidos (puede implementarse antes o después); solo comparten la numeración de permisos (§3.1) y la FASE 3. Deploy de FASE 1: fail-closed — tras aplicar, roles sin `products:cost` dejan de recibir costo por API de inmediato (efecto deseado; ninguna UI de esos roles lo pinta).
+
+---
+
+## 9. Registro de implementación (2026-09-07)
+
+### FASE 1 — Backend (commit `676509d` en `business_management`, branch `dev`)
+
+- **Migración `20260907202357_add_products_cost_permission`**: `products:cost` = **189**; grants por nombre a F2VLso, ENCR01, DEPO01, BUYR01. `.down.sql` revoca+elimina (nota: el strip vive en código, el rollback del permiso solo no restaura visibilidad). Verificado en dev: 4 grants, 0 para VNDR01/CAJA01/SUPL01/CLNT01.
+- **Puerto + gate**: `catalog.PermissionChecker` (port.go) + `catalog.CostGate` (costgate.go, patrón sale B.3: nil=legacy, admin bypass, error→500). Bridge en `wiring/catalog.go` (`CatalogCostGate()` sobre el permission cache compartido).
+- **Strip post-cache**: helpers `StripCostData()` sobre los 3 DTOs de salida — `ProductFinancialEnrichedResponse` (unit_costs_summary→null, financial_health→cero, has_valid_costs→false, best_margin_*→omitidos), `ProductOperationInfoResponse` (ídem) y `ProductEnrichedResponse` (**purchase_price→omitido**: la columna "Costo de Compra" del FE cae a este campo como fallback — hallazgo del §2 confirmado en implementación). Se aplica en 15 handlers de catalog DESPUÉS del servicio; la cache (sin dimensión de rol) nunca ve payloads sanitizados. `unit_costs_summary` serializa `null` (key estable; no distingue "sin permiso" de "producto sin costos" — intencional).
+- **Pricing re-gate** (`internal/pricing/http/routes.go`): wrapper `costGate` (`RequireModulePermissionOnPath`, read=write=`products:cost`) sobre `/products/{id}/costs*`, `/margin-alert`, `/margin-report`, `/supplier-comparison`, `/cost-trends`, `/weighted-average`, `/cost-methods`, `/margin-alerts`, `/suppliers/{id}/cost-analysis`, más **`/cost-transactions`** (subrouter completo — estaba en products:read: fuga enumerada como riesgo en §7) y dos hallazgos de la auditoría §3.2: **`/products/by-category`** (devuelve cost+margin de ProductWithPricing) y **`/{id}/pricing-info`** (devuelve current_cost/weighted_avg_cost/margin_*). **`/{id}/units` queda fuera**: UnitPrice es solo precio de venta (auditado). Price-transactions y ajustes de precio quedan como estaban.
+- **ETag**: resuelto *por construcción*: el hash es del body, que ya varía por permiso → la dimensión entra al hash sola. Test explícito: ETags distintos por rol, replay cruzado sin 304, replay propio con 304.
+- **Tests**: `internal/catalog/http_costgate_test.go` (por familia de handler con/sin permiso/admin bypass, strip-no-contamina-cache con puntero compartido, resolver-error→500, ETag por permiso) y `internal/pricing/http/routes_test.go` (403 sin products:cost / 200 con él / price-routes siguen con products:read).
+- **Gates**: `make build` ✅ · `go test ./...` 0 FAIL ✅ · `golangci-lint run` ✅ · `make migrate-up` + `migrate-backfill` + `migrate-verify-gaps` ✅ (268 aplicadas, 0 gaps — el backfill registró 6 migraciones del 2026-09-05 ya aplicadas pero sin fila en `migration_history`, condición preexistente del dev DB).
+
+### FASE 2 — Frontend (branch `dev` de `erp-webapp`)
+
+- **Feature `src/features/catalog/`** (feature-sliced, patrón transfers): `types.ts` (proyección `CatalogProduct` del DTO de búsqueda avanzada — no tipa ningún campo de costo), `hooks/useCatalogProducts.ts` (react-query sobre `productService.searchAdvanced` = POST `/products/search/advanced`: filtros server-side de categoría/marca, stock, sort, paginación; el backend matchea `name ILIKE OR barcode =` así que el buscador soporta código de barras sin endpoint extra), `hooks/useDebouncedValue.ts`, `components/CatalogCard.tsx` (imagen/ícono, nombre, marca·categoría, barcode/unidad, P.V.P. con IVA, badge de stock, variantes expandibles on-demand), `components/CatalogBoard.tsx` (PageHeader + toolbar + grilla mobile-first + estados §6.7 + paginación), barrel `index.ts`.
+- **Ruta/nav**: `/catalogo` con `PermissionGuard products:read` (App.tsx) + "Catálogo" en "Gestión Comercial" (navigation.ts, ícono Store, products:read — lo ven vendedor y cajero).
+- **Re-gating §3.4**: `/productos` → `products:write` (ruta+nav); ProductsTable columna costo + chip margen → `products:cost` (useAuth); ProductDetailsModal (tabla de costos, card Mejor Margen, ítem has_costs del checklist, banner Financial Health) → `products:cost`; "Nuevo Producto" (ProductsHeader) → `products:write` (fix del gap); `/profitability/*` (6 rutas) → `analytics:read`; ride-along §5.4: `/configuracion/{categorias,marcas,atributos,balanzas,conversiones}` → `products:write` (ruta+nav).
+- **i18n**: `locales/es/catalog.js` (clave `catalog.*` + `nav.catalog`); `en` cae a fallback español (patrón transfers).
+- **Tests**: `CatalogBoard.test.tsx` (7: precio sin costo, params de query, debounce, empty, error+retry, variantes on-demand, paginación) + ProductsTable.test (2 nuevos: columna costo oculta sin products:cost, chip de margen solo con él) + mock de AuthContext agregado a 5 tests legacy que renderizan los componentes ahora gateados + navigation.test actualizado (VNDR01 ahora ve Catálogo en Gestión Comercial — cambio de spec del plan).
+- **Auditoría performance**: `erp-webapp/conductor/AUDIT_REACT_PERFORMANCE_CATALOGO_FRONTEND.md` — sin hallazgos bloqueantes (2 notas P3).
+- **Gates**: `vitest --run` 578/578 ✅ · `tsc --noEmit` 0 ✅ · `pnpm build` ✅ · `lint:design` ✅.
+
+### Notas de deploy
+
+- Fail-closed: al deployar FASE 1, roles sin `products:cost` dejan de recibir costos por API de inmediato (ninguna UI de esos roles los pinta). **F2VLso/ENCR01/DEPO01/BUYR01 necesitan re-login** para que el JWT refresque permisos y vean costo en la UI de gestión.
+- FASE 3 (CTA "Agregar al pedido" + reuso en el armador de `/pedidos`) queda para `PLAN_PEDIDOS_MOSTRADOR`.

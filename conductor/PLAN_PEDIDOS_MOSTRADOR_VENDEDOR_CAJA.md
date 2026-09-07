@@ -105,7 +105,7 @@ OPEN/CLAIMED ──cancel(motivo)──▶ CANCELLED (final)
 
 ### 3.5 Permisos y roles
 
-- **Permisos nuevos**: `counterorders:read` (**189**), `counterorders:write` (**190**) — son perms de path-prefix → sí se registran en `config/module_permissions.go` (`"/counter-orders"`).
+- **Permisos nuevos**: `counterorders:read` (**190**), `counterorders:write` (**191**) — son perms de path-prefix → sí se registran en `config/module_permissions.go` (`"/counter-orders"`). ACTUALIZACIÓN 2026-09-07: `PLAN_CATALOGO_VENDEDOR` tomó el **189** para `products:cost` (se implementó primero); counterorders pasa a 190-191 (coordinación §5.1 de ambos planes).
 - **Grants por nombre** (lección de topologías): VNDR01, CAJA01, ENCR01 reciben ambos; F2VLso por consistencia; DEPO01 no.
 - **"Vendedor solo vendedor" (v3, FASE 4)**: revocar `sales:write` a VNDR01 y blindar server-side el cobro:
   - `POST /sale/pos-checkout` y `PUT /sale/{id}/confirm-payment` pasan a exigir además `cash:write` por ruta (`RequireModulePermissionOnPath`; hoy solo `sales:write`, `routes.go:53,64`). Cobrar = manejar dinero.
@@ -190,7 +190,7 @@ CREATE TABLE transactions.counter_order_details (
 
 ### FASE 1 — Backend: entidad + API (sola)
 
-1. **Migración** (`make migrate-create`): tablas §3.7 + permisos 189/190 (`counterorders:read/write`) + grants por nombre (VNDR01, CAJA01, ENCR01, F2VLso) + `.down.sql` (revoke + drop). Verificar con `make migrate-up` y `make migrate-verify-gaps` (lección del 2026-09-07: `migrate-up` va en los gates).
+1. **Migración** (`make migrate-create`): tablas §3.7 + permisos 190/191 (`counterorders:read/write`; el 189 lo tomó `products:cost`) + grants por nombre (VNDR01, CAJA01, ENCR01, F2VLso) + `.down.sql` (revoke + drop). Verificar con `make migrate-up` y `make migrate-verify-gaps` (lección del 2026-09-07: `migrate-up` va en los gates).
 2. **Dominio y puertos** (`internal/sale/counter_order.go` + port): tipos `CounterOrder`/`CounterOrderItem`/estados; puertos `CounterOrderRepository` (CRUD + claim/release/convert con guards SQL), `ClientReader` (existe/activo), `ProductReader` (existencia + precio vigente + IVA + stock por sucursal — reusar los que ya consume el servicio de venta).
 3. **Servicio** (`counter_order_service.go`): create (valida cliente/productos/unidades/cantidad>0, genera código `PED-`), update (solo OPEN sin claim), claim (guard + sweep stale), release, convert (verifica venta + idempotente), cancel (motivo), list/detail con resolución de precios/IVA/stock. Branch por `ResolveBranchContext`. Tests table-driven con mocks por puerto (incl. caso 409 de claim).
 4. **HTTP** (`http_counter_order.go` + subrouter en `internal/sale/http/routes.go`): rutas §3.6, handlers solo parseo. Registro en `config/module_permissions.go`. `wiring/sale.go` conecta dependencias.
