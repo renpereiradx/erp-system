@@ -173,6 +173,10 @@ Independiente del plan de pedidos (puede implementarse antes o después); solo c
 - **Auditoría performance**: `erp-webapp/conductor/AUDIT_REACT_PERFORMANCE_CATALOGO_FRONTEND.md` — sin hallazgos bloqueantes (2 notas P3).
 - **Gates**: `vitest --run` 578/578 ✅ · `tsc --noEmit` 0 ✅ · `pnpm build` ✅ · `lint:design` ✅.
 
+### Hotfix post-UV (2026-09-08, backend `75b6518`)
+
+- **`POST /products/search/advanced` daba 403 al vendedor**: el endpoint es una búsqueda (lectura) que viaja como POST, y en el subrouter `/products` el middleware de módulo mapea POST→`products:write`. Era una trampa legacy (los únicos consumidores previos eran roles write); el catálogo es el primer consumidor read-only. Fix: registrado a nivel raíz con `RequireModulePermissionOnPath(products:read)` + ETag (precedencia intacta; tests de ruta: read-only 200, admin 200, sin products:read 403). `/search/facets` queda en el subrouter (GET→read).
+
 ### Notas de deploy
 
 - Fail-closed: al deployar FASE 1, roles sin `products:cost` dejan de recibir costos por API de inmediato (ninguna UI de esos roles los pinta). **F2VLso/ENCR01/DEPO01/BUYR01 necesitan re-login** para que el JWT refresque permisos y vean costo en la UI de gestión.
