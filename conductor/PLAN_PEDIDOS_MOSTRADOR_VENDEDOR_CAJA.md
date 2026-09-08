@@ -1,10 +1,22 @@
 # PLAN: Pedidos de Mostrador — Carrito del Vendedor → Cobro en Caja
 
 **Fecha:** 2026-09-07
-**Estado:** 📝 PLAN (pendiente de implementación)
+**Estado:** ✅ IMPLEMENTADO (FASES 1–4 completas, 2026-09-08)
+**Commits:** backend `dev`: FASE 1 (post-75b6518) + FASE 4 (fixes E2E incluidos); frontend `dev`: FASE 2 `a138a5c`, FASE 3 `b56b396`, FASE 4 `7f43c1e`. FASE 5 sigue post-puesta en marcha.
 **Alcance:** Cross-repo (backend `business_management` + frontend `erp-webapp`) → este plan vive en `conductor/` raíz
 **Origen:** Pedido del owner: el rol Vendor necesita una UI para (1) cargar productos en un carrito, (2) asociar un cliente y guardarlo. El cliente pasa por caja, el cajero busca su nombre/orden y procesa el carrito — como venta nueva o agregándolo a una venta pendiente. "Con esto, el vendedor es solo vendedor."
 **Verificación:** Todas las afirmaciones de §2 fueron verificadas contra el código el 2026-09-07 (exploración de ambos repos con evidencia file:line). Los 3 hallazgos de integración de presupuestos de `HALLAZGOS_PRESUPUESTOS_BACKEND_2026-08-17.md` (H1 aridad SQL, H2 URLs, H3 shape) **ya están corregidos** — el módulo presupuestos funciona hoy con contrato canónico v2.0.
+
+### Registro de implementación (2026-09-08)
+
+- **FASE 1**: migración `20260908145926_counter_orders_system` (tablas + permisos 190/191 + grants por nombre VNDR01/CAJA01/ENCR01/F2VLso, CHECKs de coherencia del ciclo de vida). Contexto `internal/sale`: `counter_order.go` + puertos en `port.go` + `counter_order_service.go` (tests table-driven, mocks por puerto) + handlers `http_counter_order.go` + subrouter `/counter-orders` + `config/module_permissions.go` + wiring (`CounterOrderRepo` hace de pricer: resuelve precio con `unit_prices`/`get_active_price` + `liquidate_sale_line_tax` — la misma resolución de la venta).
+- **FASE 2**: feature-sliced `src/features/counterorders/` (OrdersBoard, OrderBuilder con catálogo+variante+escáner, OrderDetailModal, CancelOrderDialog, StatusBadge), `src/domain/counterorders/cart.ts` (lógica pura), `counterOrderService`, `useCounterOrderPreloadStore`, ruta `/pedidos` (counterorders:read), nav "Gestión Comercial" → "Pedidos", i18n `es/counterorders.js`. 17 tests + auditoría `vercel-react-best-practices` en `erp-webapp/conductor/AUDIT_REACT_PERFORMANCE_COUNTERORDERS_FRONTEND.md`.
+- **FASE 3**: `useCounterOrderCheckout` (claim al continuar con 409 anti doble-caja, ítems→CartItems `isFromCounterOrder`, release al salir sin procesar, convert idempotente tras `pos-checkout`/merge/leave-pending con toast accionable de reintento), paso del wizard "Pendientes y pedidos del cliente" con destino inline (venta nueva / merge a pendiente), aviso en `ClientStep`, precarga /pedidos→/ventas vía store. `checkoutSteps.ts` muestra 'pending' también con pedidos.
+- **FASE 4**: auditoría previa confirmó que VNDR01 era el único rol con `sales:write` sin `cash:write` (2026-09-08). Re-gates: `pos-checkout` y `confirm-payment` exigen `cash:write` por ruta (test `TestRequireModulePermissionDoubleGate`); `POST /sale/{id}/cancellation-requests` re-gateado a `sales:read` como compat root antes del subrouter. Migración `20260908161317_vendor_revoke_sales_write` (revoca por nombre, reversible). FE: sin `sales:write` no hay tab "Nueva Venta" (abre Historial), landing del vendor → `/pedidos`, CTA "Procesar en caja" pasa a `cash:write`, matriz VNDR01 de `FRONTEND_RBAC_GUIDE.md` actualizada.
+- **E2E por API (dev, tokens vendor/cajero)**: vendor crea pedido (precios resueltos IVA10, stock) → vendor `pos-checkout` 403 → vendor `POST /sale/` 403 → caja reclama (CLAIMED "En caja con X") → caja `pos-checkout` crea la venta → convert marca CONVERTED (idempotente 200; otra venta 409) → vendor solicita anulación 201 → claim sobre CONVERTED 409 → pedido inexistente 404.
+- **Bugs detectados por el E2E y corregidos**: faltaban tags json snake_case en `ResolvedLine`; carga masiva de ítems con `pq.Array` (`ANY($1)`); `MarkConverted` debe limpiar `claimed_by/at` (CHECK `ck_counter_orders_claim_present`).
+- **Desvíos menores del plan**: (a) `convert` recibe solo `{sale_id}` — el `mode` resultó innecesario (el guard CLAIMED + idempotencia por sale_id cubren ambos destinos); (b) `release` es del claimer o admin (`force` por `RoleID==F2VLso`, mismo criterio del middleware); (c) el CHECK de DB exige `claimed_by/at` NULL fuera de CLAIMED.
+- **Notas de entorno dev**: usuarios de prueba creados para el E2E (`e2ecaja01` CAJA01 + password reseteada en `vnd_1130df5f-8372-431d-b920-37`, pass `e2etest123`) — limpiar antes de producción. Re-login requerido en producción para refrescar JWTs (FASE 4).
 
 ---
 
