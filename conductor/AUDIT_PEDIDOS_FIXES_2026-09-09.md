@@ -102,6 +102,28 @@ auditoría a priori).
 `validateItems` ahora rechaza >2 decimales con 400 informativo ("admite hasta
 2 decimales"). Caso agregado a `TestCounterOrderCreate_Table`.
 
+### C4 (nuevo, hallado en la re-verificación E2E) — Todo cancel por API devolvía 500 ✅
+
+`MarkCancelled` pasaba `userID` como `$2` pero el SQL solo referenciaba `$1` y
+`$3` → Postgres no puede inferir el tipo de un parámetro sin referenciar
+("could not determine data type of parameter $2"). `POST /counter-orders/{id}/cancel`
+fallaba 500 **para todos los usuarios** (los tests unitarios no lo vieron:
+mockean el repo). La tabla no tiene `cancelled_by`, así que el fix elimina el
+parámetro huérfano (`counter_order_repo.go`). Lección: las mutaciones guardadas
+del repo no tienen cobertura de integración — el E2E por API es el único gate
+que las ejercita.
+
+## Re-verificación E2E (binario arreglado en :5051, sin tocar los dev :3001/:5050)
+
+- Create con producto sin precio → **201 + `price_warning`** y EXACTAMENTE 1
+  pedido nuevo (antes: 404 + 3 huérfanos). C1+C2 verificados en vivo.
+- Bandeja y detalle del pedido degradado → 200 con el ítem avisado y total 0.
+- Cancel del pedido degradado → 200 tras C4 (antes imposible, 500).
+- `all_branches=1` sin `branches:switch` → 200 con scope en sucursal activa.
+- Cantidad `0.004` → 400 "admite hasta 2 decimales".
+- Datos de prueba eliminados (pedido + producto); DB dev quedó en su estado
+  previo (4 pedidos activos).
+
 ## Gates
 
 - Backend: `go build ./...` ✅ · `go test ./...` ✅ (sale: 40+ casos) ·
@@ -127,6 +149,7 @@ auditoría a priori).
 
 - Sin migraciones nuevas.
 - Requiere **rebuild + restart del backend** para tomar efecto (los servidores
-  dev :3001/:5050 siguen con el binario previo).
+  dev :3001/:5050 siguen con el binario previo — el fix del cancel C4 en
+  especial: hoy cancelar un pedido por API/UI da 500 con el binario viejo).
 - Los roles ya granteados no cambian; `branches:switch` (188) es quien habilita
   "ver todas" — hoy solo admin + DEPO01.
