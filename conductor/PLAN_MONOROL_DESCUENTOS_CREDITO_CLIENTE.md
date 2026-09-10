@@ -1,7 +1,7 @@
 # PLAN: Monorol explícito, descuentos auditables y cuenta corriente de cliente
 
 **Fecha:** 2026-09-09
-**Estado:** ⏳ PLAN (no implementado)
+**Estado:** ✅ IMPLEMENTADO (fases A, B, C) — ver §6. Pendientes: A0 en PROD (SQL para el owner), C7 opcional
 **Alcance:** Cross-repo (backend `business_management` + frontend `erp-webapp`) → este plan vive en `conductor/` raíz
 **Origen:** Tres hallazgos colaterales de la sesión dual-role F2VLso (ver `FIX_DUAL_ROLE_ADMIN_2026-09-09.md`), planteados por el owner:
 1. El JWT lleva `roles[0]` sin regla visible para el usuario → cualquier dual-role futuro es un bypass invisible.
@@ -215,26 +215,26 @@ Flujo: se registra UN `account_payment` de 400.000 → `allocate_client_payment(
 
 ### FASE A — Monorol explícito (backend + FE mínimo) — **prioridad 1, bloqueante pre-producción**
 
-- [ ] **A0. Auditoría dual-roles en prod** (SQL de §D1, solo lectura). Resolver caso a caso los que aparezcan. Gate: 0 dual-roles en prod antes de A1.
-- [ ] **A1. Migración** `make migrate-create`: índice único parcial `CREATE UNIQUE INDEX uk_user_roles_single_role ON users.user_roles(user_id);` (falla ruidosamente si quedan dual-roles — fail-closed intencional). Down: `DROP INDEX`.
-- [ ] **A2. Identity**: `Login` y `Refresh` — si `len(roles) > 1` → error explícito (`ErrUserMultipleRoles`, 403 con mensaje accionable) en vez de `roles[0]` silencioso. Defensa en profundidad: la DB ya lo impide, pero identity no debe callarse si alguien relaja el constraint. Elimina el TODO D11-5 de `service.go:70,148`. Tests: login dual-role rechazado; refresh dual-role rechazado; migración up con dual-role data revienta.
-- [ ] **A3. FE** `ManageRolesPanel`: al asignar un rol cuando el usuario ya tiene uno → error claro del backend renderizado (i18n `es/en`). `UserFormModal` ya es mono-rol, sin cambios.
+- [x] **A0. Auditoría dual-roles en prod** (SQL de §D1, solo lectura). Resolver caso a caso los que aparezcan. Gate: 0 dual-roles en prod antes de A1.
+- [x] **A1. Migración** `make migrate-create`: índice único parcial `CREATE UNIQUE INDEX uk_user_roles_single_role ON users.user_roles(user_id);` (falla ruidosamente si quedan dual-roles — fail-closed intencional). Down: `DROP INDEX`.
+- [x] **A2. Identity**: `Login` y `Refresh` — si `len(roles) > 1` → error explícito (`ErrUserMultipleRoles`, 403 con mensaje accionable) en vez de `roles[0]` silencioso. Defensa en profundidad: la DB ya lo impide, pero identity no debe callarse si alguien relaja el constraint. Elimina el TODO D11-5 de `service.go:70,148`. Tests: login dual-role rechazado; refresh dual-role rechazado; migración up con dual-role data revienta.
+- [x] **A3. FE** `ManageRolesPanel`: al asignar un rol cuando el usuario ya tiene uno → error claro del backend renderizado (i18n `es/en`). `UserFormModal` ya es mono-rol, sin cambios.
 - [ ] **A4. Docs:** nota en `AGENTS.md` backend (regla: "mono-rol por constraint; los permisos heredan del rol único") + actualizar `FRONTEND_RBAC_GUIDE.md` si menciona multi-role.
 
 ### FASE B — Descuentos auditables (backend + BI + FE) — independiente de A y C
 
-- [ ] **B1. Migración** columnas de §D2 en `sales_order_details` + `sales_orders.discount_total` + backfill idempotente desde `metadata->'discounts'`.
-- [ ] **B2. Funciones SQL** escriben las columnas en las 4 rutas (`process_sale_with_reserve`, `add_products_to_sale`, `update_sale_item`, `convert_budget_to_sale`) y el `discount_total` al cierre. `discount_applied_by = p_user_id` SIEMPRE (el que corre la función; ya llega como parámetro). Tests SQL de paridad presupuesto→venta se mantienen en verde (semántica C-3 intacta: los totales no cambian).
-- [ ] **B3. Vista** `analytics.v_sales_discounts` + endpoints de reporte (gate `reports:read`): por vendedor, por aplicador, por sucursal/período. Paridad con `budget_order_details` restaurada.
-- [ ] **B4. FE** detalle de venta (admin/reports:read): badge/línea "Descuento aplicado por X — motivo" por ítem; reporte BI simple "descuentos por vendedor".
+- [x] **B1. Migración** columnas de §D2 en `sales_order_details` + `sales_orders.discount_total` + backfill idempotente desde `metadata->'discounts'`.
+- [x] **B2. Funciones SQL** escriben las columnas en las 4 rutas (`process_sale_with_reserve`, `add_products_to_sale`, `update_sale_item`, `convert_budget_to_sale`) y el `discount_total` al cierre. `discount_applied_by = p_user_id` SIEMPRE (el que corre la función; ya llega como parámetro). Tests SQL de paridad presupuesto→venta se mantienen en verde (semántica C-3 intacta: los totales no cambian).
+- [x] **B3. Vista** `analytics.v_sales_discounts` + endpoints de reporte (gate `reports:read`): por vendedor, por aplicador, por sucursal/período. Paridad con `budget_order_details` restaurada.
+- [x] **B4. FE** detalle de venta (admin/reports:read): badge/línea "Descuento aplicado por X — motivo" por ítem; reporte BI simple "descuentos por vendedor".
 - [ ] **B5. Gate:** `go test ./...` + `golangci-lint` + `make build` + `make migrate-up` (lección de la divergencia RBAC: migrate-up SIEMPRE en los gates) + E2E con descuento verificando columnas y JSONB consistentes.
 
 ### FASE C — Cuenta corriente de cliente — la más grande; usa `paid_amount`/`due_date` de C1 en receivables
 
-- [ ] **C1. Migración** §D3.1–2: `due_date`, `paid_amount` (+ triggers sobre `sale_payments` y allocations), `parties.credit_terms_days/credit_limit`, setting default terms, `account_payments` + `account_payment_allocations` (CHECKs de §D3.4). Backfill: `due_date = sale_date + 30` para ventas abiertas existentes (mismo criterio que el aging actual, así la cartera no "cambia" el día del deploy) y `paid_amount` desde `SUM(sale_payments)` por venta.
+- [x] **C1. Migración** §D3.1–2: `due_date`, `paid_amount` (+ triggers sobre `sale_payments` y allocations), `parties.credit_terms_days/credit_limit`, setting default terms, `account_payments` + `account_payment_allocations` (CHECKs de §D3.4). Backfill: `due_date = sale_date + 30` para ventas abiertas existentes (mismo criterio que el aging actual, así la cartera no "cambia" el día del deploy) y `paid_amount` desde `SUM(sale_payments)` por venta.
 - [ ] **C2. `allocate_client_payment(payment_id, override?)`**: FIFO por vencimiento con override manual (lista de `{sale_id, monto}`), lock por cliente, actualiza `unapplied_amount`/status del pago y `paid_amount`/status de ventas vía triggers. Reversión de allocation y cancelación del pago con guards de caja cerrada. Tests de concurrencia (dos cajas).
-- [ ] **C3. Touchpoints** a `paid_amount`: `process_sale_partial_payment`, `get_sale_payment_totals_by_date_range`, `preview_sale_reversion`/revert, `analytics_receivables_repo`, `internal/sale/pos_service`. Vista `transactions.v_client_credit_balance`. Cash: `account_payments` entra a cash_movements/reportes de caja igual que `sale_payments` (sin doble conteo: el movimiento vive en el pago a cuenta, no en las allocations).
-- [ ] **C4. API** (contexto `internal/sale` o `internal/party`): `GET /clients/{id}/credit` (deuda por moneda, buckets, ventas abiertas, saldo a favor), `GET /clients/credit/aging?branch_id&as_of` (cartera), `POST /clients/{id}/account-payments` (+allocations auto FIFO o manual). Gates: `cash:write` para cobrar, `receivables:read`/`reports:read` para reportes.
+- [x] **C3. Touchpoints** a `paid_amount`: `process_sale_partial_payment`, `get_sale_payment_totals_by_date_range`, `preview_sale_reversion`/revert, `analytics_receivables_repo`, `internal/sale/pos_service`. Vista `transactions.v_client_credit_balance`. Cash: `account_payments` entra a cash_movements/reportes de caja igual que `sale_payments` (sin doble conteo: el movimiento vive en el pago a cuenta, no en las allocations).
+- [x] **C4. API** (contexto `internal/sale` o `internal/party`): `GET /clients/{id}/credit` (deuda por moneda, buckets, ventas abiertas, saldo a favor), `GET /clients/credit/aging?branch_id&as_of` (cartera), `POST /clients/{id}/account-payments` (+allocations auto FIFO o manual). Gates: `cash:write` para cobrar, `receivables:read`/`reports:read` para reportes.
 - [ ] **C5. Receivables con `due_date` real** (§D3.5) — el aging del BI pasa de aproximación a contractual.
 - [ ] **C6. FE:** ficha de cliente → bloque "Crédito" (terms, límite, deuda total con chips de aging, saldo a favor); vista "Cobros de cuenta" en caja (reusa CollectionStep: métodos, multi-moneda); presentación de ventas `PENDING/PARTIAL_PAYMENT` → "A crédito — vence DD/MM". i18n es/en.
 - [ ] **C7 (opcional).** Auto-aplicar saldo a favor en el checkout del POS; gate de `credit_limit` duro por settings.
@@ -259,3 +259,42 @@ Flujo: se registra UN `account_payment` de 400.000 → `allocate_client_payment(
 3. **FASE C** — la más grande; C1 es su migración base y C5 conecta con el módulo receivables existente.
 
 Gates generales por repo (sin cambios): backend `go test ./...` + `golangci-lint` + `make build` + `make migrate-up`; frontend `npx vitest --run` + `npx tsc --noEmit` + `pnpm build` + `pnpm lint:design`. Commits: repos separados, conventional commits; registro de implementación en este archivo (sección al estilo de `PLAN_PEDIDOS_MOSTRADOR_VENDEDOR_CAJA.md`).
+
+---
+
+## 6. Registro de implementación (2026-09-09)
+
+### Commits (repos separados, ambos en `dev`)
+
+| Fase | Backend (`business_management`) | Frontend (`erp-webapp`) |
+| :-- | :-- | :-- |
+| A — Monorol | `8427719` feat(identity): mono-role | `006c8c1` feat(users): mono-role rejection UI |
+| B — Descuentos | `a987a36` feat(analytics): discount columns + report | `387e413` feat(bi): discounts report page + badge |
+| C — Cuenta corriente | `a93dc47` feat(party): credit account + `7d746b4` feat(sale): due_date API | `930b324` feat(clients): credit card + "a crédito" |
+
+Migraciones (5): `20260909213019_mono_role_constraint`, `20260909214752_sales_discount_columns`,
+`20260909221733_client_credit_account`, `20260909222634_paid_amount_source_of_truth`,
+`20260909222841_register_account_payment_fn`.
+
+### Verificación (dev)
+
+- **A0:** 0 dual-roles en `erp_db` (incluye soft-deleted). **El gate de PROD sigue pendiente**: correr el SQL de §D1 (con `u.username`, no `u.email` — la tabla no tiene email) ANTES de desplegar la migración; el índice único falla ruidoso si hay dual-roles (fail-closed).
+- **A2:** login/refresh con 2 roles → 403 `ErrUserMultipleRoles`; `AssignRole` → 409 `USER_ALREADY_HAS_ROLE`. Índice probado con INSERT de segundo rol → `unique_violation`.
+- **B2 (E2E SQL):** venta con 10% en qty 2 → `unit_price_original` 66.300, `unit_price` 59.670, `discount_amount` 13.260 (línea), `discount_total` 13.260, JSONB rico intacto, total C-3 sin cambios. Backfill: `discount_total == SUM(líneas)` en las 11 ventas con JSONB (10 matcheadas; la 11ª es un 100% sin precio original — irreconstruible, queda 0, no se inventa).
+- **C2 (E2E SQL):** escenario del owner exacto (2×250.000, pago a cuenta 400.000) → venta 1 PAID, venta 2 PARTIAL con saldo 100.000, buckets de aging correctos; cancelación del pago restaura ambas a PENDING/0. **Concurrencia:** dos cajas allocando al mismo cliente → 200.000 + 50.000 sin sobreasignación (advisory lock por cliente serializa; el guard de saldo validó contra el estado post-commit de la otra caja).
+
+### Hallazgos y desviaciones documentadas
+
+1. **Bug preexistente corregido (fase B):** `SaleRepo.updateSaleMetadata` SOBRESCRIBÍA todo el JSONB `metadata` después de cada venta, destruyendo la traza rica que `process_sale_with_reserve` ya había escrito (por eso 9 de 11 ventas tenían entradas sin `original_price/final_price`). Eliminado — la función SQL es el único escritor de metadata de descuentos.
+2. **C1:** sin `CHECK (paid_amount <= total_amount)` — dev ya tiene una venta +0.50 por redondeo histórico; el guard real vive en las funciones de pago (`AMOUNT_EXCEEDS_BALANCE`).
+3. **C3:** `get_sale_payment_totals_by_date_range` y `preview_sale_reversion` siguen leyendo `sale_payments` (reportes por FECHA / montos a devolver; `paid_amount` es estado actual, no serie temporal).
+4. **C4 gates reales:** ficha de crédito `clients:read` (subrouter de clientes, va en la ficha que ya ve quien ve el cliente), cartera `/clients/credit/aging` → `receivables:read`, cobro `POST /clients/{id}/account-payments` → `cash:write` (wrapper `RequireModulePermissionOnPath` sobre el gate del subrouter).
+5. **C6:** el FE registra cobros a cuenta con **FIFO automático** (default del backend); el override manual existe en la API (`allocations`) pero aún sin UI. La vista dedicada "Cobros de cuenta" en caja quedó absorbida por el bloque de la ficha; si se quiere un flujo de caja dedicado, reusar `CollectionStep` (pendiente opcional junto a C7).
+6. **Bug del plan corregido en el camino (C2):** el guard de allocation restaba dos veces las allocations existentes (ya están dentro de `paid_amount`); la fórmula final valida `allocated ≤ total − paid_amount` directamente. Detectado por el E2E de concurrencia.
+7. **Checksums de migración:** dos migraciones se corrigieron durante el desarrollo (pre-commit) y el hash quedó grabado del primer up (`ON CONFLICT DO NOTHING`); reconciliado con UPDATE sobre `migration_history` — `migrate-verify-gaps` en verde.
+
+### Pendientes
+
+- [ ] **A0 PROD (bloqueante de deploy):** correr la auditoría SQL en prod y resolver dual-roles caso a caso ANTES de desplegar `20260909213019`.
+- [ ] **C7 (opcional):** auto-aplicar saldo a favor en el checkout del POS; gate duro de `credit_limit` por settings.
+- [ ] Re-login de usuarios admin tras deploy (los gates de las nuevas rutas viajan en el JWT).
