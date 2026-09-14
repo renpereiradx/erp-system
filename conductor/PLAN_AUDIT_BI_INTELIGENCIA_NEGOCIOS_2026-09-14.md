@@ -1,6 +1,6 @@
 # PLAN — Auditoría y remediación del módulo BI "Inteligencia de Negocios"
 
-**Fecha**: 2026-09-14 (v2: auditoría profunda backend integrada) · **Tipo**: Cross-repo (backend Go + frontend React) · **Estado**: 🔄 En progreso — **FASE 0 ✅** + **1A T1-T4 ✅** (T1 cf59a81, T2 884231b, T3 514d856, T4 fca817b); T5 + sub-fases 1B-1E pendientes
+**Fecha**: 2026-09-14 (v2: auditoría profunda backend integrada) · **Tipo**: Cross-repo (backend Go + frontend React) · **Estado**: 🔄 En progreso — **FASE 0 ✅ + sub-fase 1A ✅ COMPLETA (T1-T5: cf59a81, 884231b, 514d856, fca817b, d2d3607)**; sub-fases 1B-1E pendientes
 
 > **Orden de ejecución (v2)**: FASE 0 → **FASE 1 completa (backend BI, sub-fases 1A-1E)** → FASE 2-5
 > (frontend). No se inicia ninguna fase de frontend hasta que el gate de FASE 1 esté en verde:
@@ -355,12 +355,19 @@ Por cada página del inventario 1.1, ejecutar y documentar en la ficha de la pá
   `auditBranchScopeCondition` (`sales_payments`→`sale_payments` + PK `payment_id`,
   `reserve_orders`→`reserves`) y aliases faltantes en las 4 queries de turnover (Overview
   además mostraba rotación en cero silencioso).
-- [ ] **T5 · action_url reales (P0-3)**: catálogo central BE alert-type→ruta FE (rutas
-  existentes: `/movimientos-stock`, `/productos`, `/receivables/overdue`,
-  `/comercial/presupuestos`) + test que valide cada ruta contra una lista canónica compartida
-  con el FE (se actualiza el FE en FASE 3; el BE define el contrato primero).
-- Gates 1A: `go test ./...` + `golangci-lint run` + `make build` + smoke dev-JWT de los
-  endpoints corregidos + EXPLAIN comparado (T2) documentado en `conductor/` del BE.
+- [x] **T5 · action_url reales (P0-3)**: ✅ 2026-09-14 (BE `d2d3607`, reporte
+  `business_management/conductor/FASE1_T5_ALERT_ACTION_URLS_2026-09-14.md`):
+  `internal/analytics/alert_routes.go` con `AlertActionURLs` (key→ruta) +
+  `CanonicalFEAlertRoutes` (contrato compartido); repo deja de hardcodear. Destinos: inventario
+  → `/inventory-analytics/stock-levels` (se descarta `/productos`: gated `products:write` =
+  muro de permisos al click), margen → `/profitability/products`, vencidas mantiene
+  `/receivables/overdue`, presupuestos → `/comercial/presupuestos`. 3 tests de contrato
+  (catálogo ⊆ canónica, formato, no-vacíos). Smoke: `/dashboard/alerts` 200 con las URLs
+  nuevas en las 2 alertas vivas de dev; 5/5 rutas verificadas contra `App.tsx`. Espejo TS del
+  FE + test de router: FASE 3.
+- Gates 1A: ✅ `go test ./...` + `golangci-lint run` + `make build` + smoke dev-JWT de los
+  endpoints corregidos + EXPLAIN comparado (T2/T4) documentado en `conductor/` del BE.
+  **Sub-fase 1A COMPLETA (T1-T5).**
 
 #### 1B — Robustez de API (3 días)
 
