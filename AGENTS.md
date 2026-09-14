@@ -173,7 +173,7 @@ src/domain/<feature>/  ← Lógica de negocio pura (cálculos, validaciones)
 > **Contrato HTTP (post-F7.7):** `VITE_API_URL` debe ser la URL directa del backend
 > (ej. `http://localhost:5050`). El proxy rewrite se eliminó en Vite y Nginx; el backend tiene CORS
 > para `localhost:5173`. Si se reactiva un proxy inverso, cambiar `VITE_API_URL=/api` y restaurar el
-> rewrite en `vite.config.js` + `nginx.conf` **en el mismo diff**. Ver `PLAN_F7.7_BASEURL_EXPLICITO.md`.
+> rewrite en `vite.config.js` + `nginx.conf` **en el mismo diff**.
 
 ---
 
