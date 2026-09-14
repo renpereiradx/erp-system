@@ -1,6 +1,6 @@
 # PLAN — Auditoría y remediación del módulo BI "Inteligencia de Negocios"
 
-**Fecha**: 2026-09-14 (v2: auditoría profunda backend integrada) · **Tipo**: Cross-repo (backend Go + frontend React) · **Estado**: 🔄 En progreso — **FASE 0 ✅ + sub-fase 1A ✅ COMPLETA (T1-T5: cf59a81, 884231b, 514d856, fca817b, d2d3607)**; sub-fases 1B-1E pendientes
+**Fecha**: 2026-09-14 (v2: auditoría profunda backend integrada) · **Tipo**: Cross-repo (backend Go + frontend React) · **Estado**: 🔄 En progreso — **FASE 0 ✅ + 1A ✅ COMPLETA (T1-T5) + 1B: T6 ✅ (3cc04ab)**; T7-T9 + sub-fases 1C-1E pendientes
 
 > **Orden de ejecución (v2)**: FASE 0 → **FASE 1 completa (backend BI, sub-fases 1A-1E)** → FASE 2-5
 > (frontend). No se inicia ninguna fase de frontend hasta que el gate de FASE 1 esté en verde:
@@ -371,11 +371,16 @@ Por cada página del inventario 1.1, ejecutar y documentar en la ficha de la pá
 
 #### 1B — Robustez de API (3 días)
 
-- [ ] **T6 · apperr en analytics (BR-1, BR-2)**: repos devuelven `apperr` tipados
-  (NotFound para ErrNoRows en ByID, InvalidInput para filtros); handlers usan
-  `HTTPStatus()`; `respondError` deja de enviar `err.Error()` crudo (mensaje seguro al
-  cliente + error completo al log con request_id). Envelope de error unificado con el del
-  middleware de auth (`{success:false, error:{code,message}}`).
+- [x] **T6 · apperr en analytics (BR-1, BR-2)**: ✅ 2026-09-14 (BE `3cc04ab`, reporte
+  `business_management/conductor/FASE1_T6_APPERR_2026-09-14.md`): `respondError` escribe el
+  envelope unificado del middleware auth (`{success:false, error:{code,message}}`; el
+  `toApiError` del FE ya lo parsea) y **sanitiza todo mensaje 5xx** a genérico; nuevo
+  `respondAppError(w,r,err)` mapea `apperr` vía `HTTPStatus()` y loguea el error completo con
+  request_id — los **132 call sites** `respondError(w,500,err.Error())` de los 11 http*.go
+  convertidos mecánicamente (cero leak). 4 not-found tipados (payables/receivables ByID,
+  supplier/client detail) → **404** con mensaje en español; audit/prorrateo ya lo hacían bien.
+  Tests de mapeo (Kind→status, unwrap, 500 sin leak). Smoke: ByID falso 500→404, sort_by
+  inválido 400 con `BAD_REQUEST`.
 - [ ] **T7 · Timeouts + paralelismo (BR-3, BP-1)**: `context.WithTimeout` (10-15s) en los
   services BI o budget por query en repos; `errgroup` para las sub-queries de Summary/KPIs;
   `Comparison`/`TopBottomProducts` a query única con window functions en vez de 2/4 pasadas.
