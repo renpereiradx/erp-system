@@ -1,6 +1,6 @@
 # PLAN — Auditoría y remediación del módulo BI "Inteligencia de Negocios"
 
-**Fecha**: 2026-09-14 (v2: auditoría profunda backend integrada) · **Tipo**: Cross-repo (backend Go + frontend React) · **Estado**: 🔄 En progreso — **FASE 0 ✅ completa** (tz audit, EXPLAIN baseline, purge, entorno FE, scaffold auditorías) + FASE 1A T1 ✅; T2+ pendientes
+**Fecha**: 2026-09-14 (v2: auditoría profunda backend integrada) · **Tipo**: Cross-repo (backend Go + frontend React) · **Estado**: 🔄 En progreso — **FASE 0 ✅** + **1A T1-T4 ✅** (T1 cf59a81, T2 884231b, T3 514d856, T4 fca817b); T5 + sub-fases 1B-1E pendientes
 
 > **Orden de ejecución (v2)**: FASE 0 → **FASE 1 completa (backend BI, sub-fases 1A-1E)** → FASE 2-5
 > (frontend). No se inicia ninguna fase de frontend hasta que el gate de FASE 1 esté en verde:
@@ -339,11 +339,18 @@ Por cada página del inventario 1.1, ejecutar y documentar en la ficha de la pá
       Barrido del resto del contexto — ya seguro sin cambios: inventory/sales/profitability
       (`validSortFields`/`validSorts`), dashboard TopProducts y audit (switches cerrados).
       Tests table-driven (`TestParseSortParams`); smoke: válidos 200, payloads de inyección 400.
-- [ ] **T4 · Bugs de corrección**: forecast stock JOIN 1:N (BC-3: pre-agregar stock por
-  producto antes del join); compras CANCELLED en IncomeStatement (BC-5); summary global de
-  List con `COUNT(*) FILTER`/CTE aparte (BC-6); repeat_customers + customer KPIs con scope
-  consistente (BC-7); RecentActivity filtra `so.status` (BC-8); LTV con rango o cota
-  documentada (BC-9); tie-breaker `, id DESC` en ORDER BY paginados (BC-12).
+- [x] **T4 · Bugs de corrección**: ✅ 2026-09-14 (BE `fca817b`, reporte
+  `business_management/conductor/FASE1_T4_CORRECCIONES_2026-09-14.md`): forecast stock JOIN 1:N
+  pre-agregado por producto (BC-3); compras CANCELLED fuera del IncomeStatement (BC-5); summary
+  global de List con `SUM() OVER ()` (BC-6); repeat_customers con scope de branch + customer
+  KPIs consistentes — `new_customers` redefinido a "primera compra del período" branch-scoped,
+  misma definición que el summary de ByCustomer (BC-7); RecentActivity filtra `so.status`
+  (BC-8); LTV acotado as-of fin de período con `sale_date < $2` (BC-9); tie-breaker
+  determinista en todo ORDER BY paginado — CxC/CxP List, TopProducts, ledgers, profitability,
+  audit (BC-12). Colateral del smoke: drift `parties.ruc`→`tax_id` en ByCustomer (500 crónico
+  enmascarado por el mock del FE, P1-2; misma clase que f5b1a38). Verificado: smoke dev-JWT 200
+  en todos los endpoints, invarianza del summary entre page_size 2 y 100 (API real), orden
+  estable en requests idénticos, EXPLAIN delta de las 6 queries (sub-ms en dev).
   ~~hallazgos del smoke T1~~ → ✅ **resueltos aparte en BE `363393d` (2026-09-14)**: drift de
   `auditBranchScopeCondition` (`sales_payments`→`sale_payments` + PK `payment_id`,
   `reserve_orders`→`reserves`) y aliases faltantes en las 4 queries de turnover (Overview
