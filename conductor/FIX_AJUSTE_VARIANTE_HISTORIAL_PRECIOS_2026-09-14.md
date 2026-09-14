@@ -83,3 +83,66 @@ vivo; fixes en FE + BE. Gates verdes.
 - El fallback demo persiste en otros métodos del service (validateConsistency,
   types) — mismo patrón de enmascaramiento, a revisar on-demand.
 - Migración aplicada en dev (make migrate-up); prod la recibe con el deploy.
+
+---
+
+# SEGUIMIENTO (mismo día): FILTROS DEL HISTORIAL GLOBAL — BE 66c4049 / FE d2c5dda
+
+Owner report: "mejora el manejo de rango de fechas, revisa los demás filtros,
+haz que Aplicar Filtros funcione óptimo" (página /ajustes-precios/historial).
+
+## Causas raíz (los filtros nunca llegaron a la API)
+
+1. La página llamaba `getRecentAdjustments({page, limit, ...filters})` — la
+   firma real es `(limit, days)`: pasaba un objeto, el backend devolvía
+   `limit=50` default **de los últimos 7 días**, sin ningún filtro.
+2. Los rango de fechas eran inputs de TEXTO con defaults hardcodeados
+   01/10/2024–31/10/2024 que no se enviaban a ningún lado (y ni siquiera
+   matchearían el formato `YYYY-MM-DD 00:00:00` del backend).
+3. usuario/unidad/tipo eran inputs de texto que el endpoint ignora por diseño
+   (solo soporta fechas + product_id exacto).
+4. El header "Mostrando 1 a 0 de 0": total = length de página; sin rows → 0.
+   Además `GetRecentPriceAdjustments` filtraba `metadata->>'branch_id'` de
+   forma estricta: 0/15 filas lo traen → lista global vacía con sucursal
+   activa (exactamente la captura del owner).
+5. Fallback demo: si la API fallaba, la página pintaba 3 filas falsas con
+   total simulado 150.
+
+## Fixes
+
+**Backend (66c4049)** — `GET /manual_adjustment/price/date-range`:
+- Params nuevos: `user` (ILIKE user_id/username/nombre party), `unit`
+  (exacto), `adjustment_type` (metadata). `product_id` pasó de igualdad
+  exacta a búsqueda "nombre o SKU": ILIKE sobre p.name, p.id y **pv.sku**
+  (LEFT JOIN product_variants).
+- Rows enriquecidas: product_name, user_name (join users.parties), variant_name.
+- `COUNT(*) OVER()` → `total` real en la respuesta para paginar.
+- `GetRecentPriceAdjustments` ahora también es branch-tolerante a filas NULL.
+- Port/service: filtro agrupado en `pricing.PriceAdjustmentFilter` (sin firma
+  de 9 strings).
+
+**Frontend (d2c5dda)** — página reescrita:
+- `getByDateRange(dateFrom, dateTo, product, 25, offset, {user, unit,
+  adjustment_type})` — todo server-side.
+- Filtros draft vs applied: tipear no dispara requests; Aplicar/Enter aplican
+  y resetean a página 1; rango invertido muestra error inline (ISO compara
+  lexicográfico) y NO fetchea.
+- Fechas: inputs nativos `type="date"` (ISO directo), sin defaults falsos —
+  vacío = todo el historial.
+- Unidad y Tipo: `<select>` reales (catálogo de unidades y enum de metadata).
+- Total server-side; header colapsa a "resultados" cuando es 0.
+- Fallback demo ELIMINADO (error state con reintento); chip de tipo humanizado
+  desde metadata; chip de variante en la fila; user_name en vez del id crudo.
+- i18n: dateRangeError, table.variant, adjustmentType.* (8 valores) en es.
+
+## Verificación en vivo (instancia efímera :5099 — el :5050 era del usuario)
+
+- Sin filtros: total 18, rows con product/variant/user_name.
+- product_id=NEGRO-M (SKU de variante) → 3 rows; producto+user+tipo → 2;
+  fechas 14/09 + unit → 6; tipo inexistente → 0.
+- Nota: el proceso :5050 era un `go run` del USUARIO con binario viejo — mi
+  instancia nueva murió por puerto ocupado (bind: address already in use).
+  Regla nueva del usuario: al terminar, SIEMPRE liberar el puerto.
+- Gates: go test ./... 36 ok; vitest 629/629 (page test reescrito con mocks
+  estables de i18n — t nuevo por render refetchearía en bucle), tsc 0, build,
+  lint:design.
