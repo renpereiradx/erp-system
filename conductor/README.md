@@ -12,6 +12,7 @@ frontend a la vez.
 
 | Archivo | Rol |
 |:--------|:----|
+| `PLAN_AUDIT_BI_INTELIGENCIA_NEGOCIOS_2026-09-14.md` | 📋 **Activo (v2)**: auditoría y remediación BI — FASE 1 backend COMPLETO primero (timezone Asunción, índices, SQLi latente, PyG con canceladas, apperr, cache Redis, auditoría activable, ~3 semanas); frontend solo después. |
 | `PLAN_BUSQUEDA_VARIANTES_PLANAS.md` | 📋 **Activo**: variantes como productos independientes en la búsqueda de compras, ventas, pedidos y catálogo. |
 | `PLAN_PEDIDOS_MOSTRADOR_VENDEDOR_CAJA.md` | 🔄 FASE 5 pendiente (ver plan). |
 | `PLAN_CATALOGO_VENDEDOR.md` | 🔄 FASE 3 opcional (integración con `/pedidos`). |
