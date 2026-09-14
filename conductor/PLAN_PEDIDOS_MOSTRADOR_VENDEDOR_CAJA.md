@@ -1,7 +1,7 @@
 # PLAN: Pedidos de Mostrador — Carrito del Vendedor → Cobro en Caja
 
 **Fecha:** 2026-09-07
-**Estado:** ✅ IMPLEMENTADO (FASES 1–4 completas, 2026-09-08). **FASE 5: 5A TTL + 5B convert atómico implementados 2026-09-13** → ver `PLAN_PEDIDOS_FASE5_MEJORAS.md` (quedan on-demand: ticket/QR §5.5 — bloqueado por decisión de permiso del owner, reservas §5.2, métricas).
+**Estado:** ✅ IMPLEMENTADO (FASES 1–4 completas, 2026-09-08). **FASE 5 completa salvo reservas-on-demand**: 5A TTL + 5B convert atómico (2026-09-13, `PLAN_PEDIDOS_FASE5_MEJORAS.md`) + ticket QR FE-render / métricas reports:read / stock visible en caja (2026-09-13, `PLAN_PEDIDOS_FASE5_TICKET_METRICAS_STOCK.md`). Reservas reales (§5.2) siguen on-demand — el owner fijó el modelo: el stock se compromete solo vía venta pagada.
 **Commits:** backend `dev`: FASE 1 (post-75b6518) + FASE 4 (fixes E2E incluidos); frontend `dev`: FASE 2 `a138a5c`, FASE 3 `b56b396`, FASE 4 `7f43c1e`. FASE 5 sigue post-puesta en marcha.
 **Alcance:** Cross-repo (backend `business_management` + frontend `erp-webapp`) → este plan vive en `conductor/` raíz
 **Origen:** Pedido del owner: el rol Vendor necesita una UI para (1) cargar productos en un carrito, (2) asociar un cliente y guardarlo. El cliente pasa por caja, el cajero busca su nombre/orden y procesa el carrito — como venta nueva o agregándolo a una venta pendiente. "Con esto, el vendedor es solo vendedor."
