@@ -469,9 +469,24 @@ Por cada página del inventario 1.1, ejecutar y documentar en la ficha de la pá
   (anti-leak), summary, dashboard KPIs, trends, top users, entity history, hourly, alerts.
   Smoke HTTP ✅ (consolidado 3 filas vs branch_id=1/2 con 1 fila cada uno). Nota para T17: el
   writer debe poblar `branch_id` con la branch activa del actor.
-- [ ] **T13 · Queries non-sargable (BP-5)**: reescribir `EXTRACT(DAY FROM NOW()-x)` como
-  rango de fechas calculado en Go; due-date de payables a columna calculada o rango; ABC/
-  StockAging/FinancialOverview con CTEs pre-agregados en vez de subqueries por fila.
+- [x] **T13 · Queries non-sargable (BP-5)**: ✅ 2026-09-15 (BE `7b506a4`, reporte
+  `business_management/conductor/FASE1_T13_NONSARGABLE_2026-09-15.md`): predicated rewrites
+  sargables — ventanas de due-date de payables List (`+INTERVAL '30 days'` pasa del lado de la
+  columna al de la constante en Status OVERDUE + Priorities URGENT/HIGH/MEDIUM/LOW + DueBefore;
+  con `enable_seqscan=off` la forma vieja no usa índice alguno y la nueva hace Bitmap Index
+  Scan sobre `idx_purchase_orders_order_date` de T2) y `DaysOverdue` de receivables
+  (`EXTRACT(DAY FROM NOW()-sale_date) >= n` → `sale_date <= NOW() - make_interval(days => n)`;
+  inconsistencia preexistente documentada sin cambiar: filtra antigüedad de venta, no la
+  columna mostrada basada en due_date). CTEs pre-agregados: StockAging (subqueries
+  correlacionados, uno duplicado, → 2 CTEs agrupados), ABC (LATERAL por producto → un pase
+  `sales_agg`), FinancialOverview (pagos por fila → paid joins de T11; caja → movimientos por
+  registro agrupados). **HALLAZGO: StockAging, DeadStock y Reorder eran 500s crónicos desde
+  FASE 10.2** — el CTE `product_stock` no aliasaba columnas y las queries referenciaban
+  `pst.product_id`/`pst.current_stock`/`ls.last_sale_date`/`ORDER BY stock_value` inexistentes
+  (SQL histórica congelada y corrida en psql para probarlo); alias explícitos en todos los CTEs
+  y los 3 endpoints devuelven datos reales (aging 20 / dead-stock 9 / reorder 5 en dev). Tests
+  A/B de integración: sets idénticos en las 6 ventanas, valores idénticos de FinancialOverview
+  (consolidado + branch), ABC fila por fila. Smoke 8 endpoints 200 ✅.
 - [ ] **T14 · Protección (BP-6)**: rate-limit (Redis, fail-open) en los endpoints agregados
   pesados (dashboard, analytics, reports); ETag en GET de reports. Evaluar costo/beneficio
   con métricas del middleware antes de habilitar.
