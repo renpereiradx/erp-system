@@ -414,12 +414,22 @@ Por cada página del inventario 1.1, ejecutar y documentar en la ficha de la pá
 
 #### 1C — Performance y arquitectura (4-5 días)
 
-- [ ] **T10 · Cache BI (BP-2)**: puerto `CachePort` en analytics (estilo pricing) + adapter
-  Redis reutilizando `config/redis.go`; clave = endpoint+period+branch+hash(filters); TTL
-  60-120s para dashboard summary/kpis/overview de receivables/payables; singleflight +
-  fail-open (patrón ProductCache); cache solo en GET. Evaluar como alternativa/complemento
-  una vista materializada del summary con refresh event-driven (patrón del worker de
-  `mv_product_catalog` con pg_notify).
+- [x] **T10 · Cache BI (BP-2)**: ✅ 2026-09-15 (BE `8298583`, reporte
+  `business_management/conductor/FASE1_T10_CACHE_BI_2026-09-15.md`): puerto driven `CachePort`
+  en analytics (solo read-through; sin invalidación activa — el TTL es la estrategia de
+  refresco) + adapter `redis.BICache` reutilizando el client de `config/redis.go` (fail-open +
+  singleflight del patrón ProductCache, namespace propio `v1:bi:*`); clave =
+  endpoint+period+day-bucket+branch+hash(filters); TTL 60s para dashboard summary/kpis y 120s
+  para overviews de receivables/payables (solo GET — verificado por call sites); envelope
+  `biEnvelope` preserva el `partialErrors` no exportado de T8 en el round-trip JSON (banner
+  `metadata.partial` sobrevive a los hits). La vista materializada del summary con refresh
+  event-driven (patrón `mv_product_catalog`) fue evaluada y **descartada por ahora**:
+  granularidad sin branch/período, ~8 triggers en tablas calientes y modo de fallo peor (worker
+  muerto = stale indefinido); criterio de revisit documentado (miss p95 > 500ms en prod).
+  Smoke dev-JWT: 4 endpoints miss/hit 200 con `data` IDENTICAL (único delta `generated_at`
+  por-request), claves con TTL exacto en Redis, 0 warnings. Colateral: panic preexistente en
+  `TestParsePeriodQuery` de T9 (espacio crudo en el target de httptest mataba el paquete
+  analytics) arreglado con `url.QueryEscape` + gofmt de `http_financial.go`.
 - [ ] **T11 · Deduplicación SQL (BP-3)**: helpers Go para el bloque `paid` (~30 copias) y el
   par revenue/cost; ledgers IVA pasan a leer las vistas `v_sales_ledger_sifen` /
   `v_purchases_ledger_sifen` / `v_monthly_vat_liquidation` con test A/B de equivalencia
