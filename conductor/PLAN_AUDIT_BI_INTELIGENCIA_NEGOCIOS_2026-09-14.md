@@ -450,9 +450,25 @@ Por cada página del inventario 1.1, ejecutar y documentar en la ficha de la pá
   vista. `supplier_ruc` del libro compras ahora trae `tax_id` (antes siempre `''`). Contrato FE
   sin cambios — solo bajan los montos de IVA/neto al valor legal. Smoke dev ✅ (libros, vat,
   vat/monthly = liquidación, filtros SIFEN).
-- [ ] **T12 · Audit scope (BP-4)**: denormalizar `branch_id` en `audit_logs` (migración +
-  backfill desde el mapeo de entidades) y reemplazar el OR-de-11-EXISTS + `strings.Replace`
-  por filtro directo; test anti-regresión de scope (usuario de una branch no ve logs de otra).
+- [x] **T12 · Audit scope (BP-4)**: ✅ 2026-09-15 (BE `c6d8c0a`, migración
+  `20260915173844_t12_audit_logs_branch_backfill`, reporte
+  `business_management/conductor/FASE1_T12_AUDIT_SCOPE_2026-09-15.md`): `audit_logs.branch_id` y
+  su índice ya existían desde 20260429193353 pero el read-side nunca los usó — la condición era
+  un OR de **11 EXISTS correlacionados** (65 líneas de SQL, PAYMENT con doble probe)
+  inyectado en **18 sitios** de `audit_repo.go`, 12 de ellos vía `strings.Replace`/`ReplaceAll`
+  (aliasización tardía, `GROUP BY X` → `AND (...) GROUP BY X`). Ahora:
+  `auditBranchScopeCondition` = `alias.branch_id = $n` (O(1) sobre el índice) + los 12 sitios
+  Replace reescritos a construcción directa (`branchCond` explícito; muere el
+  `ReplaceAll("timestamp","al.timestamp")` innecesario). Semántica preservada: filas NULL-branch
+  invisibles a lecturas de branch, visibles consolidadas. Migración backfill (10 UPDATEs
+  guardados por `branch_id IS NULL` desde el mapeo de entidades; PRODUCT a NULL a propósito —
+  multi-sucursal, T17 escribirá la branch del actor). **Bug latente arreglado**: `CreateAuditLog`
+  siempre fallaba — lib/pq codifica `[]byte` tipado (incluido `json.RawMessage` nil) como cadena
+  vacía y jsonb lo rechaza; `nullableJSON` pasa vacío como NULL (T17 lo necesita). Test de
+  integración anti-regresión: siembra multi-branch y verifica aislamiento en logs/ByID
+  (anti-leak), summary, dashboard KPIs, trends, top users, entity history, hourly, alerts.
+  Smoke HTTP ✅ (consolidado 3 filas vs branch_id=1/2 con 1 fila cada uno). Nota para T17: el
+  writer debe poblar `branch_id` con la branch activa del actor.
 - [ ] **T13 · Queries non-sargable (BP-5)**: reescribir `EXTRACT(DAY FROM NOW()-x)` como
   rango de fechas calculado en Go; due-date de payables a columna calculada o rango; ABC/
   StockAging/FinancialOverview con CTEs pre-agregados en vez de subqueries por fila.
