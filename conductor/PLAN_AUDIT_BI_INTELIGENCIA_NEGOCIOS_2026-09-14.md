@@ -1,6 +1,6 @@
 # PLAN — Auditoría y remediación del módulo BI "Inteligencia de Negocios"
 
-**Fecha**: 2026-09-14 (v2: auditoría profunda backend integrada) · **Tipo**: Cross-repo (backend Go + frontend React) · **Estado**: 🔄 En progreso — **FASE 0 ✅ + 1A ✅ COMPLETA (T1-T5) + 1B: T6 ✅ (3cc04ab)**; T7-T9 + sub-fases 1C-1E pendientes
+**Fecha**: 2026-09-14 (v2: auditoría profunda backend integrada) · **Tipo**: Cross-repo (backend Go + frontend React) · **Estado**: 🔄 En progreso — **FASE 0 ✅ + 1A ✅ (T1-T5) + 1B: T6-T7 ✅ (3cc04ab, 8f4d2c3)**; T8-T9 + sub-fases 1C-1E pendientes
 
 > **Orden de ejecución (v2)**: FASE 0 → **FASE 1 completa (backend BI, sub-fases 1A-1E)** → FASE 2-5
 > (frontend). No se inicia ninguna fase de frontend hasta que el gate de FASE 1 esté en verde:
@@ -381,9 +381,15 @@ Por cada página del inventario 1.1, ejecutar y documentar en la ficha de la pá
   supplier/client detail) → **404** con mensaje en español; audit/prorrateo ya lo hacían bien.
   Tests de mapeo (Kind→status, unwrap, 500 sin leak). Smoke: ByID falso 500→404, sort_by
   inválido 400 con `BAD_REQUEST`.
-- [ ] **T7 · Timeouts + paralelismo (BR-3, BP-1)**: `context.WithTimeout` (10-15s) en los
-  services BI o budget por query en repos; `errgroup` para las sub-queries de Summary/KPIs;
-  `Comparison`/`TopBottomProducts` a query única con window functions en vez de 2/4 pasadas.
+- [x] **T7 · Timeouts + paralelismo (BR-3, BP-1)**: ✅ 2026-09-14 (BE `8f4d2c3`, reporte
+  `business_management/conductor/FASE1_T7_TIMEOUTS_PARALELISMO_2026-09-14.md`):
+  `withQueryDeadline` instala `WithTimeout(15s)` en los 12 subrouters BI (por subrouter a
+  propósito: RegisterRoutes recibe el router raíz compartido); `Summary` (7), `KPIs` (5) y
+  `Trends` (4) en `errgroup` — Summary/KPIs preservan ceros-ante-parcial pero dejan de ser
+  silenciosos (log; metadata.partial = T8); `Comparison` 2→1 query (CTE periods, A/B
+  idéntico) y `TopBottomProducts` 4→1 (CTE materializada + 4 window rankings + tie-breaker
+  product_id; el único delta vs viejo es el orden dentro de empates = la inestabilidad
+  BC-12). Diff semántico pre/post refactor de summary/kpis/compare/topbottom: IDENTICAL.
 - [ ] **T8 · Errores parciales honestos (BR-4a)**: sub-summaries fallidas → log estructurado
   + `metadata.partial: true` + `metadata.partial_errors:[...]` (el FE podrá mostrar banner
   "datos parciales" en FASE 3).
