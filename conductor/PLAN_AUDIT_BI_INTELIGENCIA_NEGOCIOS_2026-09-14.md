@@ -487,9 +487,27 @@ Por cada página del inventario 1.1, ejecutar y documentar en la ficha de la pá
   y los 3 endpoints devuelven datos reales (aging 20 / dead-stock 9 / reorder 5 en dev). Tests
   A/B de integración: sets idénticos en las 6 ventanas, valores idénticos de FinancialOverview
   (consolidado + branch), ABC fila por fila. Smoke 8 endpoints 200 ✅.
-- [ ] **T14 · Protección (BP-6)**: rate-limit (Redis, fail-open) en los endpoints agregados
-  pesados (dashboard, analytics, reports); ETag en GET de reports. Evaluar costo/beneficio
-  con métricas del middleware antes de habilitar.
+- [x] **T14 · Protección (BP-6)**: ✅ 2026-09-15 (BE `e69f097`, reporte
+  `business_management/conductor/FASE1_T14_RATE_LIMIT_ETAG_2026-09-15.md`): rate-limit Redis
+  fail-open en los 12 subrouters BI vía `biChain` compartida (deadline → permiso → rate-limit →
+  ETag; DI por `RouteDeps.RateLimiter`, sin tocar el global de `/setup`) con `config.BIRateLimit`
+  (120 req/min por usuario — carga de dashboard ≈ 8 llamadas). **Ships observe-only** (el plan
+  pide evaluar con métricas antes de habilitar): campo nuevo `RateLimitConfig.ObserveOnly`
+  computa la decisión, cuenta `rate_limit_decisions_total{outcome=allowed|would_block|blocked|fail_open}`
+  y loguea `rate_limit_would_block`, pero siempre pasa; flip a enforce (429 + Retry-After) con
+  env `BI_RATE_LIMIT_ENFORCE` → `server.Config.BIRateLimitEnforce`. ETag middleware existente
+  aplicado a los GET de BI, **habilitado por floorear `metadata.generated_at` al minuto** en
+  `respondSuccess` — el timestamp por-request hacía cada respuesta byte-distinta y el 304 era
+  imposible; ahora los hits del caché T10 son 100% byte-idénticos (colateral: muere el "único
+  delta generated_at por-request" del smoke T10; FE solo lo usa como fallback/display).
+  Métricas Prometheus nuevas en `/metrics` (puente a T21): rate limit por outcome +
+  `etag_responses_total{hit,miss}` / `etag_bytes_saved_total`. Hallazgos: la semántica
+  preexistente de `FailOpen=true` era "never block" (solo loguea; preservada, BI usa
+  `ObserveOnly`); `CheckRateLimit` siempre fail-opens ante outage Redis (ahora visible con
+  `Degraded`+`fail_open`; el comentario fail-closed de `SetupRateLimit` era falso, corregido).
+  Smoke dev: 2º GET summary → **304**; 130 requests concurrentes → 130×200 con 12 would_block;
+  barrido 12 grupos 200 (discounts 400 sin fechas = preexistente); legacy sin ETag. Gates:
+  tests/lint/build ✅. Runbook del flip en el reporte.
 - [ ] **T15 · Branch scope estable (BP-8)**: reemplazar `($n IS NULL OR branch_id=$n)` por
   `branch_id = COALESCE($n, branch_id)` o query dual elegida en Go, verificado con EXPLAIN
   que usa el índice compuesto.
