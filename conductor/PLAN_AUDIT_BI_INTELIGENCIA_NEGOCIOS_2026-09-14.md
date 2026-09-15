@@ -430,10 +430,26 @@ Por cada página del inventario 1.1, ejecutar y documentar en la ficha de la pá
   por-request), claves con TTL exacto en Redis, 0 warnings. Colateral: panic preexistente en
   `TestParsePeriodQuery` de T9 (espacio crudo en el target de httptest mataba el paquete
   analytics) arreglado con `url.QueryEscape` + gofmt de `http_financial.go`.
-- [ ] **T11 · Deduplicación SQL (BP-3)**: helpers Go para el bloque `paid` (~30 copias) y el
-  par revenue/cost; ledgers IVA pasan a leer las vistas `v_sales_ledger_sifen` /
-  `v_purchases_ledger_sifen` / `v_monthly_vat_liquidation` con test A/B de equivalencia
-  (misma fecha → mismo resultado que la query a mano antes de borrarla).
+- [x] **T11 · Deduplicación SQL (BP-3)**: ✅ 2026-09-15 (BE `8b46bcf`, migración
+  `20260915144941`, reporte `business_management/conductor/FASE1_T11_DEDUP_SQL_2026-09-15.md`):
+  helpers Go con texto SQL canónico + **golden tests** que fijan la salida al texto
+  pre-refactor (reemplazo provablemente idéntico): `salePaymentsPaidJoin`/`purchasePaymentsPaidJoin`
+  reemplazan las 29 copias del bloque `paid` (3 variantes: branch `$N`, sin branch —el dashboard
+  NUNCA filtró pagos por branch, preservado—, y rango payment_date DSO/DPO);
+  `sdRevenue`/`sdCost`/`sdProfitSum`/`coalesce0` reemplazan 62 expresiones del par
+  revenue/cost con las 3 políticas de coste NULL documentadas (skip / plegar a 0 / fallback
+  0.7). **Hallazgo mayor que el plan:** las queries a mano de libros IVA sobredeclaraban el IVA
+  — `bruto × rate/100` sobre precio CON-IVA en vez de `rate/(100+rate)`; las vistas SIFEN ya
+  traían la base legal corregida (auditoría IVA 2026-08-19) pero nadie en Go las leía. Los
+  libros (`VATReport`/`SalesLedger`/`PurchaseLedger`/`getMonthlyVAT`) ahora leen las vistas:
+  migración con columnas nuevas aditivas (branch, fiscal FE5.1, payment_method, buckets brutos
+  con-IVA, gross_lines/gross_amount), JOIN a detalles INNER y `NOT IN ('CANCELLED')` (corrige el
+  Form 120: 6 compras CANCELLED sumaban IVA crédito en dev); down restaura 20260820152422
+  verbatim. **Test A/B de integración** congela las queries viejas y verifica: counts/brutos/
+  exentos/entries idénticos ±0.01, ratio IVA logueado 10/11 y 5/105 exactos; repo 1:1 con la
+  vista. `supplier_ruc` del libro compras ahora trae `tax_id` (antes siempre `''`). Contrato FE
+  sin cambios — solo bajan los montos de IVA/neto al valor legal. Smoke dev ✅ (libros, vat,
+  vat/monthly = liquidación, filtros SIFEN).
 - [ ] **T12 · Audit scope (BP-4)**: denormalizar `branch_id` en `audit_logs` (migración +
   backfill desde el mapeo de entidades) y reemplazar el OR-de-11-EXISTS + `strings.Replace`
   por filtro directo; test anti-regresión de scope (usuario de una branch no ve logs de otra).
