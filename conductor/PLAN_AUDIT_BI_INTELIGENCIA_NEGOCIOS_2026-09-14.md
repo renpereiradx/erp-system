@@ -1,6 +1,6 @@
 # PLAN — Auditoría y remediación del módulo BI "Inteligencia de Negocios"
 
-**Fecha**: 2026-09-14 (v2: auditoría profunda backend integrada) · **Tipo**: Cross-repo (backend Go + frontend React) · **Estado**: 🔄 En progreso — **FASE 0 ✅ + 1A ✅ (T1-T5) + 1B: T6-T8 ✅ (3cc04ab, 8f4d2c3, ea8de73)**; T9 + sub-fases 1C-1E pendientes
+**Fecha**: 2026-09-14 (v2: auditoría profunda backend integrada) · **Tipo**: Cross-repo (backend Go + frontend React) · **Estado**: 🔄 En progreso — **FASE 0 ✅ + 1A ✅ (T1-T5) + 1B ✅ COMPLETA (T6-T9: 3cc04ab, 8f4d2c3, ea8de73, 425e534)**; sub-fases 1C-1E pendientes
 
 > **Orden de ejecución (v2)**: FASE 0 → **FASE 1 completa (backend BI, sub-fases 1A-1E)** → FASE 2-5
 > (frontend). No se inicia ninguna fase de frontend hasta que el gate de FASE 1 esté en verde:
@@ -398,10 +398,18 @@ Por cada página del inventario 1.1, ejecutar y documentar en la ficha de la pá
   `partial_errors:[...]` vía interface `partialReporter` (genérico). Respuesta sigue 200 —
   banner FE en FASE 3. Extra BR-4a(c): `json.Marshal` silenciosos de audit.go ahora
   propagan error. Tests de promoción; camino sano E2E sin clave `partial`.
-- [ ] **T9 · Parseo unificado (BR-5, P2)**: un único `parsePeriod` validado (default month),
-  un único `parsePagination` (default 1/20, cap 100) para TODOS los handlers; page/size
-  inválidos → 400; `getLimit` con techo 100; LIMIT en AgingReport/DiscountLines/
-  CollectionReminders + `COUNT OVER` para total. Extraer helpers de date-range y days.
+- [x] **T9 · Parseo unificado (BR-5, P2)**: ✅ 2026-09-15 (BE `425e534`, reporte
+  `business_management/conductor/FASE1_T9_PARSEO_UNIFICADO_2026-09-14.md`):
+  `parsePeriodQuery` único (validado, default month, 400 con valores permitidos; reemplaza
+  getPeriod ×39 + parsePeriod de audit ×5 con sus 5 bloques muertos);
+  `parsePaginationErr(defaultSize)` única (cap 100 clamp, presente-inválido → 400; reemplaza
+  15 sitios crudos + 2 parsePagination silenciosos + ledgerPagination sin cap, ambos viejos
+  eliminados); `getLimit` clampea a 100; `parseDateRange` con envelope T6. P2: AgingReport
+  CxC/CxP paginados con `COUNT(*) OVER()`/`SUM OVER()` → totales GLOBALES verificados por API
+  (page_size 2 ≡ 100 en totales; lección BC-6 aplicada); `DiscountLines` LIMIT opcional +
+  `metadata.total_count`; CollectionReminders ya tenía LIMIT 50. Campos aditivos para el FE.
+  **Gates 1B ✅ (tests de mapeo T6 + parseo T9, go test, lint, build, smoke) — SUB-FASE 1B
+  COMPLETA (T6-T9).**
 - Gates 1B: ídem 1A + tests de mapeo de errores (404/400/500) y de parseo.
 
 #### 1C — Performance y arquitectura (4-5 días)
