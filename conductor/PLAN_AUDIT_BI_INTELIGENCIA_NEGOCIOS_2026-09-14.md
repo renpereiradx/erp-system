@@ -508,9 +508,28 @@ Por cada página del inventario 1.1, ejecutar y documentar en la ficha de la pá
   Smoke dev: 2º GET summary → **304**; 130 requests concurrentes → 130×200 con 12 would_block;
   barrido 12 grupos 200 (discounts 400 sin fechas = preexistente); legacy sin ETag. Gates:
   tests/lint/build ✅. Runbook del flip en el reporte.
-- [ ] **T15 · Branch scope estable (BP-8)**: reemplazar `($n IS NULL OR branch_id=$n)` por
-  `branch_id = COALESCE($n, branch_id)` o query dual elegida en Go, verificado con EXPLAIN
-  que usa el índice compuesto.
+- [x] **T15 · Branch scope estable (BP-8)**: ✅ 2026-09-15 (BE `9cc3a7d`, reporte
+  `business_management/conductor/FASE1_T15_BRANCH_SCOPE_2026-09-15.md`): medido antes de
+  elegir — COALESCE **no arregla nada** (columna dentro de la expresión = misma falta de
+  condición de índice que el OR, comprobado con `force_generic_plan` + EXPLAIN), así que se
+  implementó la **query dual** vía `biBranchScope(alias, n, branchID)` en `analytics_sql.go`:
+  scoped `(alias.branch_id = $n)` (compuesto `idx_*_branch_date` alcanzable), consolidado
+  `($n::int IS NULL)` (el brazo nil del OR verbatim — placeholder consumible ⇒ las 203 listas
+  de args de los call sites no cambian de forma). Transformación mecánica de 203 sitios en los
+  9 repos BI (variantes con/sin espacios, con/sin alias, SQL denso FASE 10.2 incluido) +
+  `paymentsPaidJoin` T11 toma `branchID *int` (31 callers; variante sin-branch del dashboard
+  preservada). Outliers manuales: `f.BranchID` discounts, 2 strings interpretados, 5 `const`
+  → `:=`. Equivalencia exacta por construcción (nil ⇒ TRUE ambos; no-nil ⇒ `= $n` ambos;
+  filas NULL-branch mismas visibilidades que T12). **A/B contra dev DB**: 3 shapes ×
+  nil/branch/999 → sets idénticos vs texto histórico congelado; goldens T11 re-fijados a la
+  forma dual; baseline pre-T15 congelada verbatim en el A/B de T13 (sigue verde). **EXPLAIN
+  genérico con síntesis 300k filas**: shape agregado 4.1× más rápido y 3× menos filas tocadas;
+  shape lista independiente del layout de datos. Gates + smoke ✅ (branch 999 → ceros;
+  b1/b2/b3 con aritmética exacta). Hallazgos: (1) el "consolidado" por API no lo era —
+  `middleware/auth.go:206` inyecta la branch activa del admin en los claims post-token
+  (FASE E, preexistente); (2) **fan-out de `total_sales` en Performance** — `SUM(s.total_amount)`
+  sobre LEFT JOIN con detalles infla el total por número de líneas (clase BC, preexistente,
+  surfaceado al backlog); (3) los OR-branch de contextos no-BI quedan para su fase.
 - [ ] **T16 · Legibilidad (BP-7)**: partir los 4 métodos gigantes y el SQL one-line de
   inventory (sin cambio funcional; test de regresión = mismas filas/totales antes/después);
   borrar `handlers/bi_helpers.go`.
