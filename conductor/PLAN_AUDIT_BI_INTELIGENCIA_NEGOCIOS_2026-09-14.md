@@ -744,3 +744,10 @@ rol tiene permiso, preserva contexto. 5) No se salta DESIGN.md.
 >   handler, P0-4 no ejercitable (0 alertas cliente en dev); Top Productos PASS condicional
 >   (floats crudos). Grupo 100% gated dashboard:read ✅. P1-1 fallback demo NO dispara con API
 >   sana (solo catch).
+
+> - **2D Sales Analytics ✅** (FE `60df285`) — datos reales en las 6 (mocks catch-only con API
+>   sana); payment methods "UNKNOWN 100%"; floats crudos ×4 págs ("−77.0818…%"); growth/churn
+>   literales P1-3 (retención 100% vs churn 13.9% contradictorios); heatmap de velocity SIN datos
+>   + hora pico fija P1-4; comparativa con delta de margen mal calculado (−5.0pp mostrado para
+>   +20.3pp reales); Descuentos PASS (única con guard reports:read, .tsx, 1 fila incoherente);
+>   5/6 rutas sin guard.
