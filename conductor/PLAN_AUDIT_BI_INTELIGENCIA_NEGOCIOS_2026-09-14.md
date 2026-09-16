@@ -890,10 +890,28 @@ rol tiene permiso, preserva contexto. 5) No se salta DESIGN.md.
 >   overdue), NA-DB-2, redondeos, delta margen pp, leak InvoiceDetail, fallbacks mock
 >   fuera, banner T8 metadata.partial.
 > - P2: huérfanas eliminadas, hora pico real, Oct 2023, bandas T20, paginación stock-levels.
-> - **Aucas pendientes (no bloquean cierre)**: ① unificación de política de costo
->   (profit módulo vs summary) — REQUIERE decisión del usuario; ② demanda server-side
->   pagination — requiere cambio BE (/forecast/demand no pagina); ③ backfill legacy
->   audits.audits (8.816 filas) → audit_logs — decisión BE; ④ List payables ignora
->   search/priority/fechas — gap contrato BE; ⑤ POST /api/v1/audit/export existe sin UI.
+> - **Aucas pendientes → RESUELTAS (2026-09-16, sesión pre-FASE 4)**: ① unificación de
+>   política de costo (profit módulo vs summary) — **pendiente de decisión del usuario**
+>   (análisis: ambos lados usan el helper T11 `sdCost`; profitability usa costo real
+>   `get_cost_for_variant` con NULLs excluidos, `/dashboard/summary` usa el fallback
+>   fabricado `unit_price*0.7` — hallazgo BC-12; dev: solo 7/110 líneas de venta sin
+>   costo resoluble, Gs. 790.000 de ingreso; NO hay snapshot de costo en la línea de
+>   venta); ② demanda server-side pagination ✅ (BE `41e708e`: parsePaginationErr +
+>   COUNT separado + LIMIT/OFFSET con CTE compartido, `top_n` queda como alias de
+>   page_size; FE `0f524b6`: page state + footer metadata, patrón F3K); ③ backfill
+>   legacy ✅ (migraciones `20260916183127` + `20260916185600`: 8.818 filas → audit_logs
+>   con `metadata.legacy_id` idempotente, TZ reconstruida con
+>   `current_setting('TimeZone')`, triggers legacy CONGELADOS — audit-only, verificado
+>   en pg_proc; SALE_PAYMENTS entity_id recuperado vía `payment_id` (la PK no es `id`);
+>   branch mapeado para reserves/SALE_PAYMENTS según criterio T12 — users/PRODUCTS
+>   quedan consolidado-only; 19 LEGACY visibles en branch 1 en dev, export CSV
+>   verificado); ④ List payables ✅ (BE `ce2af93`: search/priority/fechas parseados,
+>   priority enum-validada 400, end_date exclusivo +1d, ILIKE id/proveedor/RUC/CI,
+>   parties JOIN agregado al COUNT; FE `fee054c` doc de contrato); ⑤ audit/export ✅
+>   (FE `7c2baac`: `exportLogs` vía getBlob + botón "Exportar CSV" en /auditoria/logs
+>   con filtros activos, search→search_term, success→bool, end_date exclusivo, test de
+>   contrato). Smoke en vivo: payables 18→10 con filtros, demanda página 1/2 sin
+>   solapamiento, CSV con usuario resuelto y TZ -03. Gates: BE go test/lint/build +
+>   FE vitest 656/tsc/build/lint:design en verde.
 > - **Next: FASE 4** — migración .tsx/FSD de páginas legacy sustancialmente tocadas +
 >   checklist DESIGN + auditoría vercel-react-best-practices del módulo BI.
