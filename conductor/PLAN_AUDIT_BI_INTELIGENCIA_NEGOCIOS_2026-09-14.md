@@ -786,3 +786,47 @@ rol tiene permiso, preserva contexto. 5) No se salta DESIGN.md.
 > **Next: FASE 3 — fixes FE priorizados** (P0: 12 métodos de service, NA-DB-1 unwrap, remapeos
 > cash-flow/supplier, KPIs mock de auditoría, guards; P1: fabricaciones + honestidad; P2:
 > paginaciones + pulido + eliminar huérfanas).
+
+> ## ✅ FASE 3 — RONDA P0 COMPLETA (2026-09-16) — páginas muertas desbloqueadas + RBAC real
+>
+> 7 commits FE en `dev` (774314a → c3be837), gates verdes por commit (vitest 653/653 ·
+> tsc 0 · build · lint:design) + **smoke de navegador verificado en vivo** (dev-JWT admin
+> jJkV4F6HR + modo API):
+>
+> - **3A `774314a`** — 12 métodos de service completados contra endpoints BE reales
+>   (payables 6 · receivables 4 · finreports 2) + mapeos `purchase_date`/`payment_history`
+>   + fix prefijo audit. Test de contrato: `biServices.p0-methods.service.test.ts` (12 tests).
+> - **3B `3f12c3c`** — **NA-DB-1**: store desenvuelve `.data` (summary + payablesOverview;
+>   tipo de getSummary honesto). `useCashFlow` remapeado a `/payables/cash-flow` +
+>   `/payables/schedule` (proyección y calendario reales; bancos Itaú/Sudameris e insights
+>   fabricados FUERA con sus archivos: TreasuryInsights.jsx + mockData.js eliminados).
+>   `useSupplierAnalysis` remapeado al dto plano + `/payables/supplier/{id}` (página pasó de
+>   EN BLANCO a completa; fuera score/100, límite ×1.5, trend Ene-Feb-Mar, badge CRÍTICA fija).
+> - **3C `922eb51`** — Auditoría: KPIs mock (12.450/42/188/3.120) → reales del dashboard
+>   endpoint ('—' si no hay); paginación server-side real (total/total_pages/page_size);
+>   filtros fechas/nivel/resultado cableados; navigate() en vez de location.href; curva y
+>   donut reales desde /audit/trends y actions_by_category; "+12.5%" y "0% = Óptimo" fuera.
+>   Bug hallado: el dashboard de auditoría leía el envelope (ceros estructurales) — unwrap.
+> - **3D `152c772`** — **RBAC**: 32 rutas BI con PermissionGuard espejando el gate exacto
+>   del BE (payables/receivables/reports/sifen/analytics:read) + **T18 ejecutada**: 4 RoleGuard
+>   F2VLso → PermissionGuard audit:read.
+> - **3E `2411723`** — "Nueva Factura" → 404 eliminada (botón+FAB+Exportar muerto);
+>   /clientes → /parties?tab=clientes (chips de alertas + breadcrumb).
+> - **P0 gate `c3be837`** — fixes del smoke: variable equivocada en fetchSummary;
+>   contacto JSON crudo del proveedor parseado; avgDays 0 → sin frase.
+>
+> **Verificación en vivo (post-P0)**: /payables/invoices 18 facturas reales · /receivables
+> Gs. 522.200 + facturas recientes · /receivables/overdue viva · /dashboard montos reales
+> (CxC 81% cobrado, CxP 49,9%) · /auditoria ceros honestos · IVA Gs. 19.425 = tasa legal
+> 10/110 T11 · cash-flow con calendario real · proveedor BodyTech completo (Crítica real,
+> Gs. 3.009.450, 10 facturas) · /auditoria/logs sin mocks, paginación real.
+>
+> **Notas para siguientes rondas (P1/P2)**: curva de cobranza CxC sigue con fallback "-∞" y
+> chip "Sincronizado" hardcodeado; tramos de antigüedad del dashboard CxC en 0% (revisar
+> mapping vs /aging/summary); transform de Overdue genera refs "INV-2023-XXX" y contactos
+> "Vía Email" ficticios; tabla nueva audit_logs tiene 0 filas (pipeline T17) mientras el
+> legacy audits.audits conserva 8.816 sin backfill (decisión BE pendiente); filters
+> search/priority/fechas del List de payables viajan pero el BE los ignora (gap contrato);
+> POST /api/v1/audit/export existe sin botón FE (cablear en P2 o quitar).
+> **Next: FASE 3 ronda P1** (fabricaciones del resumen financiero/insights/perfil crédito,
+> NA-DB-2 $→Gs., redondeos, fallbacks demo de catches, delta margen pp).
