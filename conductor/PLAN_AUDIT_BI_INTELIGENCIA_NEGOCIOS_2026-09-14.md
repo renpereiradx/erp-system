@@ -861,3 +861,39 @@ rol tiene permiso, preserva contexto. 5) No se salta DESIGN.md.
 >
 > **Next: FASE 3 ronda P2** (huérfanas eliminar, TrendsVelocity hora pico, "Oct 2023",
 > bandas T20 ingresos, paginación stock-levels/demanda).
+
+> ## ✅ FASE 3 — RONDA P2 + CIERRE (2026-09-16) — pulido y limpieza
+>
+> 3 commits FE (a8b0783 → 6dfb20f), gates verdes por commit:
+>
+> - **3I `a8b0783`** — decisión ELIMINAR de FASE 2 ejecutada: rutas huérfanas fuera
+>   (/bi/inventory/stock-levels que CRASHEABA + mock, /bi/inventory/risk-analysis mock,
+>   /finance/profitability duplicada) + componentes y exports borrados.
+> - **3J `aed0566` + `8e8399f`** — "Hora pico 14:00" fija → real del hourly trend ("n/d" si
+>   no hay datos); captions literales ("+5% unidades", "Promedio diario estable")
+>   neutralizados; "Oct 2023" y stub "Exportar" del Aging CxC fuera; escenarios de
+>   Pronóstico de Ingresos ya no se fabrican con el BE mandando scenarios=null (fuera el
+>   bug `recomendado: || true`) — estado vacío honesto; las bandas T20 (lower/upper bound)
+>   ya se muestran reales en la tabla mensual. Hex → tokens en chip de TrendsVelocity.
+> - **3K `6dfb20f`** — stock-levels consume la paginación server-side de T9 (antes traía
+>   solo la página default sin controles): page/page_size + Anterior/Siguiente + "Página X
+>   de Y" desde metadata real, verificado en vivo (17 de 17, 1 página en dev).
+>
+> **Smoke final en vivo**: stock-levels paginado OK; resumen financiero, CxC, auditoría,
+> IVA, cash-flow y proveedor verificados en la ronda P0/P1.
+>
+> ## ✅ FASE 3 COMPLETA (2026-09-16) — 15 commits FE (774314a → 6dfb20f) + 3 wrappers
+>
+> - P0: 12 métodos de service + NA-DB-1 + remapeos cash-flow/supplier + auditoría real +
+>   RBAC (32 rutas, T18 audit:read) + redirecciones → **~10 páginas muertas resucitadas**.
+> - P1: fabricaciones fuera (resumen financiero, insights, perfil crédito, curva CxC,
+>   overdue), NA-DB-2, redondeos, delta margen pp, leak InvoiceDetail, fallbacks mock
+>   fuera, banner T8 metadata.partial.
+> - P2: huérfanas eliminadas, hora pico real, Oct 2023, bandas T20, paginación stock-levels.
+> - **Aucas pendientes (no bloquean cierre)**: ① unificación de política de costo
+>   (profit módulo vs summary) — REQUIERE decisión del usuario; ② demanda server-side
+>   pagination — requiere cambio BE (/forecast/demand no pagina); ③ backfill legacy
+>   audits.audits (8.816 filas) → audit_logs — decisión BE; ④ List payables ignora
+>   search/priority/fechas — gap contrato BE; ⑤ POST /api/v1/audit/export existe sin UI.
+> - **Next: FASE 4** — migración .tsx/FSD de páginas legacy sustancialmente tocadas +
+>   checklist DESIGN + auditoría vercel-react-best-practices del módulo BI.
