@@ -625,7 +625,7 @@ Por cada página del inventario 1.1, ejecutar y documentar en la ficha de la pá
 
 ### FASE 2 — Auditoría por página FE (3-4 días; requiere FASE 1 ✅)
 
-- [ ] Ejecutar protocolo §3 para las ~36 páginas, en orden de riesgo: **CxP (6) ✅ 2A** → CxC (6) →
+- [ ] Ejecutar protocolo §3 para las ~36 páginas, en orden de riesgo: **CxP (6) ✅ 2A** → **CxC (6) ✅ 2B** →
       Dashboard (5) → Sales Analytics (6) → Pronósticos (5) → Rentabilidad (6) → Inventario
       (4) → Reportes Financieros (8) → Auditoría (4)
       - **[x] 2A CxP ✅ 2026-09-16** (FE `2a1cce6`): 6 fichas + 7 screenshots en
@@ -722,3 +722,16 @@ rol tiene permiso, preserva contexto. 5) No se salta DESIGN.md.
 - **`pnpm dev` defaultea a demo**: auditar siempre en modo API.
 - **Auditoría BE (T17)** puede generar volumen: sampling configurable desde día 1.
 - **Main se mueve entre sesiones**: rebase antes de cada gate.
+
+> **Avance FASE 2 (2026-09-16)**
+> - **2A CxP ✅** (FE `2a1cce6`, wrapper `deb1b5c`) — 6/6 FAIL; P0-1 confirmado; CashFlow drift total
+>   + fabricaciones (P0-6 ampliado); SupplierAnalysis blank con API 200; "Nueva Factura" →
+>   `/payables/new` 404; `/payables/*` sin guard FE (vendedor accede, BE 403 ok); plan stale:
+>   detalle = `InvoiceDetail.jsx`.
+> - **2B CxC ✅** (FE `adc32fa`) — Resumen FAIL (P0-2 envenena Promise.all → ceros + curva fabricada
+>   + chip "Sincronizado" falso); Lista FAIL (vacío deshonesto + filtros stub); Detalle FAIL (2
+>   métodos); Vencidas FAIL trivial (name-mismatch, ruta canónica T5 rota); Aging PASS condicional
+>   (datos reales; "Oct 2023" hardcodeado; gráfico sin fuente); Perfil Crédito FAIL (score 50
+>   fallback vs risk_level LOW real; límite 150M literal; barras literales; falsa alerta >90d).
+>   **P0-2 ampliado a 4 métodos faltantes.** Doble montaje `/receivables` (sin guard) vs
+>   `/dashboard/receivables` (gated). Vendedor accede por URL al grupo (NA-CXP-2).
