@@ -770,3 +770,19 @@ rol tiene permiso, preserva contexto. 5) No se salta DESIGN.md.
 >   Financiero FAIL P1 (caja "$1.2M" = mock Santander; pronóstico "$742k" fabricado); Gestión
 >   IVA FAIL P0-trivial (getVat/getTaxSummary inexistentes; IVA legal post-T11 invisible);
 >   CashFlow/PyG PASS cond; Libros Legales y SIFEN×2 PASS. 5/7 rutas sin guard.
+
+> - **2I Auditoría + huérfanas ✅** (FE `7e30db9`, SUMMARY.md) — Dashboard Auditoría FAIL
+>   (curva fabricada + donut 100% + "+12.5%"); **Logs FAIL grave (KPIs 100% mock 12.450/42/188/
+>   3.120 junto a tabla vacía; "Página 1 de 30" sin filas)**; Detalle y Actividad PASS (honestos).
+>   Huérfanas: StockManagement CRASHEA, decisión ELIMINAR ×3. **RoleGuard F2VLso sigue sin
+>   migrar a audit:read (tarea T18 pendiente de ejecución en FASE 3).**
+>
+> ## ✅ FASE 2 COMPLETA (2026-09-16) — 50 páginas + 3 huérfanas auditadas en 9 bloques
+>
+> **Veredicto global: 10 PASS · 12 PASS condicional · 28 FAIL (56% no confiable)**.
+> Entregable: `erp-webapp/conductor/audits/bi-2026-09/SUMMARY.md` (matriz completa, 12 hallazgos
+> transversales, prioridades P0/P1/P2 para FASE 3) + 44 fichas + 63 screenshots. Commits FE:
+> `2a1cce6` (2A) → `7e30db9` (2I). Roles probados: admin consolidado + vendedor VNDR01.
+> **Next: FASE 3 — fixes FE priorizados** (P0: 12 métodos de service, NA-DB-1 unwrap, remapeos
+> cash-flow/supplier, KPIs mock de auditoría, guards; P1: fabricaciones + honestidad; P2:
+> paginaciones + pulido + eliminar huérfanas).
