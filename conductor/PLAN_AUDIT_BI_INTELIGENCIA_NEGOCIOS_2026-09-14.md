@@ -762,3 +762,6 @@ rol tiene permiso, preserva contexto. 5) No se salta DESIGN.md.
 >   profit del módulo vs summary global = política de costo 0,7 vs real — decisión de negocio**);
 >   Tendencias FAIL (+-100%, pico ---, vacío); Vendedores FAIL (fan-out T15 BE + objetivo 0%).
 >   Grupo 100% gated analytics:read ✅.
+
+> - **2G Inventario ✅** — 4/4 PASS (único grupo .tsx completo; dashboard = mejor página BI;
+>   stock-levels 20 filas sin paginar P2; endpoints resucitados T13/T16 verificados en vivo).
