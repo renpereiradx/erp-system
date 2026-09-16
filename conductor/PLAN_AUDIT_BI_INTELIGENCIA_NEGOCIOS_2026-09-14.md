@@ -765,3 +765,8 @@ rol tiene permiso, preserva contexto. 5) No se salta DESIGN.md.
 
 > - **2G Inventario ✅** — 4/4 PASS (único grupo .tsx completo; dashboard = mejor página BI;
 >   stock-levels 20 filas sin paginar P2; endpoints resucitados T13/T16 verificados en vivo).
+
+> - **2H Reportes Financieros ✅** (7 págs reales en sidebar, conteo "8" stale) — Resumen
+>   Financiero FAIL P1 (caja "$1.2M" = mock Santander; pronóstico "$742k" fabricado); Gestión
+>   IVA FAIL P0-trivial (getVat/getTaxSummary inexistentes; IVA legal post-T11 invisible);
+>   CashFlow/PyG PASS cond; Libros Legales y SIFEN×2 PASS. 5/7 rutas sin guard.
