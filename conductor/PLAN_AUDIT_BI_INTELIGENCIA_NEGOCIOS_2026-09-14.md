@@ -756,3 +756,9 @@ rol tiene permiso, preserva contexto. 5) No se salta DESIGN.md.
 >   (datos reales; stats honestas T20 visibles; demanda 13 filas sin paginar); Ingresos FAIL
 >   (escenarios y bandas en cero por mapping; tabla real); Dashboard FAIL P1 ("+33521439.14%"
 >   = monto $ como %). 5 rutas sin guard.
+
+> - **2F Rentabilidad ✅** — Productos PASS (patrón referencia); Clientes PASS cond (Pareto 0%);
+>   Categorías FAIL (NaN en KPI); Dashboard FAIL (gráfico vacío, texto roto, **discrepancia de
+>   profit del módulo vs summary global = política de costo 0,7 vs real — decisión de negocio**);
+>   Tendencias FAIL (+-100%, pico ---, vacío); Vendedores FAIL (fan-out T15 BE + objetivo 0%).
+>   Grupo 100% gated analytics:read ✅.
