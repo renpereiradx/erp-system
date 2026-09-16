@@ -891,12 +891,14 @@ rol tiene permiso, preserva contexto. 5) No se salta DESIGN.md.
 >   fuera, banner T8 metadata.partial.
 > - P2: huérfanas eliminadas, hora pico real, Oct 2023, bandas T20, paginación stock-levels.
 > - **Aucas pendientes → RESUELTAS (2026-09-16, sesión pre-FASE 4)**: ① unificación de
->   política de costo (profit módulo vs summary) — **pendiente de decisión del usuario**
->   (análisis: ambos lados usan el helper T11 `sdCost`; profitability usa costo real
->   `get_cost_for_variant` con NULLs excluidos, `/dashboard/summary` usa el fallback
->   fabricado `unit_price*0.7` — hallazgo BC-12; dev: solo 7/110 líneas de venta sin
->   costo resoluble, Gs. 790.000 de ingreso; NO hay snapshot de costo en la línea de
->   venta); ② demanda server-side pagination ✅ (BE `41e708e`: parsePaginationErr +
+>   política de costo ✅ **decisión del usuario: política A (costo real en todo)** — BE
+>   `3e77d05`: `getFinancialKPIs`/`getInventoryKPIs` sin el fallback `unit_price*0.7`
+>   (BC-12) y el bloque `profit` del Summary calculado sobre **COGS real** de las líneas
+>   vendidas (nuevo `getRealCOGS`) en vez de `ventas − compras del período` (la razón
+>   oculta por la que ni el 0.7 cuadraba); verificado en vivo: `/dashboard/summary` ==
+>   `/profitability/overview` → 202.480 / 94,76%. El snapshot histórico de `unit_cost`
+>   en la línea de venta queda como mejora futura (FASE 8) — el profit sigue resolviendo
+>   costo actual, o sea cambios de costo "reescriben historia"; ② demanda server-side pagination ✅ (BE `41e708e`: parsePaginationErr +
 >   COUNT separado + LIMIT/OFFSET con CTE compartido, `top_n` queda como alias de
 >   page_size; FE `0f524b6`: page state + footer metadata, patrón F3K); ③ backfill
 >   legacy ✅ (migraciones `20260916183127` + `20260916185600`: 8.818 filas → audit_logs
