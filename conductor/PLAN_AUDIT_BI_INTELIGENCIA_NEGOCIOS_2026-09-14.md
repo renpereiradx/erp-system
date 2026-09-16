@@ -751,3 +751,8 @@ rol tiene permiso, preserva contexto. 5) No se salta DESIGN.md.
 >   + hora pico fija P1-4; comparativa con delta de margen mal calculado (−5.0pp mostrado para
 >   +20.3pp reales); Descuentos PASS (única con guard reports:read, .tsx, 1 fila incoherente);
 >   5/6 rutas sin guard.
+
+> - **2E Pronósticos ✅** (FE commits de esta sesión) — Salud Inventario/Ventas/Demanda PASS
+>   (datos reales; stats honestas T20 visibles; demanda 13 filas sin paginar); Ingresos FAIL
+>   (escenarios y bandas en cero por mapping; tabla real); Dashboard FAIL P1 ("+33521439.14%"
+>   = monto $ como %). 5 rutas sin guard.
