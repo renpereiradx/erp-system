@@ -830,3 +830,34 @@ rol tiene permiso, preserva contexto. 5) No se salta DESIGN.md.
 > POST /api/v1/audit/export existe sin botón FE (cablear en P2 o quitar).
 > **Next: FASE 3 ronda P1** (fabricaciones del resumen financiero/insights/perfil crédito,
 > NA-DB-2 $→Gs., redondeos, fallbacks demo de catches, delta margen pp).
+
+> ## ✅ FASE 3 — RONDA P1 COMPLETA (2026-09-16) — honestidad de datos
+>
+> 5 commits FE (d0846f7 → dc31468), gates verdes + smoke:
+>
+> - **3F `d0846f7`** — Resumen Financiero: caja real del cash-flow (fuera "$1.2M"), salud
+>   real de /health-score (fuera "84", ratios 2.45/1.82/42.5%, "Obj: 45%"), banner
+>   "$742k Predictive BI" eliminado, Detalle → PyG real. Sales Insights: mocks fuera del
+>   estado inicial, growths literales (12/5.4/-2.1/15 + churn 13.9%) fuera, "Ver todos los
+>   clientes" → /parties. CxC: tramos reales (getAgingSummary apuntaba a /aging/report →
+>   ahora /aging/summary), curva sin datos → empty state (los "-∞" venían de Math.max de
+>   array vacío), chip "Sincronizado" fuera. Perfil Crédito: score 50 fuera (RiskGauge por
+>   nivel), 150M fuera, utilization 80 fuera, aging computado desde facturas reales
+>   (fuera "Gs. 250M" hardcodeado). Overdue: refs INV-2023-XXX y "Vía Email" reales.
+> - **3G `c8b6851` + `dc31468`** — insights de pronósticos formateados por semántica del
+>   Type BE (monto→PYG, conteo, % 1 decimal; fuera el "+33521439.14%"); delta de margen
+>   en pp calculado de los márgenes reales (margin_change_pct es cambio RELATIVO, no pp);
+>   floats crudos redondeados (comparativa, heatmap "$0"→"Gs. 0", margen 94.75…%, kpis
+>   pronósticos); leak err.message de InvoiceDetail saneado.
+> - **3H `a16874e`** — mocks fuera de estado inicial/catch (SalesDashboard, TrendsVelocity,
+>   PeriodComparison, useAgingReport) + 4 mocks huérfanos de accounts-payable borrados +
+>   **banner T8**: apiClient despacha `api:partial-data` con metadata.partial y App muestra
+>   toast throttled 5s.
+>
+> Smoke post-P1: Resumen Financiero caja Gs. 386.360 real / salud 95 real / Quick Ratio
+> 0.29 "Revisar" (honesto); CxC tramos 34,28%/65,72% reales; sales dashboard sin flash de
+> mock. **Pendiente de decisión de negocio: unificación de política de costo (profit
+> módulo vs summary global) — NO tocar sin el usuario.**
+>
+> **Next: FASE 3 ronda P2** (huérfanas eliminar, TrendsVelocity hora pico, "Oct 2023",
+> bandas T20 ingresos, paginación stock-levels/demanda).
