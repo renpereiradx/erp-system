@@ -625,9 +625,19 @@ Por cada página del inventario 1.1, ejecutar y documentar en la ficha de la pá
 
 ### FASE 2 — Auditoría por página FE (3-4 días; requiere FASE 1 ✅)
 
-- [ ] Ejecutar protocolo §3 para las ~36 páginas, en orden de riesgo: CxP (6) → CxC (6) →
+- [ ] Ejecutar protocolo §3 para las ~36 páginas, en orden de riesgo: **CxP (6) ✅ 2A** → CxC (6) →
       Dashboard (5) → Sales Analytics (6) → Pronósticos (5) → Rentabilidad (6) → Inventario
       (4) → Reportes Financieros (8) → Auditoría (4)
+      - **[x] 2A CxP ✅ 2026-09-16** (FE `2a1cce6`): 6 fichas + 7 screenshots en
+        `erp-webapp/conductor/audits/bi-2026-09/`. Veredictos: 6/6 FAIL — 4 páginas muertas por
+        P0-1 (métodos inexistentes en `payablesService`), Cash Flow con drift de contrato total
+        (API 200 → UI en cero) + bancos/insights fabricados (P0-6 ampliado), Supplier Analysis
+        en blanco con API sana, "Nueva Factura" → `/payables/new` **404**, Aging funcional pero
+        con 3 KPIs "---" y 4 botones decorativos. **Transversal nuevo**: `/payables/*` sin guard
+        FE (vendedor accede por URL a 5 rutas; BE 403 correcto con `payables:read`); el gate del
+        dashboard usa `dashboard:read` ≠ `payables:read` del BE. Corrección al plan: la página
+        de detalle es `InvoiceDetail.jsx`, no `PayableDetail.jsx` (stale). Ambos roles probados
+        (admin consolidado dev-JWT + VNDR01).
 - [ ] Probar con 2 roles: admin (consolidado) y perfil acotado (vendedor / Buyer) — validar
       gates y redirecciones por rol
 - [ ] Consolidar `SUMMARY.md` con matriz página × veredicto
