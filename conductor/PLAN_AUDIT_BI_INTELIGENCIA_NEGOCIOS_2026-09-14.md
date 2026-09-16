@@ -552,18 +552,47 @@ Por cada página del inventario 1.1, ejecutar y documentar en la ficha de la pá
 
 #### 1D — Auditoría activable + RBAC (3 días)
 
-- [ ] **T17 · Write-path de auditoría (P0-5)**: middleware/hooks que capturen eventos y
-  escriban async — worker con canal buffer + INSERT por lote (sin bloquear el request path),
-  flush en graceful shutdown, sampling configurable. Eventos mínimos: login/logout (éxito y
-  fallo), escrituras core (ventas, compras, pagos, anulaciones), ajustes de stock/precio,
-  cambios de permisos/usuarios. Capturar request_id (ya en ctx), claims, status, duración.
-  LogAction queda como API interna del middleware.
-- [ ] **T18 · RBAC coherente (BR-6, B-8 viejo)**: completar `module_permissions.go`
-  (`/vat-prorrateo`, `/sales-analytics/discounts`) y generar/testear el catálogo contra los
-  gates reales (test que falle si drift); decidir la única fuente para auditoría FE
-  (`audit:read` vs RoleGuard F2VLso) y documentarla.
-- Gates 1D: integration test del middleware (escribe batch, no bloquea, samplea) + test de
-  catálogo.
+- [x] **T17 · Write-path de auditoría (P0-5)**: ✅ 2026-09-16 (BE `251e69b`, reporte
+  `business_management/conductor/FASE1_T17_T18_AUDIT_WRITE_PATH_RBAC_2026-09-16.md`):
+  hasta T17 **nadie escribía** audit_logs (read-side only, `LogAction` sin callers). Pipeline
+  async completo: `AuditTrail` worker (canal buffer 4096, Enqueue no-bloqueante con drop
+  contado — jamás back-pressure del request path), batch INSERT multi-VALUES (chunks 200) vía
+  puerto estrecho `AuditLogBatchWriter`, flush por tamaño (100) / ticker (2s) / drain en
+  graceful shutdown; sampling configurable (env `AUDIT_SAMPLE_RATE`, default 1.0) que jamás
+  suelta fallos, warnings ni AUTH. Middleware `AuditTrailMiddleware` para escrituras core
+  autenticadas (ventas/anulaciones, compras, pagos, stock, precios, users/roles, caja;
+  matching segment-aware — `/sale` no se traga `/sales-analytics`) con claims, request_id en
+  metadata jsonb, status, duración y **branch activa denormalizada (nota T12 cumplida)**.
+  Hooks AUTH en identity (login éxito/fallo con el intento como entity_id, logout, logout-all)
+  porque `/login` es pre-auth y `/auth/refresh` contaminaría. Métricas
+  `audit_trail_events_total{enqueued,sampled_out,dropped_full,written,write_error}` (T21).
+  Ciclos de import resueltos: `auditIPAddress` local en identity (helpers importa identity
+  vía jwt_helper), `logging.RequestIDMetadata` (analytics importa identity vía branchctx).
+  **HALLAZGO (smoke, no tests): `Run` creaba el ticker y nadie consumía `ticker.C`** —
+  lotes parciales no salían por tiempo; fix select-loop + test de regresión. El flush en
+  shutdown graceful quedó validado EN VIVO (SIGTERM drenó un evento pre-fix). Test T12 hecho
+  robusto por delta (los agregados absolutos rompían con filas concurrentes en la BD
+  compartida — lo rompieron las filas del smoke). Smoke: login fallido/logout/escritura 400
+  con branch=1/lectura admin/403 vendor ×3/métricas ✅. `LogAction` queda como API interna.
+- [x] **T18 · RBAC coherente (BR-6, B-8 viejo)**: ✅ 2026-09-16 (mismo commit, mismo reporte):
+  `module_permissions.go` completado contra los gates REALES — encabezados del plan:
+  `/vat-prorrateo` y `/sales-analytics/discounts` son **reports:read** (no analytics:read);
+  +17 prefijos faltantes (settings, devices, `sifen/{config,branch,inutilize,metrics,reconcile}`
+  — reconcile es sifen:write, `/supplier`, `/purchase/payment`, `/counter-orders/metrics`
+  (reports:read), measure/*, barcode read-only, `/cost-transactions` = **products:cost**) y
+  stale corregidos: `/cost-trends`, `/margin-alerts`, `/suppliers/{id}/cost-analysis` gatean
+  **products:cost**, no products:read; `/api/v1/permissions` era exact-path, no subrouter.
+  Exact-path nuevos: pos-checkout/confirm-payment (cash:write), anulaciones (sales:cancel),
+  aging crédito (receivables:read), account-payments (cash:write). **Test anti-drift**
+  `rbac_catalog_drift_test.go`: escanea el fuente de registro de rutas y falla ante
+  divergencia catálogo↔rutas en ambas direcciones (prefijos + `METHOD:/template` exactos),
+  con excepciones documentadas (sifen sobre /sale; auth-only /auth y /sessions); verificado
+  por mutación. **Decisión auditoría FE: `audit:read` es la fuente única** (gate BE real,
+  nav FE ya lo usa); los 4 `RoleGuard F2VLso` de `/auditoria*` migran a PermissionGuard en
+  FASE 2 — documentado en el reporte y en el test.
+- Gates 1D: integration test del middleware (escribe batch 250 filas/2 chunks contra BD real,
+  no bloquea con buffer lleno, samplea con excepciones AUTH/fallos) ✅ + test de catálogo
+  (anti-drift bidireccional) ✅ + `go test ./...` 37 paquetes + lint + build + smoke ✅.
 
 #### 1E — Calidad, contrato y tests (4-5 días)
 
