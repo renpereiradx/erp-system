@@ -530,9 +530,23 @@ Por cada página del inventario 1.1, ejecutar y documentar en la ficha de la pá
   (FASE E, preexistente); (2) **fan-out de `total_sales` en Performance** — `SUM(s.total_amount)`
   sobre LEFT JOIN con detalles infla el total por número de líneas (clase BC, preexistente,
   surfaceado al backlog); (3) los OR-branch de contextos no-BI quedan para su fase.
-- [ ] **T16 · Legibilidad (BP-7)**: partir los 4 métodos gigantes y el SQL one-line de
-  inventory (sin cambio funcional; test de regresión = mismas filas/totales antes/después);
-  borrar `handlers/bi_helpers.go`.
+- [x] **T16 · Legibilidad (BP-7)**: ✅ 2026-09-15 (BE `19a69ea`, reporte
+  `business_management/conductor/FASE1_T16_LEGIBILIDAD_2026-09-15.md`) — **cierra 1C**: los 4
+  métodos gigantes partidos en orquestador + helpers privados (movimiento puro, SQL verbatim):
+  ProductProfitabilityDateRange 267→59, PayablesRepo.List 219→85, ReceivablesRepo.List 202→83,
+  GetAuditLogs 196→67 (builder de condiciones devuelve `(where, args, próximo índice)` que los
+  LIMIT/OFFSET consumen). Las 14 líneas de SQL one-line de inventory reformateadas
+  multi-línea, con verificación programática whitespace-normalizada línea a línea. Borrado
+  `handlers/bi_helpers.go` (122 líneas muertas, 0 consumidores en el paquete). **HALLAZGO:
+  2 endpoints más de la clase crónica T13** — `/inventory-analytics/forecast` (CTE
+  `product_stock` sin aliases + ORDER BY sin alias) y `/inventory-analytics/movements` (CTE
+  sin aliasar `quantity`/`value`; by-type ordenaba por `units` inexistente); probados
+  preexistentes corriendo la query de HEAD en psql, arreglados con aliases explícitos,
+  verificados 200 con datos reales y cubiertos por `TestInventoryResurrectedEndpoints`
+  (ampliado) — los 5 endpoints crónicos de la clase quedan resucitados y con test. Gates +
+  smoke ✅ (payables `total_pending` 6.414.250 idéntico al smoke T15 = regresión numérica;
+  inventory 11/11; 10 grupos BI 200; 0 errores en log). El gate de cierre 1C (benchmark p95
+  hey/ab) queda para el gate final de FASE 1.
 - Gates 1C: EXPLAIN comparado + benchmark simple (p95 por endpoint con `hey`/`ab` contra el
   bin local) + `go test ./...` + lint + build.
 
