@@ -1,6 +1,6 @@
 # PLAN — Auditoría y remediación del módulo BI "Inteligencia de Negocios"
 
-**Fecha**: 2026-09-14 (v2: auditoría profunda backend integrada) · **Tipo**: Cross-repo (backend Go + frontend React) · **Estado**: 🔄 En progreso — **FASE 0 ✅ + 1A ✅ (T1-T5) + 1B ✅ COMPLETA (T6-T9: 3cc04ab, 8f4d2c3, ea8de73, 425e534)**; sub-fases 1C-1E pendientes
+**Fecha**: 2026-09-14 (v2: auditoría profunda backend integrada) · **Tipo**: Cross-repo (backend Go + frontend React) · **Estado**: ✅ **FASE 1 COMPLETA — GATE FINAL SUPERADO (2026-09-16)** — FASE 0 ✅ + 1A ✅ + 1B ✅ + 1C ✅ (T10-T16: 8298583…19a69ea) + 1D ✅ (T17-T18: 251e69b) + 1E ✅ (T19-T23: 79bd447, d372437, 6914c40, 63c7cf4, 892aac3); cierre en `business_management/conductor/AUDIT_BI_BACKEND_2026-09.md`. Recién aquí arranca FASE 2 (frontend)
 
 > **Orden de ejecución (v2)**: FASE 0 → **FASE 1 completa (backend BI, sub-fases 1A-1E)** → FASE 2-5
 > (frontend). No se inicia ninguna fase de frontend hasta que el gate de FASE 1 esté en verde:
@@ -596,29 +596,31 @@ Por cada página del inventario 1.1, ejecutar y documentar en la ficha de la pá
 
 #### 1E — Calidad, contrato y tests (4-5 días)
 
-- [ ] **T19 · Contratos tipados (BQ-2)**: eliminar los 9 `map[string]interface{}` → structs
+- [x] **T19 · Contratos tipados (BQ-2)**: ✅ 2026-09-16 (79bd447) — 9 `map[string]interface{}` → structs tipados (LowStockProduct, OutOfStockProduct, NegativeMarginProduct, ExpiringBudget, HealthScore, PeriodComparison+Snapshot/Delta, ClientRisk, PaymentCapacity, SupplierAnalysis) + `Alert.Details`/`RecentActivity.Details` tipados con puntero+omitempty (contrato heterogéneo preservado); golden tests de claves JSON (regla 7). Nota: `DashboardSummary/KPIs.Details` ya no existían (T8 los reemplazó por `partialErrors`).
   del dominio (LowStockProduct, OutOfStockProduct, NegativeMarginProduct, ExpiringBudget,
   HealthScore, PeriodComparison, ClientRisk, PaymentCapacity, SupplierAnalysis) +
   `Details map[string]interface{}` de DashboardSummary/KPIs → structs.
-- [ ] **T20 · Forecast honesto (BQ-5)**: implementar EXPONENTIAL (suavizado simple/Holt) y
+- [x] **T20 · Forecast honesto (BQ-5)**: ✅ 2026-09-16 (d372437) — EXPONENTIAL (SES α=0.3, proyección plana) y SEASONAL (factores mensuales del trailing year, baseline media 12 puntos) implementados; método desconocido = 400 apperr (fail-fast pre-DB); `method_effective` expuesto; bandas ±15% y cap 95% documentados en `ForecastConfidence`; alias `/api/v1/forecast` removido (FE usa `/forecast`; el anti-drift T18 cazó la entrada stale del catálogo). Smoke en vivo: method_effective, 400 honesto de SEASONAL con <12 puntos, alias 404. (suavizado simple/Holt) y
   SEASONAL (factores por período — la base ya existe en `detectSeasonality`), o devolver 400
   "method not supported" en vez de degradar a linear en silencio; exponer `method_effective`
   en la respuesta; documentar bandas ±15% y confidence cap; decidir canonical
   (`/forecast`) y deprecar el dual-mount `/api/v1/forecast` cuando el FE confirme (FE usa
   `/forecast` hoy → el BE queda con `/forecast` y remueve el alias).
-- [ ] **T21 · Logging/métricas internas (BQ-4)**: log estructurado en repos (query lenta >
+- [x] **T21 · Logging/métricas internas (BQ-4)**: ✅ 2026-09-16 (6914c40) — `bi_query_duration_seconds{group,op}` (op="http" en los 11 grupos vía biChain; op=<Método> en 53 agregados pesados) + `bi_slow_query` log estructurado con request_id sobre umbral `BI_SLOW_QUERY_MS` (default 500ms) + pprof en `/debug/pprof` tras `PPROF_ENABLED` (default false) y gate admin `users:write` sobre el auth global. Anti-drift T18 actualizado a la firma biChain(perm, group). (query lenta >
   umbral, con request_id), métrica Prometheus de duración por grupo de endpoint
   (`bi_query_duration_seconds{group=}`); pprof detrás de flag admin-only opcional.
-- [ ] **T22 · Tests (BQ-1)**: service tests para los 7 servicios sin cobertura (mocks por
+- [x] **T22 · Tests (BQ-1)**: ✅ 2026-09-16 (63c7cf4) — handler tests estilo equiv para las superficies sin cobertura (inventory analytics con los 3 resucitados T13, profitability, receivables, audit, discount reports) + contratos T19 por el wire; `routes_inventory_test.go` fija la tabla de rutas via router.Walk (representante por grupo, resucitados, GET-only, 404-no-500, alias muerto); `tests/integration/bi_fixed_queries_test.go` con DB real: endpoints resucitados, contratos tipados financieros, análisis CxP/CxC (proveedor inexistente = 404 tipado; cliente inexistente = zeros), dashboard con metadata.partial y los 4 métodos de forecast. (mocks por
   puerto, estilo `equiv_test.go`); tests de rutas/gates de `analytics/http`; integration
   tests (DB real, docker) para las queries corregidas en T1/T2/T4/T11/T12/T13 — el E2E es el
   único gate que ejercita SQL real de repos mockeados (lección FASE 5 pedidos).
-- [ ] **T23 · Pureza de dominio (BQ-3, incremental)**: en lo tocado, mover structs de
+- [x] **T23 · Pureza de dominio (BQ-3, incremental)**: ✅ 2026-09-16 (892aac3) — `getPeriodDates` de audit.go eliminado (5 call sites → `tb.Boundaries(NewPeriodRolling(period))`); wire DTOs de discounts (`DiscountLine`, `DiscountSummaryRow`) movidos al handler; `internal/analytics/dto.go` creado (el archivo que el doc de paquete reserva para transporte) con los 10 contratos T19 dentro del contexto acotado. `OutOfStockProduct`/`AlertDetails`/`ActivityDetails` permanecen en models/ (models los embebe por valor; ciclo de imports). Alias restantes de domain.go: deuda documentada., mover structs de
   `models/` al dominio analytics; quitar `json:` tags de discounts.go o mover al handler;
   eliminar `getPeriodDates` de audit.go usando `Period`.
-- **GATE FINAl FASE 1 (duro)**: `go test ./...` verde con la cobertura nueva · `golangci-lint
-  run` · `make build` · smoke dev-JWT de los 11 grupos · EXPLAIN/benchmark documentado ·
-  reporte de cierre en `business_management/conductor/AUDIT_BI_BACKEND_2026-09.md`.
+- [x] **GATE FINAL FASE 1 (duro)**: ✅ 2026-09-16 SUPERADO — `go test ./...` 37 paquetes OK
+  · `golangci-lint run` verde · `make build` OK · smoke dev-JWT 11 grupos (13 endpoints 200) con
+  contratos T19/T20/T21 verificados en vivo · benchmark p95 documentado (todos los grupos
+  ≤ 11 ms en dev; caveat DB pequeña) · reporte de cierre en
+  `business_management/conductor/AUDIT_BI_BACKEND_2026-09.md` (5be5ef2).
   ⛔ Recién aquí arranca la FASE 2 (frontend).
 
 ### FASE 2 — Auditoría por página FE (3-4 días; requiere FASE 1 ✅)
