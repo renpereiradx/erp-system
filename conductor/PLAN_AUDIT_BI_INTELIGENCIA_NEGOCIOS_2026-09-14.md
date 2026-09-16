@@ -626,7 +626,7 @@ Por cada página del inventario 1.1, ejecutar y documentar en la ficha de la pá
 ### FASE 2 — Auditoría por página FE (3-4 días; requiere FASE 1 ✅)
 
 - [ ] Ejecutar protocolo §3 para las ~36 páginas, en orden de riesgo: **CxP (6) ✅ 2A** → **CxC (6) ✅ 2B** →
-      Dashboard (5) → Sales Analytics (6) → Pronósticos (5) → Rentabilidad (6) → Inventario
+      **Dashboard (5) ✅ 2C** → Sales Analytics (6) → Pronósticos (5) → Rentabilidad (6) → Inventario
       (4) → Reportes Financieros (8) → Auditoría (4)
       - **[x] 2A CxP ✅ 2026-09-16** (FE `2a1cce6`): 6 fichas + 7 screenshots en
         `erp-webapp/conductor/audits/bi-2026-09/`. Veredictos: 6/6 FAIL — 4 páginas muertas por
@@ -735,3 +735,12 @@ rol tiene permiso, preserva contexto. 5) No se salta DESIGN.md.
 >   fallback vs risk_level LOW real; límite 150M literal; barras literales; falsa alerta >90d).
 >   **P0-2 ampliado a 4 métodos faltantes.** Doble montaje `/receivables` (sin guard) vs
 >   `/dashboard/receivables` (gated). Vendedor accede por URL al grupo (NA-CXP-2).
+
+> - **2C Dashboard ✅** (FE `9e6bd6c`) — **NA-DB-1**: `useDashboardStore` guarda el envelope sin
+>   `.data` → Resumen Ejecutivo en Gs. 0 con trends/alerts/actividad reales (fix 1 línea, impacto
+>   máximo); **NA-DB-2**: heatmap con "$0" en sistema PYG; KPIs Detallado lee bien el contrato
+>   anidado (Índice de Salud = TODO turnover×10; chips candado decorativos); Alertas: **T5
+>   "Gestionar" → /receivables/overdue verificado EN VIVO** (destino roto = 2B), 4 botones sin
+>   handler, P0-4 no ejercitable (0 alertas cliente en dev); Top Productos PASS condicional
+>   (floats crudos). Grupo 100% gated dashboard:read ✅. P1-1 fallback demo NO dispara con API
+>   sana (solo catch).
