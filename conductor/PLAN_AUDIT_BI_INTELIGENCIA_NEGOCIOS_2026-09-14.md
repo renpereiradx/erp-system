@@ -973,3 +973,50 @@ rol tiene permiso, preserva contexto. 5) No se salta DESIGN.md.
 >
 > **Next: FASE 5** — tests FE por página/componente migrado (PLAN_TEST_DESIGN_FRONTEND) +
 > gate final integrado + cierre y purge del plan según convención del README.
+
+> ## ✅ FASE 5 COMPLETA (2026-09-17) — tests FE + resolución H7 + gate final + cierre
+>
+> **Tests FE** (FE `b14b49e`, 17 archivos / 78 tests según PLAN_TEST_DESIGN_FRONTEND — mocks en
+> la frontera del módulo consumido, sin mock de lucide, asserts por rol/contrato):
+> - **Features**: cash-flow (hook useCashFlow: mapeo proyección/schedule, guard división por
+>   cero, refetch por período, error; KpiSection; PaymentCalendar; TrendChart) ·
+>   accounts-payable (hook useSupplierAnalysis: dto plano + detalle, blob JSON de contacto,
+>   defaults honestos; 4 componentes SupplierAnalysis) · bi-forecasting (PronosticoDemanda con
+>   paginación server-side y wiring de `page`; PronosticoIngresos con escenarios honestos y
+>   bandas T20).
+> - **Páginas**: AuditDashboard (KPIs reales, `n/d` sin kpis, retry, cambio de período),
+>   AuditLogs (debounce 400ms con fake timers, paginación/filtros server-side, export CSV con
+>   toast, empty state), FinancialSummaryDashboard (3 reportes, salud, guiones honestos),
+>   CashFlowProjection, SupplierAnalysis, sales-analytics Dashboard (período viaja, banner
+>   error, ausencia H7), CustomerSellerInsights, PeriodComparison (series reales
+>   `/trends/date-range`, delta +pp), TrendsVelocity (hora pico real, heatmap, refresh).
+> - Gate: **vitest 734/734 · tsc 0 · pnpm build · lint:design limpio**.
+>
+> **Drift que los tests destaparon y corrigieron** (FE `5ef861c`):
+> 1. **TZ**: fechas date-only del BE se parseaban UTC → en America/Asuncion el gráfico y el
+>    calendario de cash-flow mostraban el día ANTERIOR y el badge HOY jamás podía aparecer
+>    (`parseDay` ancla 'YYYY-MM-DD' a medianoche local; verificado en vivo: API 2026-09-17 →
+>    UI "17-sept.").
+> 2. **Display**: PeriodComparison renderizaba **"++5pp"** (signo duplicado en la tarjeta de
+>    margen) — `formatAbsDiff` no duplica el prefijo.
+> 3. Montos de ActiveObligationsTable con `toLocaleString()` sin locale → fijados `es-PY`.
+>
+> **H7 resuelto (regla FE-2: toda afordancia funciona o desaparece)** — en `5ef861c`:
+> sales Dashboard fuera Exportar/Ver Detalles/caption "Hacer clic"; TrendsVelocity "Actualizar"
+> cableado (fetch a useCallback); ActiveObligationsTable fuera Filtrar/Exportar/paginación
+> muerta/acciones por fila (el endpoint trae todas las facturas); DetailedKPIs fuera 3 chips
+> candado y "Exportar Informe" muerto, "Compartir" (que refrescaba) relabelado
+> `action.refresh`; SalesHeatmap fuera 2 selects muertos + su fetch de categorías +
+> "Exportar Reporte"; Pronóstico demanda/ingresos "Exportar" → "Actualizar" (hacía refetch) y
+> fuera "Ver todos los productos". Verificado en vivo por navegador (9 páginas, dev-JWT admin).
+>
+> **Gate final integrado**: FE 734/734 · tsc 0 · build · lint:design ✅ — BE `go test ./...`
+> 37 paquetes · golangci-lint · make build ✅ (sin cambios BE en esta fase). Smoke navegador
+> dev-JWT admin: cash-flow (TZ), proveedor, sales dashboard, trends-velocity (Actualizar + pico
+> 12:00), KPIs detallado, heatmap, demanda, ingresos, auditoría/logs (CSV real, 19 registros,
+> sin mocks). Commits FE: `5ef861c` (fix) + `b14b49e` (test). Deuda heredada intacta: H1-H5
+> del reporte de performance (code-splitting, selectores Zustand, guard anti-carrera) quedan
+> como propuesta para sesión dedicada; sweep retro-i18n del área BI pendiente.
+>
+> **PLAN CERRADO — las 5 fases completas.** Este archivo se purga según la convención del
+> README (git history es el archivo).
