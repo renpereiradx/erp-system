@@ -12,11 +12,16 @@ frontend a la vez.
 
 | Archivo | Rol |
 |:--------|:----|
-| `PLAN_AUDIT_BI_INTELIGENCIA_NEGOCIOS_2026-09-14.md` | 📋 **Activo (v2)**: auditoría y remediación BI — FASE 1 backend COMPLETO primero (timezone Asunción, índices, SQLi latente, PyG con canceladas, apperr, cache Redis, auditoría activable, ~3 semanas); frontend solo después. |
 | `PLAN_BUSQUEDA_VARIANTES_PLANAS.md` | 📋 **Activo**: variantes como productos independientes en la búsqueda de compras, ventas, pedidos y catálogo. |
 | `PLAN_PEDIDOS_MOSTRADOR_VENDEDOR_CAJA.md` | 🔄 FASE 5 pendiente (ver plan). |
 | `PLAN_CATALOGO_VENDEDOR.md` | 🔄 FASE 3 opcional (integración con `/pedidos`). |
 | `PLAN_MONOROL_DESCUENTOS_CREDITO_CLIENTE.md` | 🔄 A0 prod audit pendiente (deploy blocker). |
+
+> **Cierre 2026-09-17**: `PLAN_AUDIT_BI_INTELIGENCIA_NEGOCIOS_2026-09-14.md` COMPLETADO (5/5
+> fases: backend gate duro, auditoría 50 páginas, fixes P0/P1/P2, migración .tsx/FSD + tokens,
+> tests FE + H7) y purgado — veredicto, hallazgos y gates en el historial git de este repo y en
+> `erp-webapp/conductor/audits/bi-2026-09/` + `erp-webapp/conductor/AUDIT_REACT_PERFORMANCE_BI_FRONTEND.md`
+> (H1-H5 de performance quedan como propuesta pendiente de sesión dedicada).
 
 ## Convención de limpieza
 
