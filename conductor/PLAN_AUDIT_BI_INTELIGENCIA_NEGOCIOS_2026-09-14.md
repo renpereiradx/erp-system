@@ -659,12 +659,33 @@ Por cada página del inventario 1.1, ejecutar y documentar en la ficha de la pá
 
 ### FASE 4 — Alineación DESIGN/AGENTS + migración (continua, por grupo)
 
-- [ ] Cada página legacy tocada sustancialmente se migra a `.tsx` + FSD con hooks puros y
-      domain fuera de componentes (expectativa full-alignment del workspace)
-- [ ] Checklist DESIGN §10 + §6.7 + §6.3 por página migrada
-- [ ] Auditoría `vercel-react-best-practices` del área → reporte en
-      `erp-webapp/conductor/AUDIT_REACT_PERFORMANCE_BI_FRONTEND.md`
-- [ ] i18n: sin strings nuevos hardcoded
+- [x] Cada página legacy tocada sustancialmente se migra a `.tsx` + FSD con hooks puros y
+      domain fuera de componentes (expectativa full-alignment del workspace) — ✅ 2026-09-16:
+      12 páginas + 2 features completos (cash-flow, supplier-analysis) en 7 commits FE
+      (`1fdb8d3` → `9675c5f`); alcance binario (diff FASE 3 sustancial) y checklist por
+      página en `erp-webapp/conductor/PLAN_FASE4_MIGRACION_TSX_BI_2026-09-16.md`
+- [x] Checklist DESIGN §10 + §6.7 + §6.3 por página migrada — ✅ las 11 páginas quedan
+      limpias contra `lint:design --base main` (todo el color legacy slate/hex mapeado a
+      tokens §2); desviaciones honestas anotadas (spinners legacy, i18n retro pendiente)
+- [x] Auditoría `vercel-react-best-practices` del área → reporte en
+      `erp-webapp/conductor/AUDIT_REACT_PERFORMANCE_BI_FRONTEND.md` — ✅ 7 hallazgos
+      priorizados (H1 chunk único de 3.3 MB sin code-splitting, H2 suscripción sin selector
+      al store en 5 páginas, H3 carrera de fetch en useDashboardStore, H4/H5/H6/H7) con
+      propuesta de trabajo
+- [x] i18n: sin strings nuevos hardcoded — ✅ (strings preexistentes se conservan verbatim;
+      sweep retro-i18n anotado como tarea independiente)
+- **Drift destapado por la migración y corregido**: `TrendsVelocity` crasheaba en dev HEAD
+  (TDZ) y conservaba el max fijo del heatmap (P1-4); `PeriodComparison` fabricaba la serie
+  "Período B" (×0.85/×1.15 → ahora `/trends/date-range` real con los límites que el propio
+  compare devuelve, nuevo `getTrendsDateRange`); `sales-analytics/Dashboard` nunca enviaba
+  `period` al BE ni renderizaba su estado error; `TrendChart` de cash-flow con series
+  muertas (dataKey vs contrato del hook, resto del drift 2A); `PronosticoIngresos` con
+  clase dinámica no compilable y fallbacks de período inventados.
+- **Smoke en vivo (dev-JWT admin + modo API)**: 11 páginas migradas verificadas en navegador
+  — auditoría (18 acciones reales), logs, resumen financiero (caja Gs. 386.360, salud 95),
+  cash-flow (gráfico pintando series reales), proveedor BodyTech completo, sales dashboard,
+  insights, trends-velocity (heatmap real, pico 12:00), comparativa, demanda, ingresos
+  (estado vacío honesto de escenarios). Gates: vitest 656/656 · tsc 0 · build · lint:design.
 
 ### FASE 5 — Tests y cierre (1-2 días)
 
@@ -917,3 +938,38 @@ rol tiene permiso, preserva contexto. 5) No se salta DESIGN.md.
 >   FE vitest 656/tsc/build/lint:design en verde.
 > - **Next: FASE 4** — migración .tsx/FSD de páginas legacy sustancialmente tocadas +
 >   checklist DESIGN + auditoría vercel-react-best-practices del módulo BI.
+
+> ## ✅ FASE 4 COMPLETA (2026-09-16) — migración .tsx/FSD + DESIGN tokens + auditoría React
+>
+> 7 commits FE en `dev` (`1fdb8d3` → `9675c5f`), gates verdes por commit (vitest 656/656 ·
+> tsc 0 · build · lint:design vs main) + smoke de navegador en vivo (dev-JWT admin
+> jJkV4F6HR, modo API, Vite reiniciado tras los renombres):
+>
+> - **Migrados a .tsx/.ts** (criterio: diff FASE 3 sustancial — detalle y checklist por
+>   página en `erp-webapp/conductor/PLAN_FASE4_MIGRACION_TSX_BI_2026-09-16.md`):
+>   - A Auditoría: AuditDashboard, AuditLogs (`1fdb8d3`)
+>   - B Financiero: FinancialSummaryDashboard + tokens (`bcc2280`)
+>   - C Cash-flow: página + useCashFlow.ts + KpiSection/TrendChart/PaymentCalendar +
+>     types.ts FSD + fix dataKeys del gráfico (`fbecb52`)
+>   - D Supplier Analysis: página + hook + 4 componentes + types.ts + tokens (`eedad31`)
+>   - E Sales Analytics: Dashboard, CustomerSellerInsights, PeriodComparison,
+>     TrendsVelocity + fixes (`7ab6c85`)
+>   - F Pronósticos: PronosticoDemanda, PronosticoIngresos + tokens (`46d1857`)
+>   - Smoke fix: float crudo en unidades/día (`9675c5f`)
+> - **Drift corregido** (la conversión a tipado lo destapó): TDZ crash de TrendsVelocity en
+>   dev HEAD; serie fabricada "Período B" → `/trends/date-range` real (nuevo
+>   `salesAnalyticsService.getTrendsDateRange`, límites del propio compare); `period` que
+>   nunca viajaba en sales dashboard + error state; dataKeys muertos del TrendChart
+>   (drift 2A remanente); `bg-${color}-500` no compilable; fallbacks de período inventados;
+>   max fijo 1M del heatmap (P1-4 remanente).
+> - **Entregables**: checklist DESIGN §10/§6.7/§6.3 por página (11/11 limpias contra
+>   `lint:design --base main`) + `erp-webapp/conductor/AUDIT_REACT_PERFORMANCE_BI_FRONTEND.md`
+>   (H1 chunk 3.3 MB sin lazy-routes, H2 store sin selectores, H3 carrera de fetch, H4-H7;
+>   propuesta: code-splitting BI + selectores Zustand + guard anti-carrera → próxima sesión).
+> - **Fuera de alcance documentado**: páginas con toques triviales de FASE 3
+>   (InvoicesMasterList, InvoiceDetail, ReceivablesDashboard, AgingReport, ConsolidatedAlerts,
+>   SalesHeatmap, ProductsCategories, ClientCreditProfile); sweep retro-i18n de las páginas
+>   migradas; afordancias decorativas heredadas (H7, decisión en FASE 5).
+>
+> **Next: FASE 5** — tests FE por página/componente migrado (PLAN_TEST_DESIGN_FRONTEND) +
+> gate final integrado + cierre y purge del plan según convención del README.
