@@ -32,4 +32,8 @@ frontend a la vez.
 
 ## Planes cerrados (en git history)
 
-- **PLAN_ALINEACION_BI_FRONTEND_2026-09-18** — ✅ CERRADO 5/5 fases (2026-09-19, rama `feat/bi-alignment` mergeada a `dev`). 19/19 páginas BI en .tsx, 6 features migrados, 14 módulos domain/, ~380 keys i18n `bi.*`, suite 734→1007, index 875 kB. Detalle: commits 7f87012..65b53ed + purge 7eba2a8.
+- **PLAN_ALINEACION_BI_FRONTEND_2026-09-18** — ✅ CERRADO 5/5 fases (2026-09-19, rama `feat/bi-alignment` mergeada a `dev`). 19/19 páginas BI en .tsx, 6 features migrados, 14 módulos domain/, ~380 keys i18n `bi.*`, suite 734→1007, index 875 kB. Detalle: commits 7f87012..65b53ed (FE) + purge 7eba2a8.
+Addendum §7 (ec4e282) absorbido: salesAnalyticsMock borrado (7f43e9b);
+regla ≤10 filas server-side para CustomerSellerInsights, sales-analytics/Dashboard,
+SaludInventario, PronosticoVentas/Ingresos y OverdueAccounts queda como deuda
+puntual; release note BC-1 (timezone) sigue siendo tarea de docs/BE.
