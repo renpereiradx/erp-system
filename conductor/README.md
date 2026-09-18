@@ -12,7 +12,6 @@ frontend a la vez.
 
 | Archivo | Rol |
 |:--------|:----|
-| `PLAN_ALINEACION_BI_FRONTEND_2026-09-18.md` | 📋 **Activo**: alineación total del módulo BI del FE con DESIGN.md + AGENTS.md (19 páginas .jsx, 4 features legacy, F0–F7). |
 | `PLAN_BUSQUEDA_VARIANTES_PLANAS.md` | 📋 **Activo**: variantes como productos independientes en la búsqueda de compras, ventas, pedidos y catálogo. |
 | `PLAN_PEDIDOS_MOSTRADOR_VENDEDOR_CAJA.md` | 🔄 FASE 5 pendiente (ver plan). |
 | `PLAN_CATALOGO_VENDEDOR.md` | 🔄 FASE 3 opcional (integración con `/pedidos`). |
@@ -30,3 +29,7 @@ frontend a la vez.
 - Quedan: planes con fases pendientes, docs vivos referenciados por AGENTS.md
   (ej. `erp-webapp/conductor/PLAN_TEST_DESIGN_FRONTEND.md`, `business_management/conductor/fases/`)
   y registros de fixes de los últimos días.
+
+## Planes cerrados (en git history)
+
+- **PLAN_ALINEACION_BI_FRONTEND_2026-09-18** — ✅ CERRADO 5/5 fases (2026-09-19, rama `feat/bi-alignment` mergeada a `dev`). 19/19 páginas BI en .tsx, 6 features migrados, 14 módulos domain/, ~380 keys i18n `bi.*`, suite 734→1007, index 875 kB. Detalle: commits 7f87012..65b53ed + purge 7eba2a8.
