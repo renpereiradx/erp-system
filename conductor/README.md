@@ -12,6 +12,7 @@ frontend a la vez.
 
 | Archivo | Rol |
 |:--------|:----|
+| `PLAN_ALINEACION_BI_FRONTEND_2026-09-18.md` | 📋 **Activo**: alineación total del módulo BI del FE con DESIGN.md + AGENTS.md (19 páginas .jsx, 4 features legacy, F0–F7). |
 | `PLAN_BUSQUEDA_VARIANTES_PLANAS.md` | 📋 **Activo**: variantes como productos independientes en la búsqueda de compras, ventas, pedidos y catálogo. |
 | `PLAN_PEDIDOS_MOSTRADOR_VENDEDOR_CAJA.md` | 🔄 FASE 5 pendiente (ver plan). |
 | `PLAN_CATALOGO_VENDEDOR.md` | 🔄 FASE 3 opcional (integración con `/pedidos`). |
