@@ -1,5 +1,10 @@
 # PLAN — Alineación completa del módulo BI del frontend con DESIGN.md + AGENTS.md
 
+> **PROGRESO** (worktree `worktrees/erp-webapp-bi`, rama `feat/bi-alignment` sobre `dev` @ 6ebc472):
+> - ✅ **FASE 0 completa** (13 commits hasta c8b3cfa): dead code 1.197 LOC eliminado con grep evidence (3 commits) · D4 Dashboard lazy — **index 940.43 kB → 901.25 kB** · D3 guard `receivables:read` · `currencyUtils.ts` · servicios consolidados en `services/bi/` (profitabilityService tipado, biForecastingService movido) · aliases unificados a canónicos con `@deprecated` + envelope honesto `{success?, data}` en `receivablesService.getOverview`. Gates: vitest 734/734 · tsc 0 · build · lint:design · tokens:check.
+> - ✅ **FASE 1 completa**: los 14 módulos domain extraídos 1:1 con tests — `domain/dashboard/{heatmap,alerts,shared}` · `domain/receivables/{aging,mappers,risk}` (getRiskLevel rescatado del AP muerto) · `domain/payables/{statusLabels,aging,dashboard}` · `domain/profitability/margins` · `domain/inventory-analytics/abc` · `domain/sales-analytics/format` · `domain/finance/{cashFlow,vat}` (useMemo de 140 líneas). Páginas/hooks legacy rewired. **Suite: 969/969 (127 archivos), tsc 0** · lint:design · tokens:check.
+> - 🔄 FASE 2 (rentabilidad) en curso.
+
 **Fecha**: 2026-09-18 · **Repo afectado**: `erp-webapp` (rama `dev`) · **Tipo**: 100% frontend, sin cambios de BE ni de contratos API.
 **Contexto**: sucesor directo de `PLAN_AUDIT_BI_INTELIGENCIA_NEGOCIOS_2026-09-14` (cerrado 5/5 y purgado el 2026-09-17). Ese plan dejó los **datos honestos** (fixes P0/P1/P2), migró a `.tsx`/FSD **solo 6 grupos** (auditoría, financial-summary, cash-flow, supplier-analysis, sales-analytics, pronósticos demanda/ingresos) y añadió 78 tests + retro-i18n `bi.*` (296 keys). Este plan cierra la **deuda restante**: todo lo que quedó en `.jsx`/`.js` sin FSD, sin i18n y con tokens fuera de DESIGN.md.
 
