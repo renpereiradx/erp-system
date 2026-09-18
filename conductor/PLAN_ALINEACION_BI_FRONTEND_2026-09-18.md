@@ -127,7 +127,7 @@ Toda página/componente/hook migrado en las FASES 2–6 DEBE cumplir (sin excepc
 
 ### FASE 0 — Limpieza y cimientos estructurales (sin cambios visibles de UI)
 
-1. **Eliminar código muerto** (§1.4): `components/business-intelligence/` (6 archivos, 469 LOC), `features/accounts-payable/components/AgingReport/*` (4, 552 LOC), `features/accounts-payable/hooks/useAgingReport.js` (176), `services/mocks/receivablesMock.js` previa verificación de 0 importadores. Commits separados por grupo con la evidencia del grep en el mensaje.
+1. **Eliminar código muerto** (§1.4): `components/business-intelligence/` (6 archivos, 469 LOC), `features/accounts-payable/components/AgingReport/*` (4, 552 LOC), `features/accounts-payable/hooks/useAgingReport.js` (176), `services/mocks/receivablesMock.js` y `services/mocks/salesAnalyticsMock.js` (ambos con 0 importadores — ver `audits/bi-2026-09/VERIFICACION_POST_CIERRE_2026-09-18.md` pendiente 2). Commits separados por grupo con la evidencia del grep en el mensaje.
 2. **D4**: `Dashboard.jsx` eager → `lazy()` en App.tsx (mantener `DashboardRoute`). Medir chunk index antes/después (esperado < 940 kB).
 3. **D3**: unificar guard de `/dashboard/receivables` a `receivables:read`.
 4. `utils/currencyUtils.js` → `currencyUtils.ts` tipado (firmas `formatPYG`, `formatNumber`…). Ajustar consumidores si tsc lo exige.
@@ -228,3 +228,20 @@ Migrar `features/profitability/` completo con el contrato §2:
 - [ ] Store sin mock demo y con loading/error por recurso.
 - [ ] Gates de §4 FASE 7 en verde, incluido el gate de diseño BI en 0.
 - [ ] Suite de tests global en verde con ≥ +80 tests nuevos de BI.
+
+---
+
+## §7 Adendum — verificación post-cierre del PLAN_AUDIT_BI (2026-09-18)
+
+Verificación independiente de los compromisos del plan de auditoría BI cerrado: reporte completo
+en `erp-webapp/conductor/audits/bi-2026-09/VERIFICACION_POST_CIERRE_2026-09-18.md`. Hallazgos
+que este plan ya absorbe: fallback demo del store (F5/D1), código muerto P1-9 parcial —
+`business-intelligence/` + `receivablesMock`/`salesAnalyticsMock` huérfanos (F0), botones muertos
+en legacy (H7 a medias, contrato §2.6), "+12%" de ProductsCategories, fabricaciones de
+AuditLogDetail y donut fake de PyG (F6), Dashboard eager (F0/D4), doble montaje receivables
+(F0/D3), i18n legacy (todo el plan). **Ajustes al alcance por esa verificación**: la paginación
+server-side pendiente se explicita — tablas de Insights (`CustomerSellerInsights`) y top-productos
+de `sales-analytics/Dashboard` entran en F6 junto con `SaludInventario`, `PronosticoVentas`/
+`PronosticoIngresos` y `OverdueAccounts` (regla ≤10 filas del plan anterior, nunca completada
+para esas páginas). Fuera de este plan queda la **release note BC-1 (timezone)** — tarea suelta de
+docs/BE registrada en el reporte de verificación.
