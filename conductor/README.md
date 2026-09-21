@@ -60,4 +60,10 @@ Hotfix de contrato en InventoryTurnoverABC (FE 43f5247 + BE ya cubierto por 1356
 período del API (`month`, no `mes`), fetch de `/inventory-analytics/abc` para el half ABC (la
 respuesta de turnover nunca tuvo datos ABC), `changeValue` opcional en SummaryCard y mock
 fabricado eliminado de `data/mockInventoryABCData.ts` (quedó como home de tipos dual API/mock).
-Pendiente: alineación full del grupo (mismo trato que las 19 páginas del plan) — sesión aparte.
+**CERRADA misma fecha (FE 7146cd3, PLAN_ALINEACION_INVENTORY_ANALYTICS_2026-09-21 en erp-webapp/
+conductor/)**: alineación full del grupo (4 páginas + 9 componentes + dominio abc puro) —
+PageHeader + 3 estados, 110 keys `bi.inventory.*` es+en, token map F6.2, H7 (fuera botones
+alert()/console.log, pager falso de StockLevelsTable, reload como refresh), profit del dashboard
+desde overview (kpis.potential_profit nunca existió), error state en InventoryRisk, memo del
+filtro de stock. Gates: vitest 1047/1047, tsc 0, build, lint:design; verificado en vivo las 4
+rutas con datos reales.
