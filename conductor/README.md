@@ -45,5 +45,8 @@ Segunda pasada del mismo día (addendum §5.1): la deuda que quedaba quedó cerr
 paginación server-side en CustomerSellerInsights/SaludInventario/OverdueAccounts con
 nuevo patrón T9 en `by-seller` y `/forecast/inventory` + tope de ventanas de forecast
 (BE fab1e0e/d37a957, FE 9d56df6), y migración full de AuditUserActivity (FE 88d5ca0).
-Deuda viva restante: menor y documentada en §5.1 (formato minificado de PronosticoVentas,
-convención ui_labels del BE en bi-forecasting, runbooks de prod como leaves deliberados).
+Deuda menor de §5.1 cerrada en tercera pasada (addendum §5.1): PronosticoVentas reescrito y
+convención ui_labels eliminada end-to-end (FE 69b400c); runbooks de prod consolidados en un
+checklist ejecutable único (business_management 7764a22, RUNBOOK_PROD_PENDIENTES_BI_2026-09-21) —
+pendiente solo su EJECUCIÓN en prod (requiere acceso: A0 dual-roles, índices CONCURRENTLY,
+validación TZ, flip rate-limit), trackeada en la tabla del propio runbook.
