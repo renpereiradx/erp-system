@@ -33,7 +33,12 @@ frontend a la vez.
 ## Planes cerrados (en git history)
 
 - **PLAN_ALINEACION_BI_FRONTEND_2026-09-18** — ✅ CERRADO 5/5 fases (2026-09-19, rama `feat/bi-alignment` mergeada a `dev`). 19/19 páginas BI en .tsx, 6 features migrados, 14 módulos domain/, ~380 keys i18n `bi.*`, suite 734→1007, index 875 kB. Detalle: commits 7f87012..65b53ed (FE) + purge 7eba2a8.
-Addendum §7 (ec4e282) absorbido: salesAnalyticsMock borrado (7f43e9b);
-regla ≤10 filas server-side para CustomerSellerInsights, sales-analytics/Dashboard,
-SaludInventario, PronosticoVentas/Ingresos y OverdueAccounts queda como deuda
-puntual; release note BC-1 (timezone) sigue siendo tarea de docs/BE.
+Addendum §7 (ec4e282) absorbido: regla ≤10 filas server-side para CustomerSellerInsights,
+sales-analytics/Dashboard, SaludInventario, PronosticoVentas/Ingresos y OverdueAccounts
+queda como deuda puntual.
+Reverificación 2026-09-21 (erp-webapp 890c539, addendum §5 de VERIFICACION_POST_CIERRE):
+salesAnalyticsMock se borró recién ahí (FE c585f08) — el `7f43e9b` citado antes como
+absorbido quedó colgante, sin rama que lo contenga; release note BC-1 hecha
+(business_management e044750, CHANGELOG [Unreleased]); fabricaciones residuales de
+ProductsCategories y AuditUserActivity eliminadas. Deuda viva: paginación server-side de
+la lista anterior, migración full de AuditUserActivity, i18n completo de SaludInventario.
