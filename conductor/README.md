@@ -12,6 +12,7 @@ frontend a la vez.
 
 | Archivo | Rol |
 |:--------|:----|
+| `PLAN_BI_PACK_PREMIUM.md` | 📋 **Activo**: licenciamiento del módulo BI como pack premium (edición Core vs Core+BI; licencia firmada ed25519, gate server-side en `biChain`, entitlements en sesión, gating FE). F0 en definición. |
 | `PLAN_BUSQUEDA_VARIANTES_PLANAS.md` | 📋 **Activo**: variantes como productos independientes en la búsqueda de compras, ventas, pedidos y catálogo. |
 | `PLAN_PEDIDOS_MOSTRADOR_VENDEDOR_CAJA.md` | 🔄 FASE 5 pendiente (ver plan). |
 | `PLAN_CATALOGO_VENDEDOR.md` | 🔄 FASE 3 opcional (integración con `/pedidos`). |
@@ -50,3 +51,13 @@ convención ui_labels eliminada end-to-end (FE 69b400c); runbooks de prod consol
 checklist ejecutable único (business_management 7764a22, RUNBOOK_PROD_PENDIENTES_BI_2026-09-21) —
 pendiente solo su EJECUCIÓN en prod (requiere acceso: A0 dual-roles, índices CONCURRENTLY,
 validación TZ, flip rate-limit), trackeada en la tabla del propio runbook.
+
+**Deuda viva detectada post-cierre (2026-09-21, smoke de `/inventory-analytics/turnover-abc`)**:
+el grupo legacy `src/pages/InventoryAnalytics/` (4 páginas: InventoryTurnoverABC, InventoryDashboard,
+InventoryRisk, StockLevelsReorder) no pasó por el plan de alineación — hardcoded ES sin i18n, sin
+PageHeader/3 estados/data-mono, botones muertos y expectativas de campos que el API no envía.
+Hotfix de contrato en InventoryTurnoverABC (FE 43f5247 + BE ya cubierto por 135652b): tokens de
+período del API (`month`, no `mes`), fetch de `/inventory-analytics/abc` para el half ABC (la
+respuesta de turnover nunca tuvo datos ABC), `changeValue` opcional en SummaryCard y mock
+fabricado eliminado de `data/mockInventoryABCData.ts` (quedó como home de tipos dual API/mock).
+Pendiente: alineación full del grupo (mismo trato que las 19 páginas del plan) — sesión aparte.
