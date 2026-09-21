@@ -12,6 +12,7 @@ frontend a la vez.
 
 | Archivo | Rol |
 |:--------|:----|
+| `PLAN_CQRS_BACKEND_2026-09-21.md` | 📋 **Activo–F0**: factibilidad CQRS resuelta — CQRS-lite aprobado como convención (R1-R6; F1 = split de 12 puertos mezclados, pendiente), read models condicionales a medición (F3), CQRS completo rechazado (ADR en F4). Solo BE, sin impacto FE/REST. |
 | `PLAN_BI_PACK_PREMIUM.md` | 📋 **Activo**: licenciamiento del módulo BI como pack premium (edición Core vs Core+BI; licencia firmada ed25519, gate server-side en `biChain`, entitlements en sesión, gating FE). F0 en definición. |
 | `PLAN_BUSQUEDA_VARIANTES_PLANAS.md` | 📋 **Activo**: variantes como productos independientes en la búsqueda de compras, ventas, pedidos y catálogo. |
 | `PLAN_PEDIDOS_MOSTRADOR_VENDEDOR_CAJA.md` | 🔄 FASE 5 pendiente (ver plan). |
