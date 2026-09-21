@@ -12,6 +12,7 @@ Este directorio envuelve dos repositorios Git independientes que forman el siste
 ```
 erp-system/
 ├── AGENTS.md                         ← Este archivo (guía global)
+├── docs/                             ← Ingeniería de requerimientos (REQ por módulo; ver docs/README.md)
 ├── business_management/              ← Backend Go (API REST) — puerto :3001
 │   ├── AGENTS.md                     ← Guía específica backend
 │   ├── main.go
