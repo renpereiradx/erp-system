@@ -40,5 +40,10 @@ Reverificación 2026-09-21 (erp-webapp 890c539, addendum §5 de VERIFICACION_POS
 salesAnalyticsMock se borró recién ahí (FE c585f08) — el `7f43e9b` citado antes como
 absorbido quedó colgante, sin rama que lo contenga; release note BC-1 hecha
 (business_management e044750, CHANGELOG [Unreleased]); fabricaciones residuales de
-ProductsCategories y AuditUserActivity eliminadas. Deuda viva: paginación server-side de
-la lista anterior, migración full de AuditUserActivity, i18n completo de SaludInventario.
+ProductsCategories y AuditUserActivity eliminadas.
+Segunda pasada del mismo día (addendum §5.1): la deuda que quedaba quedó cerrada —
+paginación server-side en CustomerSellerInsights/SaludInventario/OverdueAccounts con
+nuevo patrón T9 en `by-seller` y `/forecast/inventory` + tope de ventanas de forecast
+(BE fab1e0e/d37a957, FE 9d56df6), y migración full de AuditUserActivity (FE 88d5ca0).
+Deuda viva restante: menor y documentada en §5.1 (formato minificado de PronosticoVentas,
+convención ui_labels del BE en bi-forecasting, runbooks de prod como leaves deliberados).
