@@ -12,7 +12,6 @@ frontend a la vez.
 
 | Archivo | Rol |
 |:--------|:----|
-| `PLAN_STATS_RELACIONALES_BI.md` | 📋 **Activo**: estadísticas relacionales producto↔cliente↔proveedor (compradores de un producto, top por cliente/proveedor, mejor precio entre proveedores) dentro del módulo BI. F0 cerrado (D1-D6); F1-F4 pendientes. Implementa RF-BIPACK-021..024 (`docs/` v1.1). |
 | `PLAN_BI_PACK_PREMIUM.md` | ✅ Cerrado F0-F6 (2026-09-21, BE `9dd9942`/`146172c`, FE `b3ab4eb`/`26178ff`, auditado). **Se conserva como doc vivo**: sus ADR-1..7 los citan comentarios del código y `docs/REQ_BIPACK_LICENCIAMIENTO_BI.md`. |
 | `PLAN_BUSQUEDA_VARIANTES_PLANAS.md` | 📋 **Activo**: variantes como productos independientes en la búsqueda de compras, ventas, pedidos y catálogo. |
 | `PLAN_PEDIDOS_MOSTRADOR_VENDEDOR_CAJA.md` | 🔄 FASE 5 pendiente (ver plan). |
@@ -34,6 +33,7 @@ frontend a la vez.
 
 ## Planes cerrados (en git history)
 
+- **PLAN_STATS_RELACIONALES_BI** — ✅ CERRADO F1-F4 (2026-09-22). BE `38d873b` + fix sort `24a4c9f`, FE `7d68011`; RF-BIPACK-021..024 → Implementado en `docs/requirements/REQ_BIPACK_LICENCIAMIENTO_BI.md` (v1.1). 4 drill-downs dentro del pack BI: `/sales-analytics/products/{id}/buyers`, `/sales-analytics/customers/{id}/top-products`, y grupo nuevo `/purchase-analytics` (gated `analytics:read`, entrada en `config.ModulePermissions` verificada por drift test) con `/suppliers/{id}/top-products` y `/products/{id}/suppliers` (ranking moneda base D3 + meta `excluded_other_currency`, default `+last_unit_price` D5). Contrato `{rows,total,page,page_size}` con `COUNT(*) OVER()`; query-dual extendido (`biNullableEq`/`biDateFromScope`/`biQScope`). Lección: el string `q` vacío bindea `''` (no NULL) y el predicado dual lo excluía todo → `textArg`. Integración contra DB real con fixtures `TESTREL_*` (anuladas/pendientes excluidas, moneda base, avg ponderado); EXPLAIN <1ms sin índices nuevos (D6). Smoke en vivo dev-JWT: filtros, 404/400 y 403 `MODULE_NOT_LICENSED` con `LICENSE_ENFORCE=1` (instancia efímera :5051); el smoke detectó que el handler nunca leía el param `sort` (fix `24a4c9f`). FE: `src/features/relational-analytics/` + dominio puro `src/domain/relational-analytics/`, 4 páginas (2 en el bloque sales-analytics, grupo nuevo `/purchase-analytics/*`), subgrupo nav "Analítica de Compras", deep-links en fichas de producto/cliente/proveedor, 47 keys `bi.relational.*` es/en; gates: vitest 1104/1104, tsc 0, build, lint:design; BE build+tests+lint verdes.
 - **PLAN_ALINEACION_BI_FRONTEND_2026-09-18** — ✅ CERRADO 5/5 fases (2026-09-19, rama `feat/bi-alignment` mergeada a `dev`). 19/19 páginas BI en .tsx, 6 features migrados, 14 módulos domain/, ~380 keys i18n `bi.*`, suite 734→1007, index 875 kB. Detalle: commits 7f87012..65b53ed (FE) + purge 7eba2a8.
 Addendum §7 (ec4e282) absorbido: regla ≤10 filas server-side para CustomerSellerInsights,
 sales-analytics/Dashboard, SaludInventario, PronosticoVentas/Ingresos y OverdueAccounts
