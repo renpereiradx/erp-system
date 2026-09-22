@@ -4,7 +4,7 @@ Este directorio registra **textualmente los requerimientos** de cada módulo o s
 Vista Bar: *qué debe hacer el sistema y por qué*, escrito para que tanto ingeniería como
 personas sin formación técnica (dirección, comerciales, soporte) puedan revisarlo y entenderlo.
 
-Última actualización: 2026-09-21
+Última actualización: 2026-09-22
 
 ---
 
@@ -12,7 +12,8 @@ personas sin formación técnica (dirección, comerciales, soporte) puedan revis
 
 | Directorio | Pregunta que responde | Audiencia | Ciclo de vida |
 |:-----------|:----------------------|:----------|:--------------|
-| **`docs/`** (este) | **¿QUÉ debe hacer el sistema y POR QUÉ?** | Todas (híbrido: informativo + formal) | Vivo: se actualiza cuando cambia el alcance |
+| **`docs/requirements/`** | **¿QUÉ debe hacer el sistema y POR QUÉ?** (requerimientos por módulo) | Todas (híbrido: informativo + formal) | Vivo: se actualiza cuando cambia el alcance |
+| **`docs/guides/`** | **¿CÓMO se instala, actualiza y opera una instalación?** (guías operativas paso a paso) | Implementación / soporte (híbrido) | Vivo: se actualiza cuando cambia el procedimiento |
 | `conductor/` | ¿CÓMO y CUÁNDO se ejecutó el trabajo? (planes, fases, commits) | Ingeniería | Efímero: el plan se borra al cerrarse |
 | Historial git | ¿Qué código exacto se cambió? | Ingeniería | Permanente |
 
@@ -20,15 +21,21 @@ Un requerimiento **no caduca cuando el trabajo termina** (a diferencia de un pla
 `conductor/`): queda como la definición vigente de cómo debe comportarse el módulo, y se
 actualiza solo si el alcance cambia.
 
+```
+docs/
+├── README.md           ← esta convención
+├── requirements/       ← REQ_<CÓDIGO>_<NOMBRE>.md — el QUÉ y el POR QUÉ de cada módulo
+└── guides/             ← GUIDE_<TEMA>.md — el CÓMO operativa (instalar, actualizar, migrar)
+```
+
 ## Cuándo se crea un documento
 
-- Al planificar un módulo o sistema nuevo (puede nacer como *Borrador* antes de existir código).
-- Al formalizar un módulo existente que nunca tuvo requerimientos escritos.
-- Nunca se crea "post facto" para trabajo trivial (un hotfix no necesita un REQ).
+- Un **REQ** (`requirements/`): al planificar un módulo o sistema nuevo (puede nacer como *Borrador* antes de existir código), o al formalizar un módulo existente que nunca tuvo requerimientos escritos. Nunca "post facto" para trabajo trivial (un hotfix no necesita un REQ).
+- Una **guía** (`guides/`): al definir un procedimiento operativo que se repetirá en el mundo real (instalar un cliente, actualizar una instalación, migrar de laptop a servidor, conectar una sucursal). No antes de que el procedimiento exista: la guía documenta lo implementado, no lo imaginado.
 
 ---
 
-## Estructura obligatoria de cada documento
+## Estructura obligatoria de cada REQ (en `requirements/`)
 
 Nombre de archivo: `REQ_<CÓDIGO>_<NOMBRE_CORTO>.md` (código registrado en el índice de abajo).
 
@@ -131,11 +138,58 @@ Las tablas de requerimientos (§6-§8) usan siempre este formato:
 
 ---
 
+## Convenciones de las guías (en `guides/`)
+
+Nombre de archivo: `GUIDE_<TEMA>.md`, registrado en el índice de `guides/README.md`.
+
+```markdown
+# GUIDE_<TEMA>
+
+## 1. Objetivo
+Una frase: qué logra quien complete esta guía.
+
+## 2. Alcance
+Qué escenarios cubre y cuáles NO (derivados de un REQ cuando exista).
+
+## 3. Prerrequisitos
+Qué debe existir antes de empezar (hardware, accesos, bundle y su versión).
+
+## 4. Pasos
+Numerados; cada comando copiable tal cual; variables marcadas como <ASI>.
+Cada paso o grupo lleva su verificación ("deberías ver…").
+
+## 5. Verificación final (smoke test)
+La lista corta que confirma que todo quedó funcionando.
+
+## 6. Rollback
+Cómo volver al estado anterior, paso a paso. Obligatorio si algún paso es destructivo.
+
+## 7. Problemas frecuentes
+Síntoma → causa → solución.
+
+## 8. Historia de cambios
+| Versión | Fecha | Cambio | Autor |
+```
+
+Reglas de las guías:
+
+1. **Todo comando es copiable tal cual** — nada de "ajustá según tu caso" sin decir qué ajustar.
+2. **Cada paso tiene su verificación**; si no se puede verificar, no es un paso, es una intención.
+3. **Rollback obligatorio** para cualquier procedimiento que toque datos o esquema.
+4. **Audiencia híbrida**: arranca con 2-3 frases de contexto no técnico; la parte ejecutable puede ser técnica.
+5. La guía describe el procedimiento **tal como está implementado**; si el procedimiento cambia, la guía cambia en el mismo diff.
+6. Estado y pendientes de cada guía se registran en el índice de `guides/README.md`, nunca como secciones vacías dentro de la guía.
+
+---
+
 ## Índice de documentos
 
 | Documento | Código | Módulo | Estado | Versión |
 |:----------|:-------|:-------|:-------|:--------|
-| [REQ_BIPACK_LICENCIAMIENTO_BI.md](REQ_BIPACK_LICENCIAMIENTO_BI.md) | BIPACK | Licenciamiento — BI Pack Premium (Core vs Core+BI) | Implementado · ampliación v1.1 en plan | v1.1 |
+| [REQ_BIPACK_LICENCIAMIENTO_BI.md](requirements/REQ_BIPACK_LICENCIAMIENTO_BI.md) | BIPACK | Licenciamiento — BI Pack Premium (Core vs Core+BI) | Implementado · ampliación v1.1 en plan | v1.1 |
+| [REQ_DEPLOY_DISTRIBUCION_ONPREMISE.md](requirements/REQ_DEPLOY_DISTRIBUCION_ONPREMISE.md) | DEPLOY | Distribución y despliegue on-premise (perfiles, terminales, sucursales) | Borrador · plan aprobado sin iniciar | v0.1 |
+
+Índice de guías operativas: [`guides/README.md`](guides/README.md).
 
 > Para crear un documento nuevo: copiar la estructura de arriba, elegir un código de módulo no
 > usado (ver índice) y agregar la fila correspondiente a esta tabla en el mismo diff.
