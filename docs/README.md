@@ -135,7 +135,7 @@ Las tablas de requerimientos (§6-§8) usan siempre este formato:
 
 | Documento | Código | Módulo | Estado | Versión |
 |:----------|:-------|:-------|:-------|:--------|
-| [REQ_BIPACK_LICENCIAMIENTO_BI.md](REQ_BIPACK_LICENCIAMIENTO_BI.md) | BIPACK | Licenciamiento — BI Pack Premium (Core vs Core+BI) | Implementado | v1.0 |
+| [REQ_BIPACK_LICENCIAMIENTO_BI.md](REQ_BIPACK_LICENCIAMIENTO_BI.md) | BIPACK | Licenciamiento — BI Pack Premium (Core vs Core+BI) | Implementado · ampliación v1.1 en plan | v1.1 |
 
 > Para crear un documento nuevo: copiar la estructura de arriba, elegir un código de módulo no
 > usado (ver índice) y agregar la fila correspondiente a esta tabla en el mismo diff.

@@ -12,7 +12,8 @@ frontend a la vez.
 
 | Archivo | Rol |
 |:--------|:----|
-| `PLAN_BI_PACK_PREMIUM.md` | 📋 **Activo**: licenciamiento del módulo BI como pack premium (edición Core vs Core+BI; licencia firmada ed25519, gate server-side en `biChain`, entitlements en sesión, gating FE). F0 en definición. |
+| `PLAN_STATS_RELACIONALES_BI.md` | 📋 **Activo**: estadísticas relacionales producto↔cliente↔proveedor (compradores de un producto, top por cliente/proveedor, mejor precio entre proveedores) dentro del módulo BI. F0 cerrado (D1-D6); F1-F4 pendientes. Implementa RF-BIPACK-021..024 (`docs/` v1.1). |
+| `PLAN_BI_PACK_PREMIUM.md` | ✅ Cerrado F0-F6 (2026-09-21, BE `9dd9942`/`146172c`, FE `b3ab4eb`/`26178ff`, auditado). **Se conserva como doc vivo**: sus ADR-1..7 los citan comentarios del código y `docs/REQ_BIPACK_LICENCIAMIENTO_BI.md`. |
 | `PLAN_BUSQUEDA_VARIANTES_PLANAS.md` | 📋 **Activo**: variantes como productos independientes en la búsqueda de compras, ventas, pedidos y catálogo. |
 | `PLAN_PEDIDOS_MOSTRADOR_VENDEDOR_CAJA.md` | 🔄 FASE 5 pendiente (ver plan). |
 | `PLAN_CATALOGO_VENDEDOR.md` | 🔄 FASE 3 opcional (integración con `/pedidos`). |

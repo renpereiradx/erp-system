@@ -6,8 +6,8 @@
 |:------|:------|
 | Módulo | Licenciamiento de módulos — pack "BI Premium" |
 | Código | BIPACK |
-| Versión del documento | v1.0 |
-| Estado | Implementado (F0-F6 completos, 2026-09-21; F7 opcional no incluido) |
+| Versión del documento | v1.1 |
+| Estado | Implementado (F0-F6, 2026-09-21) · ampliación v1.1 (estadísticas relacionales) aprobada y pendiente de implementación — ver [plan](../conductor/PLAN_STATS_RELACIONALES_BI.md) |
 | Fecha | 2026-09-21 |
 | Fuentes | [conductor/PLAN_BI_PACK_PREMIUM.md](../conductor/PLAN_BI_PACK_PREMIUM.md) (plan + decisiones ADR 1-7) · [conductor/RUNBOOK_LICENCIAS_2026-09.md](../conductor/RUNBOOK_LICENCIAS_2026-09.md) (operación) |
 | Implementación | Backend `9dd9942` + `146172c` · Frontend `b3ab4eb` + `26178ff` · Wrapper `809b549` |
@@ -45,6 +45,7 @@ aparece en caliente, al segundo.
 | Dashboards e indicadores (KPIs, alertas, tendencias) | ❌ | ✅ |
 | Reportes financieros (resultados, flujo de caja, IVA, libros) | ❌ | ✅ |
 | Analíticas de ventas, inventario y rentabilidad | ❌ | ✅ |
+| Estadísticas relacionales producto↔cliente↔proveedor (v1.1) | ❌ | ✅ |
 | Pronósticos (ventas, inventario, demanda) | ❌ | ✅ |
 | Cuentas por cobrar y por pagar analíticas + auditoría | ❌ | ✅ |
 
@@ -110,6 +111,9 @@ aparece en caliente, al segundo.
   renovación y revocación — todo en caliente.
 - Bloqueo de toda la superficie BI del backend (~120 consultas en 11 grupos) y ocultamiento
   de toda la superficie BI del frontend (41 rutas + menú).
+- Estadísticas relacionales producto↔cliente↔proveedor (ampliación v1.1, plan aprobado):
+  compradores de un producto, productos por cliente, productos por proveedor y comparación
+  de precios entre proveedores.
 - Entrega de la información de licencia a la sesión del usuario y pantalla/banner de estado.
 
 **Fuera:**
@@ -154,6 +158,10 @@ aparece en caliente, al segundo.
 | RF-BIPACK-018 | El modo demostración del frontend debe comportarse como una instalación con el pack completo. | Obligatorio | Implementado | Test demo entitlements |
 | RF-BIPACK-019 | El proveedor debe contar con una herramienta (`licensegen`) para generar pares de claves y emitir licencias firmadas desde su lado. | Obligatorio | Implementado | `cmd/licensegen` + tests |
 | RF-BIPACK-020 | Con el control desactivado (desarrollo), el sistema debe comportarse íntegramente como instalación con pack. | Obligatorio | Implementado | `TestBILicensing_FailOpenWithoutEnforcement` |
+| RF-BIPACK-021 | El sistema debe permitir consultar qué clientes compraron un producto dado, con filtros (rango de fechas, sucursal, variante, método de pago, unidades mínimas, búsqueda) y paginación del lado del servidor. | Obligatorio | Pendiente (plan aprobado) | Plan F1/F3 — `docs/…` trazabilidad |
+| RF-BIPACK-022 | El sistema debe permitir consultar qué productos compra más un cliente dado, con filtros (fechas, sucursal, categoría, variante, búsqueda) y paginación del lado del servidor. | Obligatorio | Pendiente (plan aprobado) | Plan F1/F3 |
+| RF-BIPACK-023 | El sistema debe permitir consultar qué productos se compran más de un proveedor dado, con los mismos filtros y paginación que RF-BIPACK-022, sobre compras efectivamente completadas. | Obligatorio | Pendiente (plan aprobado) | Plan F1/F3 |
+| RF-BIPACK-024 | El sistema debe permitir comparar proveedores de un producto dado por precio (último, promedio ponderado y mínimo histórico), ordenable por cualquiera de ellos, considerando solo compras en moneda base e informando las exclusiones por moneda. | Obligatorio | Pendiente (plan aprobado) | Plan F1/F3 |
 
 ## 7. Requerimientos no funcionales
 
@@ -172,7 +180,7 @@ aparece en caliente, al segundo.
 
 | ID | Regla | Motivo | Estado |
 |:---|:------|:-------|:-------|
-| RN-BIPACK-01 | El pack BI incluye toda la superficie analítica: dashboards, receivables/payables, reportes financieros, analíticas de ventas/inventario, rentabilidad, pronósticos y auditoría. | El valor vendido es "todo el BI"; venderlo por piezas multiplica la complejidad comercial y de soporte. | Vigente |
+| RN-BIPACK-01 | El pack BI incluye toda la superficie analítica: dashboards, receivables/payables, reportes financieros, analíticas de ventas/inventario, rentabilidad, pronósticos, auditoría y (desde v1.1) analíticas relacionales producto↔cliente↔proveedor. | El valor vendido es "todo el BI"; venderlo por piezas multiplica la complejidad comercial y de soporte. | Vigente |
 | RN-BIPACK-02 | Los dashboards fiscales SIFEN quedan fuera del pack (siempre en Core). | Monitorear la facturación electrónica es operación diaria, no analítica premium; bloquearlo pondría en riesgo el cumplimiento fiscal del cliente. | Vigente |
 | RN-BIPACK-03 | Ventana de gracia post-vencimiento: 0 días por defecto. | Cobro estricto; la gracia existe como opción negociable por cliente (configurable), no como regalo automático. | Vigente |
 | RN-BIPACK-04 | Sin pack, el menú BI se oculta por completo (sin candados ni teasers). | Decisión de simplicidad; un teaser es posición comercial a futuro pero ensucia la UI diaria. | Vigente |
@@ -245,3 +253,4 @@ hubiera, es política comercial (RN-05), no del sistema.
 | Versión | Fecha | Cambio | Autor |
 |:--------|:------|:-------|:------|
 | v1.0 | 2026-09-21 | Versión inicial: requerimientos del módulo extraídos del plan y de la implementación auditada. | Ingeniería (ZCode) |
+| v1.1 | 2026-09-21 | Ampliación aprobada: estadísticas relacionales producto↔cliente↔proveedor (RF-021..024, RN-01 ampliada). Implementación planificada en `conductor/PLAN_STATS_RELACIONALES_BI.md`. | Ingeniería (ZCode) |
