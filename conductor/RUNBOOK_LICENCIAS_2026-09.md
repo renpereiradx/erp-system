@@ -29,14 +29,16 @@ go build -o /tmp/licensegen ./cmd/licensegen
 #   → private: hex seed, chmod 600. CUSTODIA FUERA DEL REPO (backup offline del vendedor).
 #   → public:  base64; este valor es el que recibe el cliente.
 
-# 2b. Emitir una licencia de 365 días para un cliente:
+# 2b. Emitir la licencia de un cliente (MODELO NORMAL: compra única, PERPETUA —
+#     sin -days la licencia no vence jamás; decisión de negocio 2026-09-22):
 /tmp/licensegen issue \
   -key ~/custodia-licencias/vendor.key \
   -customer "Vista Bar Sucursal Centro" \
   -edition core+bi -modules bi \
-  -days 365 \
   -out ~/entregas/vista-bar-centro/license.json
-# Perpetua: -days 0. Fecha fija: -expires 2027-09-21T12:00:00Z (gana sobre -days).
+# Casos especiales ÚNICAMENTE a pedido (demo/trial con plazo):
+#   -days 365            → vence al año
+#   -expires 2027-09-21T12:00:00Z → fecha fija (gana sobre -days).
 ```
 
 Entrega al cliente: **`license.json` + la clave pública (base64)**. Nunca la privada.

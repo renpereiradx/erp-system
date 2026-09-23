@@ -6,7 +6,7 @@
 |:------|:------|
 | Módulo | Licenciamiento de módulos — pack "BI Premium" |
 | Código | BIPACK |
-| Versión del documento | v1.1 |
+| Versión del documento | v1.2 |
 | Estado | Implementado (F0-F6, 2026-09-21) · ampliación v1.1 (estadísticas relacionales) implementada (2026-09-22) — trazabilidad en la tabla RF y registro en el plan |
 | Fecha | 2026-09-21 |
 | Fuentes | [conductor/PLAN_BI_PACK_PREMIUM.md](../conductor/PLAN_BI_PACK_PREMIUM.md) (plan + decisiones ADR 1-7) · [conductor/RUNBOOK_LICENCIAS_2026-09.md](../conductor/RUNBOOK_LICENCIAS_2026-09.md) (operación) |
@@ -56,8 +56,9 @@ aparece en caliente, al segundo.
 ### 3.2 La licencia es como un candado con llave única
 
 - El proveedor genera **licencias** con una herramienta propia (`licensegen`). Cada licencia
-  es un archivo que dice: para quién es (cliente), qué compró (edición y módulos), y hasta
-  cuándo vale (fecha de vencimiento).
+  es un archivo que dice: para quién es (cliente), qué compró (edición y módulos) y — solo en
+  los casos con plazo (p. ej. una demo) — hasta cuándo vale. **La venta normal no vence**:
+  Core y pack BI se compran una vez y no caducan (RN-07).
 - El archivo va **firmado digitalmente**: el proveedor firma con una clave privada que nunca
   sale de su poder — igual que la llave maestra de un candado. El sistema del cliente solo
   tiene la "serrucha" para verificar esa firma, no la llave para fabricarla.
@@ -77,6 +78,10 @@ aparece en caliente, al segundo.
 | Renovación | Se instala la nueva licencia y el BI reaparece en caliente, al segundo, sin reiniciar ni reinstalar. |
 | Revocación (licencia retirada) | Borrar el archivo del servidor bloquea el BI de inmediato, incluso para usuarios con la sesión abierta: a la consulta siguiente, el sistema los saca de la pantalla BI. |
 
+> Las filas "por vencer / vencida / renovación" aplican **solo a licencias emitidas con
+> plazo** (demos o acuerdos especiales). Con el modelo de venta normal — compra única,
+> sin vencimiento (RN-07) — esas situaciones no ocurren.
+
 ### 3.4 El ciclo comercial completo
 
 1. **Venta**: el cliente compra Core o Core+BI (precios fuera de este documento — ver RN-05).
@@ -86,7 +91,8 @@ aparece en caliente, al segundo.
    (`LICENSE_ENFORCE=true`, una sola vez, siguiendo el runbook).
 4. **Uso**: el sistema verifica la licencia en cada consulta BI. No necesita internet: todo
    es local, no hay "llamadas a casa" ni telemetría.
-5. **Renovación / upgrade**: nueva licencia sobre la anterior — en caliente.
+5. **Renovación / upgrade**: nueva licencia sobre la anterior — en caliente (solo para
+   licencias con plazo; la venta normal no vence, RN-07).
 6. **Baja**: retirar el archivo bloquea el BI al instante; el Core sigue igual para siempre.
 
 ### 3.5 ¿Dónde vive la licencia y quién la controla?
@@ -186,8 +192,13 @@ aparece en caliente, al segundo.
 | RN-BIPACK-04 | Sin pack, el menú BI se oculta por completo (sin candados ni teasers). | Decisión de simplicidad; un teaser es posición comercial a futuro pero ensucia la UI diaria. | Vigente |
 | RN-BIPACK-05 | Precios, SKUs y condiciones (Core / add-on BI / bundle) quedan pendientes de definición comercial, fuera del alcance del sistema. | Decisión de negocio; el sistema no condiciona el modelo de precios. | Pendiente (comercial) |
 | RN-BIPACK-06 | La clave privada de firma jamás se versiona en los repositorios del producto; su custodia es exclusiva del proveedor. | La clave en el repo equivale a regalar el producto. | Vigente (verificado en auditoría 2026-09-21) |
+| RN-BIPACK-07 | La venta normal es **compra única sin vencimiento**: Core perpetuo y pack BI perpetuo. `licensegen` emite perpetuo por defecto (`-days 0`); el vencimiento, la gracia y la renovación quedan como capacidad técnica para casos especiales (demo, trial, acuerdo puntual), no como modelo de negocio. | Decisión del dueño (2026-09-22): el cliente compra una vez y el producto no caduca. Sin renovaciones que gestionar ni clientes "vencidos" por accidente — el default previo de `licensegen` (365 días) era una bomba de tiempo contraria al modelo. | Vigente |
 
 ## 9. Preguntas frecuentes
+
+**¿La licencia vence algún día? ¿Hay que pagar algo periódicamente?**
+No. La compra es única: Core y pack BI no caducan (RN-07). El vencimiento solo existe si se
+entrega una licencia con plazo expreso (p. ej. una demo).
 
 **¿Si la licencia vence, se pierden los datos del BI?**
 No. El BI solo se *oculta*: los datos quedan intactos en la base. Al renovar, todo reaparece
@@ -253,4 +264,5 @@ hubiera, es política comercial (RN-05), no del sistema.
 | Versión | Fecha | Cambio | Autor |
 |:--------|:------|:-------|:------|
 | v1.0 | 2026-09-21 | Versión inicial: requerimientos del módulo extraídos del plan y de la implementación auditada. | Ingeniería (ZCode) |
+| v1.2 | 2026-09-22 | RN-07: modelo de compra única sin vencimiento (core y pack BI perpetuos); `licensegen` cambia su default de `-days 365` a `-days 0` (perpetuo); §3 y FAQ alineados — vencimiento/gracia/renovación pasan a ser casos especiales (demo/trial). Runbook de licencias actualizado en el mismo cambio | renpereiradx + agente |
 | v1.1 | 2026-09-21 | Ampliación aprobada: estadísticas relacionales producto↔cliente↔proveedor (RF-021..024, RN-01 ampliada). Implementación planificada en `conductor/PLAN_STATS_RELACIONALES_BI.md`. | Ingeniería (ZCode) |

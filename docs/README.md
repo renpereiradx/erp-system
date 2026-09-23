@@ -186,7 +186,7 @@ Reglas de las guías:
 
 | Documento | Código | Módulo | Estado | Versión |
 |:----------|:-------|:-------|:-------|:--------|
-| [REQ_BIPACK_LICENCIAMIENTO_BI.md](requirements/REQ_BIPACK_LICENCIAMIENTO_BI.md) | BIPACK | Licenciamiento — BI Pack Premium (Core vs Core+BI) | Implementado (v1.1 drill-downs ejecutados) | v1.1 |
+| [REQ_BIPACK_LICENCIAMIENTO_BI.md](requirements/REQ_BIPACK_LICENCIAMIENTO_BI.md) | BIPACK | Licenciamiento — BI Pack Premium (Core vs Core+BI) | Implementado · v1.2: compra única sin vencimiento (RN-07) | v1.2 |
 | [REQ_DEPLOY_DISTRIBUCION_ONPREMISE.md](requirements/REQ_DEPLOY_DISTRIBUCION_ONPREMISE.md) | DEPLOY | Distribución y despliegue on-premise (perfiles, terminales, sucursales) | Implementado (reservas de sitio: Tailscale/SSH) · auditado v0.3 | v0.3 |
 | [REQ_VENTAS.md](requirements/REQ_VENTAS.md) | VENTAS | Ventas — POS, pedidos de mostrador, cuenta corriente, anulaciones | Borrador (backfill módulo existente) | v0.1 |
 
