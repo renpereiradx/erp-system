@@ -6,11 +6,11 @@
 |:--|:--|
 | Módulo | Distribución, instalación y escalado del producto en clientes (on-premise) |
 | Código | DEPLOY |
-| Versión | v0.1 |
-| Estado | Borrador |
+| Versión | v0.2 |
+| Estado | Implementado (reservas de sitio: join Tailscale real, endurecimiento SSH y prueba de 31 días de retención se ejecutan en el primer cliente) |
 | Fecha | 2026-09-22 |
 | Fuentes | Apuntes del dueño (2026-09-20, cuaderno: "Distribución y mantenimiento de Software"), evaluación técnica de sesión 2026-09-22 (auditoría de compose/nginx/CORS/licencias/modelo de sucursales de ambos repos) |
-| Implementación | ⏳ No implementado. Plan aprobado sin iniciar: `conductor/PLAN_DEPLOY_ESCALADO_ONPREMISE_2026-09-22.md` |
+| Implementación | ✅ Implementado (F1–F4 del plan ejecutado el mismo día 2026-09-22): BE commits bd2751b→51438f2 (compose canónico con perfiles, `/version`, CA interna, instalador, bundle, migración, add-branch, VPN soporte), FE 0fdc04c/312ec6d (docs consolidation + proxy `/api` TLS), wrapper 25793c2+ (docs/guides). Plan: `conductor/PLAN_DEPLOY_ESCALADO_ONPREMISE_2026-09-22.md` |
 
 ## 2. Resumen ejecutivo (para todos)
 
@@ -70,33 +70,33 @@ Para el dueño del producto (vos), cada instalación queda registrada en un **in
 
 | ID | Requerimiento | Prioridad | Estado | Verificación |
 |:--|:--|:--|:--|:--|
-| RF-DEPLOY-001 | El sistema debe instalarse desde un único bundle de release versionado (SemVer) que contiene imágenes, compose, migraciones e instalador. | Obligatorio | Pendiente | Instalar un cliente nuevo desde el bundle sin pasos manuales fuera de la guía |
-| RF-DEPLOY-002 | El instalador debe admitir los perfiles `laptop` y `server` seleccionables por parámetro. | Obligatorio | Pendiente | `install.sh --profile laptop` y `--profile server` producen las diferencias de exposición y TLS definidas en este REQ |
-| RF-DEPLOY-003 | El perfil `laptop` debe dejar todos los servicios escuchando únicamente en `localhost` (ninguna exposición a la red). | Obligatorio | Pendiente | Desde otra máquina de la misma red, ningún puerto del sistema responde |
-| RF-DEPLOY-004 | El perfil `server` debe publicar la web y la API bajo un único origen con proxy inverso `/api`. | Obligatorio | Pendiente | La terminal usa una sola URL; no hay CORS ni dirección de backend horneada en el frontend |
-| RF-DEPLOY-005 | Una terminal nueva debe poder operar el sistema usando exclusivamente un navegador y la URL del servidor. | Obligatorio | Pendiente | Alta de terminal en una máquina limpia sin instalar software |
-| RF-DEPLOY-006 | El sistema debe ofrecer un procedimiento guiado de migración de laptop a servidor que preserva los datos. | Obligatorio | Pendiente | Migración E2E en VM de prueba: mismos datos, licencia y usuarios antes y después |
-| RF-DEPLOY-007 | El procedimiento de migración debe exigir un backup previo automatizado y validar la instalación destino con smoke tests antes de dar por terminada la migración. | Obligatorio | Pendiente | El script aborta sin backup; falla visiblemente si el smoke test no pasa |
-| RF-DEPLOY-008 | Una sucursal debe poder operar el sistema conectándose al servidor central por VPN sin que ningún puerto del servidor quede expuesto a internet pública. | Obligatorio | Pendiente | Escaneo de puertos pública del servidor: solo lo que el firewall declara; sucursal opera normal por túnel |
-| RF-DEPLOY-009 | El alta de una sucursal debe incluir su creación como entidad en el ERP, sus usuarios y roles, y la verificación de que opera en su sucursal y no ve ventas ajenas. | Obligatorio | Pendiente | Caso de prueba con usuario de sucursal (scoping por sucursal ya existente en el producto) |
-| RF-DEPLOY-010 | El backend debe exponer la versión instalada en `GET /version` sin autenticación. | Obligatorio | Pendiente | `curl https://<servidor>/api/v1/version` (o ruta que se fije) responde la versión del build sin sesión |
-| RF-DEPLOY-011 | El instalador debe ser idempotente: re-ejecutarlo sobre una instalación existente no corrompe datos ni configuración. | Obligatorio | Pendiente | Re-ejecutar `install.sh` 2 veces seguidas; smoke test verde en ambas |
-| RF-DEPLOY-012 | La instalación nueva debe crear el esquema (migraciones), los roles base (seeds RBAC) y el usuario administrador inicial sin pasos manuales en la base de datos. | Obligatorio | Pendiente | Instalación limpia → login de admin funciona y los 9 roles están presentes |
-| RF-DEPLOY-013 | Cada instalación debe realizar un backup automático diario de la base de datos con retención de 30 días. | Obligatorio | Pendiente | Backup presente y restaurable tras 31 días de operación |
-| RF-DEPLOY-014 | El instalador debe ejecutar un smoke test automático al finalizar (health, versión, login admin) y reportar resultado. | Obligatorio | Pendiente | Instalación con error inyectado → reporte marca fallo |
-| RF-DEPLOY-015 | La licencia debe poder trasladarse de una máquina a otra (laptop → servidor) sin re-emisión. | Obligatorio | Congelado (ya se comporta así) | Payload de licencia sin amarra a hardware (verificado 2026-09-22); migración la mueve tal cual |
+| RF-DEPLOY-001 | El sistema debe instalarse desde un único bundle de release versionado (SemVer) que contiene imágenes, compose, migraciones e instalador. | Obligatorio | ✅ Verificada | Instalación offline desde bundle (docker load, sin build) EXIT 0 en el ensayo; `make-release-bundle.sh` exige baseline y emite SHA256SUMS |
+| RF-DEPLOY-002 | El instalador debe admitir los perfiles `laptop` y `server` seleccionables por parámetro. | Obligatorio | ✅ Verificada | Ambos perfiles instalados E2E: server (TLS 443 + proxy /api) y laptop (todo loopback) |
+| RF-DEPLOY-003 | El perfil `laptop` debe dejar todos los servicios escuchando únicamente en `localhost` (ninguna exposición a la red). | Obligatorio | ✅ Verificada | Instalación laptop: FE/BE/PG en 127.0.0.1; `echo > /dev/tcp/<lan-ip>/8081` inalcanzable desde otra máquina |
+| RF-DEPLOY-004 | El perfil `server` debe publicar la web y la API bajo un único origen con proxy inverso `/api`. | Obligatorio | ✅ Verificada | Smoke: `/api/version` y SPA bajo el mismo origen TLS; `VITE_API_URL=/api` horneada; sin CORS en el camino del navegador |
+| RF-DEPLOY-005 | Una terminal nueva debe poder operar el sistema usando exclusivamente un navegador y la URL del servidor. | Obligatorio | ✅ Verificada | Curl/login desde IP de LAN (simulación de terminal) sin nada instalado; guía GUIDE_TERMINALES_LOCAL cubre el navegador + CA |
+| RF-DEPLOY-006 | El sistema debe ofrecer un procedimiento guiado de migración de laptop a servidor que preserva los datos. | Obligatorio | ✅ Verificada | E2E: dump 2.5 MB del dev DB → `install --restore` → `users=7932` y 10 schemas idénticos a origen |
+| RF-DEPLOY-007 | El procedimiento de migración debe exigir un backup previo automatizado y validar la instalación destino con smoke tests antes de dar por terminada la migración. | Obligatorio | ✅ Verificada | `migrate-to-server.sh` genera el backup como paso 1 (con guard anti-dump-vacío — hallazgo del ensayo); `install.sh` muere visible si el smoke falla (observado en corridas fallidas) |
+| RF-DEPLOY-008 | Una sucursal debe poder operar el sistema conectándose al servidor central por VPN sin que ningún puerto del servidor quede expuesto a internet pública. | Obligatorio | ⚠️ Parcial (sitio) | Escaneo desde LAN + IP Tailscale: solo puertos del frontend publicados ✅; el join real Tailscale requiere ejecutarse en el cliente (guía §3) |
+| RF-DEPLOY-009 | El alta de una sucursal debe incluir su creación como entidad en el ERP, sus usuarios y roles, y la verificación de que opera en su sucursal y no ve ventas ajenas. | Obligatorio | ✅ Verificada (entidad+acceso+login; scoping interno pre-auditado 2026-09) | `add-branch.sh` E2E: sucursal SUC2 creada, branchadmin con acceso FULL (fila en `user_branch_access`), login OK |
+| RF-DEPLOY-010 | El backend debe exponer la versión instalada en `GET /version` sin autenticación. | Obligatorio | ✅ Verificada | Ruta fijada: backend `GET /version` (whitelist auth) y `https://<servidor>/api/version` vía proxy; devuelve `{"version","commit","build_date","go"}` con ldflags |
+| RF-DEPLOY-011 | El instalador debe ser idempotente: re-ejecutarlo sobre una instalación existente no corrompe datos ni configuración. | Obligatorio | ✅ Verificada | Segunda corrida EXIT 0 conservando secrets/certs/seed/admin (y una tercera con restore); login del admin original sigue funcionando |
+| RF-DEPLOY-012 | La instalación nueva debe crear el esquema (migraciones), los roles base (seeds RBAC) y el usuario administrador inicial sin pasos manuales en la base de datos. | Obligatorio | ✅ Verificada | Instalación limpia: baseline + `migrate force` + seeds (9 roles) + admin; login real OK (hallazgo: la cadena de migraciones nunca fue corrible desde cero — resuelto con baseline, `make db-baseline`) |
+| RF-DEPLOY-013 | Cada instalación debe realizar un backup automático diario de la base de datos con retención 30 días. | Obligatorio | ⚠️ Parcial (tiempo) | `backup.sh` probado (dump gzip íntegro con checksum); timer systemd lo instala el instalador; la retención `-mtime +30` es trivialmente correcta pero los 31 días reales se observan en operación |
+| RF-DEPLOY-014 | El instalador debe ejecutar un smoke test automático al finalizar (health, versión, login admin) y reportar resultado. | Obligatorio | ✅ Verificada | Camino verde y camino con falla ambos observados (el instalador muere con el error exacto del componente) |
+| RF-DEPLOY-015 | La licencia debe poder trasladarse de una máquina a otra (laptop → servidor) sin re-emisión. | Obligatorio | ✅ Verificada | El instalador la copia a `license/` y activa `LICENSE_ENFORCE=true`; payload sin amarra a hardware (congelado, verificado 2026-09-22) |
 
 ## 7. Requerimientos no funcionales (RNF-…)
 
 | ID | Requerimiento | Prioridad | Estado | Verificación |
 |:--|:--|:--|:--|:--|
-| RNF-DEPLOY-001 | El perfil `server` debe cifrar todo el tráfico navegador↔servidor con TLS. | Obligatorio | Pendiente | Certificado interno aceptado en las terminales; sin avisos de conexión insegura |
-| RNF-DEPLOY-002 | PostgreSQL debe escuchar solo en el servidor (localhost o red interna de Docker); Redis no debe publicar puertos al host. | Obligatorio | Pendiente | `docker compose` perfil server sin puertos de Redis; PG inaccesible desde fuera del servidor |
-| RNF-DEPLOY-003 | Debe existir una única imagen de frontend para todos los clientes (sin direcciones horneadas por cliente). | Obligatorio | Pendiente | Misma imagen FE servida en dos instalaciones con distinta IP/dominio |
-| RNF-DEPLOY-004 | Los orígenes permitidos (CORS) deben ser configurables por variables de entorno, sin cambios de código. | Obligatorio | Congelado (ya se comporta así) | `CORS_ALLOWED_ORIGINS` ya leído de entorno (`main.go:271`, verificado 2026-09-22) |
-| RNF-DEPLOY-005 | Los secretos (JWT, contraseñas de BD, claves de licencia) deben vivir solo en `.env` por instalación, jamás dentro de imágenes. | Obligatorio | Pendiente | Inspección de imágenes sin secretos; `.env` en `.gitignore` |
-| RNF-DEPLOY-006 | El acceso administrativo por SSH al servidor debe estar restringido (firewall y/o solo vía VPN). | Deseable | Pendiente | SSH no accesible desde internet pública |
-| RNF-DEPLOY-007 | Una instalación nueva en hardware preparado debe completarse en 30 minutos o menos, excluyendo descargas de imágenes. | Deseable | Pendiente | Cronómetro en la guía de validación E2E |
+| RNF-DEPLOY-001 | El perfil `server` debe cifrar todo el tráfico navegador↔servidor con TLS. | Obligatorio | ✅ Verificada | TLS 1.2/1.3 + redirect 80→443 + HSTS; `curl --cacert ca.crt` sin `-k` pasa (CA interna verificada); terminales instalan la CA con `install-ca-windows.ps1` |
+| RNF-DEPLOY-002 | PostgreSQL debe escuchar solo en el servidor (localhost o red interna de Docker); Redis no debe publicar puertos al host. | Obligatorio | ✅ Verificada | PG como servicio compose publicado en `127.0.0.1` únicamente (cambio de arquitectura del ensayo F3: nativo-loopback + contenedores es imposible en Linux); Redis sin `ports` |
+| RNF-DEPLOY-003 | Debe existir una única imagen de frontend para todos los clientes (sin direcciones horneadas por cliente). | Obligatorio | ✅ Verificada | `VITE_API_URL=/api` (relativo); la misma imagen sirve laptop (template HTTP) y server (tls.conf montada por compose) |
+| RNF-DEPLOY-004 | Los orígenes permitidos (CORS) deben ser configurables por variables de entorno, sin cambios de código. | Obligatorio | Congelado (ya se comporta así) | `CORS_ALLOWED_ORIGINS` ya leído de entorno (`main.go:271`, verificado 2026-09-22); con proxy `/api` el navegador ni siquiera cruza origen |
+| RNF-DEPLOY-005 | Los secretos (JWT, contraseñas de BD, claves de licencia) deben vivir solo en `.env` por instalación, jamás dentro de imágenes. | Obligatorio | ✅ Verificada | `.env.docker` generado por el instalador con secrets aleatorios, fuera del rsync de imágenes; imágenes solo contienen binarios/SPA |
+| RNF-DEPLOY-006 | El acceso administrativo por SSH al servidor debe estar restringido (firewall y/o solo vía VPN). | Deseable | ⏳ En sitio | Regla documentada en `deploy/README.md` y guías; el escaneo del ensayo mostró 22 filtrado, el endurecimiento concreto es por cliente |
+| RNF-DEPLOY-007 | Una instalación nueva en hardware preparado debe completarse en 30 minutos o menos, excluyendo descargas de imágenes. | Deseable | ⚠️ Parcial | Ensayo con builds: los installs con imágenes cargadas corren en minutos (el build local cacheado añadió ~2 min); cronometrar en el primer cliente |
 
 ## 8. Reglas de negocio (RN-…)
 
@@ -155,13 +155,16 @@ En el inventario de instalaciones del vendor, verificable contra el endpoint `/v
 
 | Artefacto | Referencia |
 |:--|:--|
-| Plan de ejecución (aprobado, no iniciado) | `conductor/PLAN_DEPLOY_ESCALADO_ONPREMISE_2026-09-22.md` |
+| Plan de ejecución (EJECUTADO F1–F4 el 2026-09-22; purgado al cierre) | `conductor/PLAN_DEPLOY_ESCALADO_ONPREMISE_2026-09-22.md` (historial git) |
 | Evaluación de origen (hallazgos verificados en código) | Sesión 2026-09-22: compose principal con ruta de frontend rota (`../../web-project/erp-webapp`), comentario de proxy `/api` desactualizado en `docker-compose.yml`, Redis expuesto en `docker-compose.server-local.yml`, `VITE_API_URL` horneado, licencia sin amarra a hardware (`internal/licensing/domain.go`), CORS por entorno (`main.go:271`), `/health` existente y `/version` inexistente |
 | Material de deploy disperso a consolidar | BE raíz: `WINDOWS_SETUP.md`, `DOCKER_WINDOWS_GUIDE.md`, `DOCKER_SETUP_COMPLETE.md`, `apply_migration_quick.ps1`, `verify-postgres-windows.ps1`; BE `docs/`: `DEPLOYMENT_DOCKER.md`, `docs/deployment/`, `docs/guides/`; FE: `DOCKER_BACKEND_PATH_GUIDE.md`, `scripts/docker-compose-*.ps1` |
 | Requisito relacionado | REQ_BIPACK (licenciamiento: el bundle debe portar la licencia del cliente) |
+| Guías operativas (el CÓMO) | `docs/guides/GUIDE_INSTALACION_NUEVO_CLIENTE.md`, `GUIDE_TERMINALES_LOCAL.md`, `GUIDE_MIGRACION_LAPTOP_A_SERVIDOR.md`, `GUIDE_SUCURSAL_NUEVA.md` |
+| Scripts implementados (BE repo) | `deploy/scripts/{install,migrate-to-server,make-release-bundle,gen-ca,add-branch,support-vpn}.sh`, `deploy/scripts/install-ca-windows.ps1`, `docker-compose.yml` (perfiles laptop\|server + postgres/migrate), `internal/platform/version` (`/version`), `database/baseline/` + `make db-baseline` |
 
 ## 12. Historia de cambios
 
 | Versión | Fecha | Cambio | Autor |
 |:--|:--|:--|:--|
+| v0.2 | 2026-09-22 | Estado Implementado: F1–F4 ejecutadas; §6/§7 verificaciones marcadas con resultados reales del ensayo (2 hallazgos de fondo resueltos: migraciones no corribles desde cero → baseline; PG nativo-loopback imposible en Linux → PG servicio compose). Reservas de sitio: join Tailscale, SSH, 31 días de retención | renpereiradx + agente |
 | v0.1 | 2026-09-22 | Borrador inicial a partir de la evaluación; decisiones D1–D6 registradas como RN-DEPLOY-001..006 | renpereiradx + agente |

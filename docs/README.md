@@ -4,7 +4,7 @@ Este directorio registra **textualmente los requerimientos** de cada módulo o s
 Vista Bar: *qué debe hacer el sistema y por qué*, escrito para que tanto ingeniería como
 personas sin formación técnica (dirección, comerciales, soporte) puedan revisarlo y entenderlo.
 
-Última actualización: 2026-09-22
+Última actualización: 2026-09-22 (F5: REQ_DEPLOY v0.2 Implementado + backfill REQ_VENTAS v0.1)
 
 ---
 
@@ -186,8 +186,9 @@ Reglas de las guías:
 
 | Documento | Código | Módulo | Estado | Versión |
 |:----------|:-------|:-------|:-------|:--------|
-| [REQ_BIPACK_LICENCIAMIENTO_BI.md](requirements/REQ_BIPACK_LICENCIAMIENTO_BI.md) | BIPACK | Licenciamiento — BI Pack Premium (Core vs Core+BI) | Implementado · ampliación v1.1 en plan | v1.1 |
-| [REQ_DEPLOY_DISTRIBUCION_ONPREMISE.md](requirements/REQ_DEPLOY_DISTRIBUCION_ONPREMISE.md) | DEPLOY | Distribución y despliegue on-premise (perfiles, terminales, sucursales) | Borrador · plan aprobado sin iniciar | v0.1 |
+| [REQ_BIPACK_LICENCIAMIENTO_BI.md](requirements/REQ_BIPACK_LICENCIAMIENTO_BI.md) | BIPACK | Licenciamiento — BI Pack Premium (Core vs Core+BI) | Implementado (v1.1 drill-downs ejecutados) | v1.1 |
+| [REQ_DEPLOY_DISTRIBUCION_ONPREMISE.md](requirements/REQ_DEPLOY_DISTRIBUCION_ONPREMISE.md) | DEPLOY | Distribución y despliegue on-premise (perfiles, terminales, sucursales) | Implementado (reservas de sitio: Tailscale/SSH) | v0.2 |
+| [REQ_VENTAS.md](requirements/REQ_VENTAS.md) | VENTAS | Ventas — POS, pedidos de mostrador, cuenta corriente, anulaciones | Borrador (backfill módulo existente) | v0.1 |
 
 Índice de guías operativas: [`guides/README.md`](guides/README.md).
 
