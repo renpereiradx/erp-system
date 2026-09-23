@@ -90,10 +90,11 @@ filtrar al siguiente usuario).
 
 ## Deuda observada (no bloqueante, documentada)
 
-- `GET /products/{id}/stock-summary`, `/total-stock`, `/api/v1/variants/{id}/stock`
-  leen solo `?branch_id=` (ignoran header) — el FE les pasa el param explícito,
-  funcionan, pero no uniformly header-aware.
-- `GET /products/search/facets` igual (solo query param; el FE no lo envía →
-  facetas globales).
+- ~~stock-summary / total-stock / variants/{id}/stock y facets solo leían
+  `?branch_id=`~~ → **ALINEADOS el mismo día (BE `commit` posterior, helper
+  `explicitBranchScope`)**: los 4 endpoints honran el header `X-Branch-ID`
+  bajo el mismo contrato (param gana > header > sin selección explícita =
+  global). Smoke DB real CAMISETA ADIDAS: summary b1=48/b3=24/global=72,
+  total-stock b1=8/b3=21/global=29, variant stock 8/2/10, facets 200.
 - El modo `granularity=product` con variantes muestra el stock de la fila base
   del padre (preexistente), no la suma de variantes de la sucursal.
