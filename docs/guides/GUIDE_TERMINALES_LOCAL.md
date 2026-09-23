@@ -6,7 +6,7 @@
 |:--|:--|
 | Módulo | Terminales del local (cajas, vendedores) |
 | Código | GUIDE-TERMINAL |
-| Versión | v1.0 |
+| Versión | v1.1 |
 | Estado | Vigente (escrita contra el perfil `server` real: proxy `/api` + CA interna) |
 | Fecha | 2026-09-22 |
 | Audiencia | Implementación / soporte |
@@ -25,7 +25,8 @@ instala la **confianza** (el certificado de la CA interna) y se crea el **usuari
 
 ### 3.1 Requisitos de la máquina
 
-- Windows 10/11 (o cualquier SO con navegador moderno: Chrome/Edge/Firefox).
+- Windows 10/11 o Linux de escritorio (cualquier SO con Chrome/Edge actualizado;
+  ver §4 — navegador recomendado).
 - Red del local (cable o WiFi) con salida al servidor.
 - Impresora de tickets si la caja imprime (la impresión sale del navegador:
   ver el módulo de impresión de documentos).
@@ -43,7 +44,16 @@ Sin este paso el navegador muestra advertencia de "conexión no segura".
 
 El script importa la CA al store de la máquina y verifica que quedó instalada.
 
-**Firefox** (usa su propio almacén de certificados, ignorar si el local no usa Firefox):
+**Linux (Chrome/Edge heredan el trust store del sistema):**
+
+```bash
+sudo ./install-ca-linux.sh /ruta/ca.crt
+# Debian/Ubuntu: copia a /usr/local/share/ca-certificates/ + update-ca-certificates
+# Fedora/RHEL:   copia a /etc/pki/ca-trust/source/anchors/ + update-ca-trust
+```
+
+**Firefox** (usa su propio almacén de certificados, en cualquier SO; ignorar si
+el local no usa Firefox):
 Configuración → Privacidad y seguridad → Certificados → Ver certificados →
 Autoridades → Importar → elegir `ca.crt` → marcar "sitios web".
 
@@ -63,6 +73,7 @@ advertencias**.
 
 ```
 [ ] Candado sin advertencia en https://<hostname>/
+[ ] Navegador con perfil aislado del ERP (§4) o políticas aplicadas
 [ ] Login con usuario propio (no compartir usuarios entre cajas)
 [ ] Impresora de tickets imprime página de prueba (cajas)
 [ ] Queda registrada qué máquina es (inventario simple del local)
@@ -70,7 +81,76 @@ advertencias**.
 
 ---
 
-## 4. Preguntas frecuentes
+## 4. El navegador: recomendación y perfil aislado del ERP
+
+### 4.1 Recomendación
+
+**Chrome (estándar del cliente) o Edge**, en cualquier SO de la terminal. Razones:
+
+- El frontend usa tecnología moderna (React 19, Tailwind 4, efectos de vidrio con
+  `backdrop-filter`): exige navegadores recientes. Como las terminales no tienen
+  internet, instalar el navegador reciente y dejarlo — no se auto-actualiza.
+- Chrome y Edge leen certificados del almacén del sistema (Windows y Linux): la CA
+  se instala **una vez por máquina** (§3.2). Firefox usa su propio almacén: paso
+  manual extra por terminal.
+- Para cajas, el modo kiosk deja el navegador a pantalla completa encerrado en el ERP.
+
+### 4.2 Perfil aislado: lo tipeado en el ERP no se mezcla con el Chrome personal
+
+El navegador guarda en su autofill lo que se tipea en formularios (clientes, RUCs,
+teléfonos) y lo vuelve a sugerir **en cualquier sitio**. Para que los datos del
+cliente del ERP no aparezcan en el navegador personal de nadie, el ERP se abre con
+un **perfil propio** (carpeta separada del navegador normal):
+
+**Windows:**
+
+```powershell
+.\setup-terminal-chrome.ps1 -Url https://<hostname>            # ventana normal
+.\setup-terminal-chrome.ps1 -Url https://<hostname> -Kiosk     # caja: pantalla completa
+```
+
+Crea el acceso directo "ERP" en el escritorio (usa Chrome con
+`--user-data-dir=%LOCALAPPDATA%\ERP\chrome-erp`).
+
+**Linux:**
+
+```bash
+./setup-terminal-chrome.sh --url https://<hostname>            # ventana normal
+./setup-terminal-chrome.sh --url https://<hostname> --kiosk    # caja: pantalla completa
+# Chromium en vez de Chrome: sumar --chromium
+```
+
+Crea el lanzador "ERP" (menú de aplicaciones y escritorio).
+
+El uso diario del empleado (YouTube, mail personal, etc.) va en el navegador
+normal: ni lo tipeado en el ERP aparece ahí, ni lo del navegador personal entra al
+ERP. Todo lo que viajó en el bundle incluye estos scripts (`deploy/scripts/`).
+
+### 4.3 Políticas (opcional, clientes estrictos o cajas compartidas)
+
+Si además se quiere apagar el guardado de datos del navegador en esa máquina,
+ambos scripts aplican políticas con un flag (sin dominio ni servidor: el flag
+escribe el registro/JSON local). Requiere administrador:
+
+```powershell
+.\setup-terminal-chrome.ps1 -Url ... -ApplyPolicies   # Windows (HKLM, como admin)
+sudo ./setup-terminal-chrome.sh --url ... --policies   # Linux (/etc/opt/chrome/policies/managed)
+```
+
+Apaga: autofill de formularios y tarjetas, inicio de sesión con cuenta Google +
+sync (evita que datos del local se sincronicen a una cuenta personal que después
+se usa en casa), guardado de contraseñas del ERP y historial.
+
+> Chrome/Edge mostrarán "administrado por tu organización": es esperable, avisar
+> al cliente.
+
+> **Terminales compartidas entre empleados:** con solo el perfil aislado (§4.2),
+> lo tipeado en el ERP se sugiere *dentro* del ERP entre turnos. Si eso no se
+> acepta, aplicar también las políticas (§4.3), que apagan el autofill del todo.
+
+---
+
+## 5. Preguntas frecuentes
 
 **¿Se puede usar desde casa?**
 No por defecto: el servidor vive en la red del local. Acceso remoto = VPN
@@ -87,8 +167,9 @@ las terminales solo refrescan el navegador.
 
 ---
 
-## 5. Historia de cambios
+## 6. Historia de cambios
 
 | Versión | Fecha | Cambio | Autor |
 |:--|:--|:--|:--|
+| v1.1 | 2026-09-23 | §4 navegador: perfil aislado del ERP + políticas opcionales (Windows **y Linux**, setup-terminal-chrome.ps1/.sh); CA en Linux (install-ca-linux.sh); SO de terminal sin asumir Windows | renpereiradx + agente |
 | v1.0 | 2026-09-22 | Primera versión contra la implementación real (CA interna + proxy `/api` + install-ca-windows.ps1) | renpereiradx + agente |

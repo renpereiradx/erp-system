@@ -253,6 +253,7 @@ hermes project show erp-system        # Estado del workspace
 - State: Zustand stores en `src/store/` para estado global; `useState`/`useReducer` para estado local
 - Componentes: Radix UI primitives + Fluent 2 custom styling
 - Validación: Zod en formularios, con feedback visual inmediato
+- Autofill: todo `<form>` lleva `autoComplete="off"` y los campos de contraseña `autoComplete="new-password"` (login: `username`/`current-password`) — evita que el navegador guarde datos del ERP en su autofill (terminales compartidas del cliente; ver `docs/guides/GUIDE_TERMINALES_LOCAL.md` §4)
 - i18n: `src/lib/i18n.js` siempre — nunca strings hardcoded de UI
 - Temas: Fluent 2 con tokens en `design/tokens.json` (Tailwind 4 `@theme`; modo oscuro vía clase `.dark`)
 - TypeScript: todos los archivos nuevos en `.tsx`/`.ts`, sin `.jsx`/`.js`
