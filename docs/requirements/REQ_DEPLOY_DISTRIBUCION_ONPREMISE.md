@@ -6,7 +6,7 @@
 |:--|:--|
 | Módulo | Distribución, instalación y escalado del producto en clientes (on-premise) |
 | Código | DEPLOY |
-| Versión | v0.2 |
+| Versión | v0.3 |
 | Estado | Implementado (reservas de sitio: join Tailscale real, endurecimiento SSH y prueba de 31 días de retención se ejecutan en el primer cliente) |
 | Fecha | 2026-09-22 |
 | Fuentes | Apuntes del dueño (2026-09-20, cuaderno: "Distribución y mantenimiento de Software"), evaluación técnica de sesión 2026-09-22 (auditoría de compose/nginx/CORS/licencias/modelo de sucursales de ambos repos) |
@@ -80,7 +80,7 @@ Para el dueño del producto (vos), cada instalación queda registrada en un **in
 | RF-DEPLOY-008 | Una sucursal debe poder operar el sistema conectándose al servidor central por VPN sin que ningún puerto del servidor quede expuesto a internet pública. | Obligatorio | ⚠️ Parcial (sitio) | Escaneo desde LAN + IP Tailscale: solo puertos del frontend publicados ✅; el join real Tailscale requiere ejecutarse en el cliente (guía §3) |
 | RF-DEPLOY-009 | El alta de una sucursal debe incluir su creación como entidad en el ERP, sus usuarios y roles, y la verificación de que opera en su sucursal y no ve ventas ajenas. | Obligatorio | ✅ Verificada (entidad+acceso+login; scoping interno pre-auditado 2026-09) | `add-branch.sh` E2E: sucursal SUC2 creada, branchadmin con acceso FULL (fila en `user_branch_access`), login OK |
 | RF-DEPLOY-010 | El backend debe exponer la versión instalada en `GET /version` sin autenticación. | Obligatorio | ✅ Verificada | Ruta fijada: backend `GET /version` (whitelist auth) y `https://<servidor>/api/version` vía proxy; devuelve `{"version","commit","build_date","go"}` con ldflags |
-| RF-DEPLOY-011 | El instalador debe ser idempotente: re-ejecutarlo sobre una instalación existente no corrompe datos ni configuración. | Obligatorio | ✅ Verificada | Segunda corrida EXIT 0 conservando secrets/certs/seed/admin (y una tercera con restore); login del admin original sigue funcionando |
+| RF-DEPLOY-011 | El instalador debe ser idempotente: re-ejecutarlo sobre una instalación existente no corrompe datos ni configuración. | Obligatorio | ✅ Verificada | Segunda corrida EXIT 0 conservando secrets/certs/seed/admin (y una tercera con restore); login del admin original sigue funcionando. Auditoría 2026-09-22: el rsync de re-instalación borraba `license/` (el ensayo corrió sin licencia y no lo vio); corregido con exclude — licencia y CA sobreviven re-runs |
 | RF-DEPLOY-012 | La instalación nueva debe crear el esquema (migraciones), los roles base (seeds RBAC) y el usuario administrador inicial sin pasos manuales en la base de datos. | Obligatorio | ✅ Verificada | Instalación limpia: baseline + `migrate force` + seeds (9 roles) + admin; login real OK (hallazgo: la cadena de migraciones nunca fue corrible desde cero — resuelto con baseline, `make db-baseline`) |
 | RF-DEPLOY-013 | Cada instalación debe realizar un backup automático diario de la base de datos con retención 30 días. | Obligatorio | ⚠️ Parcial (tiempo) | `backup.sh` probado (dump gzip íntegro con checksum); timer systemd lo instala el instalador; la retención `-mtime +30` es trivialmente correcta pero los 31 días reales se observan en operación |
 | RF-DEPLOY-014 | El instalador debe ejecutar un smoke test automático al finalizar (health, versión, login admin) y reportar resultado. | Obligatorio | ✅ Verificada | Camino verde y camino con falla ambos observados (el instalador muere con el error exacto del componente) |
@@ -166,5 +166,6 @@ En el inventario de instalaciones del vendor, verificable contra el endpoint `/v
 
 | Versión | Fecha | Cambio | Autor |
 |:--|:--|:--|:--|
+| v0.3 | 2026-09-22 | Auditoría post-implementación: 4 correcciones en scripts — (1) install.sh ya no borra `license/` al re-instalar (rsync exclude; RF-DEPLOY-011 ahora cubre licencia), (2) pipefail en pipelines de backup y restore dentro del contenedor (dump truncado ya no puede pasar por exitoso), (3) camino `--remote` de migrate-to-server.sh reparado (path real del instalador en el bundle + `sudo env`), (4) smoke con login del admin recién creado (RF-DEPLOY-014 completo en el script). Higiene FE: contraseña vieja de DB eliminada de 4 archivos (credencial ya rotada 2026-09-21) | renpereiradx + agente |
 | v0.2 | 2026-09-22 | Estado Implementado: F1–F4 ejecutadas; §6/§7 verificaciones marcadas con resultados reales del ensayo (2 hallazgos de fondo resueltos: migraciones no corribles desde cero → baseline; PG nativo-loopback imposible en Linux → PG servicio compose). Reservas de sitio: join Tailscale, SSH, 31 días de retención | renpereiradx + agente |
 | v0.1 | 2026-09-22 | Borrador inicial a partir de la evaluación; decisiones D1–D6 registradas como RN-DEPLOY-001..006 | renpereiradx + agente |
