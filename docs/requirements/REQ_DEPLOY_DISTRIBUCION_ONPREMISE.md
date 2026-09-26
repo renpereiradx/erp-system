@@ -85,6 +85,7 @@ Para el dueño del producto (vos), cada instalación queda registrada en un **in
 | RF-DEPLOY-013 | Cada instalación debe realizar un backup automático diario de la base de datos con retención 30 días. | Obligatorio | ⚠️ Parcial (tiempo) | `backup.sh` probado (dump gzip íntegro con checksum); timer systemd lo instala el instalador; la retención `-mtime +30` es trivialmente correcta pero los 31 días reales se observan en operación |
 | RF-DEPLOY-014 | El instalador debe ejecutar un smoke test automático al finalizar (health, versión, login admin) y reportar resultado. | Obligatorio | ✅ Verificada | Camino verde y camino con falla ambos observados (el instalador muere con el error exacto del componente) |
 | RF-DEPLOY-015 | La licencia debe poder trasladarse de una máquina a otra (laptop → servidor) sin re-emisión. | Obligatorio | ✅ Verificada | El instalador la copia a `license/` y activa `LICENSE_ENFORCE=true`; payload sin amarra a hardware (congelado, verificado 2026-09-22) |
+| RF-DEPLOY-016 | El instalador debe poder ejecutarse de forma interactiva (wizard paso a paso) sin conocer los flags, manteniendo el modo flags para automatización. | Obligatorio | ✅ Verificada | `install.sh` sin flags y en terminal pregunta perfil → hostname → licencia (autodetectada junto al bundle) → restore, con defaults entre corchetes; los flags pasados no se re-preguntan y `--yes` desactiva el wizard; sin TTY exige flags como antes. Bash puro, sin dependencias nuevas (el cliente está offline) |
 
 ## 7. Requerimientos no funcionales (RNF-…)
 
@@ -166,6 +167,7 @@ En el inventario de instalaciones del vendor, verificable contra el endpoint `/v
 
 | Versión | Fecha | Cambio | Autor |
 |:--|:--|:--|:--|
+| v0.4 | 2026-09-26 | Wizard interactivo en `install.sh` (RF-DEPLOY-016): correrlo sin flags en una terminal pregunta paso a paso lo que falte con defaults; flags y `--yes` mantienen el modo automatizado intacto. Mensaje final de `make-release-bundle.sh` simplificado (el técnico ya no tipea flags) | renpereiradx + agente |
 | v0.3 | 2026-09-22 | Auditoría post-implementación: 4 correcciones en scripts — (1) install.sh ya no borra `license/` al re-instalar (rsync exclude; RF-DEPLOY-011 ahora cubre licencia), (2) pipefail en pipelines de backup y restore dentro del contenedor (dump truncado ya no puede pasar por exitoso), (3) camino `--remote` de migrate-to-server.sh reparado (path real del instalador en el bundle + `sudo env`), (4) smoke con login del admin recién creado (RF-DEPLOY-014 completo en el script). Higiene FE: contraseña vieja de DB eliminada de 4 archivos (credencial ya rotada 2026-09-21) | renpereiradx + agente |
 | v0.2 | 2026-09-22 | Estado Implementado: F1–F4 ejecutadas; §6/§7 verificaciones marcadas con resultados reales del ensayo (2 hallazgos de fondo resueltos: migraciones no corribles desde cero → baseline; PG nativo-loopback imposible en Linux → PG servicio compose). Reservas de sitio: join Tailscale, SSH, 31 días de retención | renpereiradx + agente |
 | v0.1 | 2026-09-22 | Borrador inicial a partir de la evaluación; decisiones D1–D6 registradas como RN-DEPLOY-001..006 | renpereiradx + agente |
