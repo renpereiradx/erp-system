@@ -121,6 +121,10 @@ Al terminar imprime un resumen con URLs, ubicación de la CA y próximos pasos.
 1. **Guardar la contraseña del admin** (`/opt/erp/credentials/admin-inicial.txt`)
    en el gestor del cliente y **borrar el archivo**.
 2. **Probar login** desde el navegador del servidor: `https://<hostname>/`.
+   La instalación limpia siembra la sucursal **MAIN "Sucursal Principal"**
+   (datos placeholder, con config fiscal `timbrado 00000000`): elegir esa
+   sucursal al entrar y **cargar los datos reales del negocio** (nombre,
+   RUC, timbrado vigente) en *Configuración → Sucursales* antes de facturar.
 3. **Distribuir la CA a las terminales** → [`GUIDE_TERMINALES_LOCAL.md`](GUIDE_TERMINALES_LOCAL.md).
 4. **Configurar backup externo**: el backup diario vive en `/opt/erp/backups/`
    (30 días de retención). Copiarlo fuera de la máquina (disco externo/nube) —
