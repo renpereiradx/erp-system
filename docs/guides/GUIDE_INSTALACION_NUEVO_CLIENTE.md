@@ -139,9 +139,27 @@ Al terminar imprime un resumen con URLs, ubicación de la CA y próximos pasos.
 ## 7. Actualizar un cliente existente
 
 ```bash
-# con un bundle más nuevo:
-sudo ./business_management/deploy/scripts/install.sh --profile server \
-    --hostname erp.miempresa.local --yes
+# con un bundle más nuevo, desde el directorio del bundle NUEVO:
+tar xzf erp-release-<nueva>.tar.gz
+sudo ./erp-release-<nueva>/business_management/deploy/scripts/install.sh
+```
+
+El instalador detecta la instalación previa y **Enter hereda sus decisiones**:
+perfil instalado, hostname del certificado, licencia y overrides de puertos
+(puertos custom como `ERP_DB_PORT` se pierden si se re-genera el `.env` sin
+ellos — el instalador los recupera del `.env` existente). El prompt de backup
+a restaurar se deja **vacío** en una actualización normal (es solo para
+migración laptop→servidor).
+
+Cambiar de perfil sobre una instalación existente (server↔laptop) pide
+confirmación explícita: reconfigura puertos/TLS y **los contenedores del perfil
+anterior no se detienen solos** (`docker compose --profile <viejo> down` a mano).
+
+Para automatizar (o sin terminal): los flags de siempre —
+
+```bash
+sudo ./erp-release-<nueva>/business_management/deploy/scripts/install.sh \
+    --profile server --hostname erp.miempresa.local --yes
 ```
 
 El `.env.docker` existente (secretos) se conserva; las imágenes nuevas del bundle
