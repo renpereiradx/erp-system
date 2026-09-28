@@ -33,9 +33,9 @@ go build -o /tmp/licensegen ./cmd/licensegen
 #     sin -days la licencia no vence jamás; decisión de negocio 2026-09-22):
 /tmp/licensegen issue \
   -key ~/custodia-licencias/vendor.key \
-  -customer "Vista Bar Sucursal Centro" \
+  -customer "Cliente Demo Sucursal Centro" \
   -edition core+bi -modules bi \
-  -out ~/entregas/vista-bar-centro/license.json
+  -out ~/entregas/cliente-demo-centro/license.json
 # Casos especiales ÚNICAMENTE a pedido (demo/trial con plazo):
 #   -days 365            → vence al año
 #   -expires 2027-09-21T12:00:00Z → fecha fija (gana sobre -days).

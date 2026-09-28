@@ -7,7 +7,7 @@ Instrucciones para agentes AI de coding que trabajen en este workspace.
 
 ## Estructura del Proyecto
 
-Este directorio envuelve dos repositorios Git independientes que forman el sistema ERP Vista Bar:
+Este directorio envuelve dos repositorios Git independientes que forman el ERP System:
 
 ```
 erp-system/

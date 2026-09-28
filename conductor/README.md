@@ -1,7 +1,7 @@
 # conductor/ (workspace-level)
 
 Este directorio **raíz** (no el de `business_management/conductor/` ni `erp-webapp/conductor/`)
-centraliza la **coordinación cross-repo** del ERP Vista Bar: planes y fixes que tocan backend y
+centraliza la **coordinación cross-repo** del ERP System: planes y fixes que tocan backend y
 frontend a la vez.
 
 > **Limpieza 2026-09-11**: los planes/registros de trabajo completado fueron eliminados de los

@@ -17,7 +17,7 @@
 
 ## 2. Resumen ejecutivo (para todos)
 
-El ERP Vista Bar se vende en **dos ediciones**: **ERP Core** (todo el sistema de gestión:
+El ERP System se vende en **dos ediciones**: **ERP Core** (todo el sistema de gestión:
 ventas, compras, inventario, caja, pedidos, facturación electrónica SIFEN, usuarios) y
 **ERP Core + BI Premium**, que agrega el módulo completo de **Inteligencia de Negocios**
 (dashboards, reportes financieros, analíticas de ventas e inventario, pronósticos,
@@ -134,7 +134,7 @@ aparece en caliente, al segundo.
 
 | Actor | Rol frente al módulo |
 |:------|:---------------------|
-| Proveedor (Vista Bar) | Genera, firma, entrega y revoca licencias. Único dueño de la clave privada. |
+| Proveedor | Genera, firma, entrega y revoca licencias. Único dueño de la clave privada. |
 | Cliente (dirección) | Decide qué edición compra; ve estado y vencimiento en Configuración → Licencia. |
 | Usuario del ERP (cualquier rol) | Ve o no ve BI según la licencia de la instalación; dentro del BI, sus permisos habituales siguen aplicando. |
 | Soporte técnico | Instala/renueva licencias siguiendo el runbook; diagnostica con la pantalla de estado. |

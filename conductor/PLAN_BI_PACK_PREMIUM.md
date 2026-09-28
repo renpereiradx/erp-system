@@ -190,7 +190,7 @@ el dispatcher FE (`BusinessManagementAPI.ts`) emite `api:module_not_licensed` pa
   {
     "payload": {
       "edition": "core+bi",
-      "customer": "Vista Bar",
+      "customer": "Cliente Demo",
       "modules": ["bi"],
       "issued_at": "2026-09-21T12:00:00Z",
       "expires_at": "2027-09-21T12:00:00Z"

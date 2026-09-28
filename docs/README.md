@@ -1,7 +1,7 @@
 # docs/ — Ingeniería de Requerimientos
 
 Este directorio registra **textualmente los requerimientos** de cada módulo o sistema del ERP
-Vista Bar: *qué debe hacer el sistema y por qué*, escrito para que tanto ingeniería como
+System: *qué debe hacer el sistema y por qué*, escrito para que tanto ingeniería como
 personas sin formación técnica (dirección, comerciales, soporte) puedan revisarlo y entenderlo.
 
 Última actualización: 2026-09-22 (auditoría post-implementación: REQ_DEPLOY v0.3)
