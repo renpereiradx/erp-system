@@ -6,9 +6,9 @@
 |:------|:------|
 | Módulo | Licenciamiento de módulos — pack "BI Premium" |
 | Código | BIPACK |
-| Versión del documento | v1.2 |
-| Estado | Implementado (F0-F6, 2026-09-21) · ampliación v1.1 (estadísticas relacionales) implementada (2026-09-22) — trazabilidad en la tabla RF y registro en el plan |
-| Fecha | 2026-09-21 |
+| Versión del documento | v2.0 |
+| Estado | Implementado (F0-F6, 2026-09-21) · v1.1 estadísticas relacionales (2026-09-22) · v2.0 modelo de evaluación y rescate (2026-09-28) — trazabilidad en las tablas RF/RN |
+| Fecha | 2026-09-28 |
 | Fuentes | [conductor/PLAN_BI_PACK_PREMIUM.md](../conductor/PLAN_BI_PACK_PREMIUM.md) (plan + decisiones ADR 1-7) · [conductor/RUNBOOK_LICENCIAS_2026-09.md](../conductor/RUNBOOK_LICENCIAS_2026-09.md) (operación) |
 | Implementación | Backend `9dd9942` + `146172c` · Frontend `b3ab4eb` + `26178ff` · Wrapper `809b549` |
 | Audiencia | Dirección, comerciales, soporte, ingeniería |
@@ -67,20 +67,27 @@ aparece en caliente, al segundo.
   fecha de vencimiento, la firma deja de coincidir y el sistema lo rechaza. Si solo lo
   "reformatea" (espacios, saltos de línea), sigue funcionando: la firma cubre el contenido.
 
-### 3.3 Qué ve el cliente en cada caso
+### 3.3 Estados de la instalación (v2.0)
+
+| Estado | Comportamiento |
+|:-------|:---------------|
+| **Sin licencia** | Evaluación full (Core+BI) por **90 días desde el primer arranque**. Al vencer: **bloqueo total** — solo login, `/system/license` (ver + cargar) y logout siguen vivos. El FE muestra una pantalla de "licencia requerida" con carga de licencia. |
+| **Licencia Core (sin BI)** | **Perpetua** (`expires_at: null`, `-modules core`). BI apagado, ERP Core 100% operativo. |
+| **Licencia Core+BI** | **Perpetua**. Todo el pack BI. |
+
+Complementos del modelo de estados:
 
 | Situación | Qué pasa |
 |:----------|:---------|
-| Instalación **sin** pack BI | El menú "Inteligencia de Negocios" directamente no existe. Si alguien entra por un link viejo a una página BI, se redirige a Pedidos con un aviso claro. La página de inicio es Pedidos. El resto del ERP funciona al 100%. |
-| Instalación **con** pack vigente | El sistema es exactamente el actual: menú BI completo, todas las pantallas. |
-| Licencia por vencer | Un banner avisa durante los **30 días previos** ("su licencia vence en N días"). |
-| Licencia vencida | El BI se apaga ese mismo día: mismo comportamiento que no tener pack. **Ningún dato se pierde** — solo se oculta el acceso. |
-| Renovación | Se instala la nueva licencia y el BI reaparece en caliente, al segundo, sin reiniciar ni reinstalar. |
-| Revocación (licencia retirada) | Borrar el archivo del servidor bloquea el BI de inmediato, incluso para usuarios con la sesión abierta: a la consulta siguiente, el sistema los saca de la pantalla BI. |
+| Evaluación por terminar | Un banner avisa durante los **30 días previos** al fin de la evaluación. La card de Configuración muestra la fecha de fin. |
+| Instalación con licencia vigente | El sistema es exactamente el actual: menú BI completo según la edición comprada. |
+| Licencia con plazo por vencer (demos) | Banner durante los 30 días previos; vencida, la instalación cae a las reglas de evaluación (el remanente de la ventana, contada desde el primer arranque). |
+| Renovación / upgrade | Se instala la nueva licencia y el pack reaparece en caliente, al segundo, sin reiniciar ni reinstalar. |
+| Revocación (borrar el archivo) | Con evaluación vigente, cae a evaluación; con la ventana agotada, bloqueo total de inmediato, incluso con sesiones abiertas. |
+| Rescate web (v2.0) | Desde la pantalla de bloqueo, cualquier usuario autenticado puede **cargar el archivo de licencia** (PUT `/system/license`): el backend verifica la firma antes de persistir y el sistema se desbloquea en caliente. |
 
-> Las filas "por vencer / vencida / renovación" aplican **solo a licencias emitidas con
-> plazo** (demos o acuerdos especiales). Con el modelo de venta normal — compra única,
-> sin vencimiento (RN-07) — esas situaciones no ocurren.
+> El bloqueo total NO borra ni oculta datos: es una compuerta de acceso. Al cargar una
+> licencia válida, todo vuelve con su historia completa (mismo principio que v1.0).
 
 ### 3.4 El ciclo comercial completo
 
@@ -121,6 +128,11 @@ aparece en caliente, al segundo.
   compradores de un producto, productos por cliente, productos por proveedor y comparación
   de precios entre proveedores.
 - Entrega de la información de licencia a la sesión del usuario y pantalla/banner de estado.
+- **Modelo de evaluación y rescate (v2.0):** sin licencia válida, la instalación corre en
+  evaluación full (Core+BI) por 90 días desde el primer arranque (ancla persistida en
+  `system_installation`); agotada, bloqueo total salvo login/logout/refresh y
+  `/system/license` (ver + **carga de licencia vía PUT** = rescate web sin tocar el
+  servidor). El instalador fija `LICENSE_ENFORCE=true` por defecto.
 
 **Fuera:**
 
@@ -168,6 +180,11 @@ aparece en caliente, al segundo.
 | RF-BIPACK-022 | El sistema debe permitir consultar qué productos compra más un cliente dado, con filtros (fechas, sucursal, categoría, variante, búsqueda) y paginación del lado del servidor. | Obligatorio | Implementado | `GET /sales-analytics/customers/{id}/top-products` (BE 38d873b; FE 7d68011); integración real-DB + smoke |
 | RF-BIPACK-023 | El sistema debe permitir consultar qué productos se compran más de un proveedor dado, con los mismos filtros y paginación que RF-BIPACK-022, sobre compras efectivamente completadas. | Obligatorio | Implementado | `GET /purchase-analytics/suppliers/{id}/top-products`, grupo nuevo gated `analytics:read` (BE 38d873b; FE 7d68011) |
 | RF-BIPACK-024 | El sistema debe permitir comparar proveedores de un producto dado por precio (último, promedio ponderado y mínimo histórico), ordenable por cualquiera de ellos, considerando solo compras en moneda base e informando las exclusiones por moneda. | Obligatorio | Implementado | `GET /purchase-analytics/products/{id}/suppliers` + meta `excluded_other_currency` (BE 38d873b; FE 7d68011); banner FE y smoke 403 sin licencia |
+| RF-BIPACK-025 | Sin licencia válida, la instalación debe operar en evaluación full (Core+BI) durante 90 días corridos desde el primer arranque (ventana configurable vía `LICENSE_TRIAL_DAYS`). | Obligatorio | Implementado | `TestServiceTrialWindow` + `TestBILicensing_Lifecycle` (trial → superficie BI 200); ancla `system_installation` |
+| RF-BIPACK-026 | Agotada la evaluación sin licencia, el backend debe bloquear TODA ruta salvo login, refresh, logout, health/setup y `/system/license` (ver + carga), respondiendo 403 `LICENSE_EXPIRED`; el FE debe reemplazar la app completa por la pantalla de licencia requerida. | Obligatorio | Implementado | `TestRequireActiveLicense` (whitelist) + `TestBILicensing_TrialBlockAndRescue`; gate FE `LicenseRequiredGate` + dispatcher `api:license_expired` |
+| RF-BIPACK-027 | El sistema debe permitir cargar una licencia desde la web (PUT `/api/v1/system/license`, auth-only): el candidato se verifica criptográficamente antes de persistir; inválido → 400 `LICENSE_INVALID` sin tocar el estado; válido → desbloqueo en caliente. | Obligatorio | Implementado | `TestServiceInstallRescue` + `TestLicenseInstallHandler` + flujo E2E en `TestBILicensing_TrialBlockAndRescue` |
+| RF-BIPACK-028 | El ancla del primer arranque debe persistirse en base de datos (`system_installation`, fila única sembrada por migración + baseline) y sobrevivir reinicios y actualizaciones. | Obligatorio | Implementado | Migración `20260928100000_system_installation_anchor` + sección en `baseline_schema.sql` |
+| RF-BIPACK-029 | Licencia Core (sin BI): perpetua (`expires_at: null`, `-modules core`) con BI apagado; licencia Core+BI: perpetua con todo el pack. `licensegen` emite perpetuo por defecto. | Obligatorio | Implementado | `TestServiceHasModuleEnforcement` (perpetual) · runbook §2b (`-days 0` default, RN-07) |
 
 ## 7. Requerimientos no funcionales
 
@@ -176,7 +193,7 @@ aparece en caliente, al segundo.
 | RNF-BIPACK-001 | La licencia debe ser criptográficamente infalsificable: ninguna modificación del contenido debe poder validar una firma existente. | Obligatorio | Implementado | Tests ed25519 (edición/ausencia/clave incorrecta) |
 | RNF-BIPACK-002 | En desarrollo el control debe fallar abierto (todo disponible) y en producción cerrado (nada disponible ante la duda), controlado por `LICENSE_ENFORCE`. | Obligatorio | Implementado | Tests fail-open/fail-closed |
 | RNF-BIPACK-003 | Debe existir un único binario/build para ambas ediciones; el gating es exclusivamente de tiempo de ejecución. | Obligatorio | Implementado | Un solo build; F7 opcional no requerido |
-| RNF-BIPACK-004 | La implementación no debe introducir migraciones de base de datos ni estado persistido en DB. | Obligatorio | Implementado | Cero migraciones nuevas |
+| RNF-BIPACK-004 | La implementación no debe introducir estado de licenciamiento en DB **fuera del ancla del trial**: v2.0 enmienda esta regla y agrega exactamente una migración (`system_installation`, fila única). El archivo de licencia sigue siendo la única fuente de entitlements. | Obligatorio | Implementado (enmendada v2.0) | Migración `20260928100000` (única) · el gate sigue leyendo `license.json` |
 | RNF-BIPACK-005 | El contrato con el frontend debe ser aditivo: un backend sin el módulo de licencias debe seguir funcionando con frontends nuevos y viceversa. | Obligatorio | Implementado | Campo `entitlements` omitible; FE fail-open sin dato |
 | RNF-BIPACK-006 | La verificación de licencia no debe agregar costo perceptible a las consultas (verificación de metadatos del archivo, no re-verificación criptográfica por consulta). | Obligatorio | Implementado | Re-chequeo por mtime; benchmark en plan |
 | RNF-BIPACK-007 | La operación del proveedor (emisión, renovación, revocación, alta de instalaciones existentes) debe estar documentada paso a paso en un runbook. | Obligatorio | Implementado | `conductor/RUNBOOK_LICENCIAS_2026-09.md` |
@@ -193,12 +210,24 @@ aparece en caliente, al segundo.
 | RN-BIPACK-05 | Precios, SKUs y condiciones (Core / add-on BI / bundle) quedan pendientes de definición comercial, fuera del alcance del sistema. | Decisión de negocio; el sistema no condiciona el modelo de precios. | Pendiente (comercial) |
 | RN-BIPACK-06 | La clave privada de firma jamás se versiona en los repositorios del producto; su custodia es exclusiva del proveedor. | La clave en el repo equivale a regalar el producto. | Vigente (verificado en auditoría 2026-09-21) |
 | RN-BIPACK-07 | La venta normal es **compra única sin vencimiento**: Core perpetuo y pack BI perpetuo. `licensegen` emite perpetuo por defecto (`-days 0`); el vencimiento, la gracia y la renovación quedan como capacidad técnica para casos especiales (demo, trial, acuerdo puntual), no como modelo de negocio. | Decisión del dueño (2026-09-22): el cliente compra una vez y el producto no caduca. Sin renovaciones que gestionar ni clientes "vencidos" por accidente — el default previo de `licensegen` (365 días) era una bomba de tiempo contraria al modelo. | Vigente |
+| RN-BIPACK-08 | **Evaluación de 90 días** (v2.0): una instalación sin licencia válida opera full (Core+BI) desde el primer arranque (ancla `system_installation`, sembrada en la migración / baseline); agotada la ventana, **bloqueo total** salvo login/logout/refresh y `/system/license` (ver + carga). La licencia Core (`-modules core`) y la Core+BI son perpetuas y apagan el trial al instalarse. La evaluación NO se reinicia al instalar/quitar licencias: el reloj corre desde el primer arranque; una licencia vencida cae al remanente de ventana. | Decisión del dueño (2026-09-28): el cliente prueba el sistema completo 90 días antes de pagar; el bloqueo total al vencer (no solo el BI) es el incentivo de cierre, y el rescate web evita visitas técnicas. | Vigente |
+| RN-BIPACK-09 | **Rescate web** (v2.0): PUT `/api/v1/system/license` (auth-only, como el GET) acepta el archivo de licencia textual, lo verifica criptográficamente ANTES de persistir (inválido → 400 `LICENSE_INVALID`, estado intacto) y lo escribe atómicamente en el path del mount (compose sin `:ro`). Es el procedimiento estándar de activación post-venta: el técnico carga la licencia desde el navegador, sin SSH. | El bloqueo total deja el sistema inusable pero el servidor vivo: la puerta de rescate es lo único que necesita un cliente que acaba de pagar. La verificación previa impide que un upload basura pise una licencia buena. | Vigente |
 
 ## 9. Preguntas frecuentes
 
-**¿La licencia vence algún día? ¿Hay que pagar algo periódicamente?**
+**¿La licencia comprada vence algún día? ¿Hay que pagar algo periódicamente?**
 No. La compra es única: Core y pack BI no caducan (RN-07). El vencimiento solo existe si se
 entrega una licencia con plazo expreso (p. ej. una demo).
+
+**¿Y si la instalación no tiene licencia? (v2.0)**
+Funciona completa — Core+BI — por 90 días desde el primer arranque (evaluación, RN-08).
+Agotados, el sistema se bloquea: solo login y la pantalla de licencia quedan vivos. Nada
+se pierde; al cargar la licencia comprada todo vuelve.
+
+**¿Cómo se activa un cliente que compró después de la evaluación? (v2.0)**
+Rescate web (RN-09): iniciar sesión en la instalación bloqueada y cargar el archivo
+`license.json` desde la pantalla de "licencia requerida" (o Configuración → Licencia).
+El backend verifica la firma y el sistema se desbloquea al instante, sin reiniciar.
 
 **¿Si la licencia vence, se pierden los datos del BI?**
 No. El BI solo se *oculta*: los datos quedan intactos en la base. Al renovar, todo reaparece
@@ -245,6 +274,10 @@ hubiera, es política comercial (RN-05), no del sistema.
 | `licensegen` | Herramienta del proveedor para generar claves y emitir licencias firmadas. |
 | Runbook | Manual paso a paso de operación (emisión, instalación, renovación, revocación). |
 | ADR | *Architecture Decision Record*: decisión de diseño registrada y numerada en el plan, con su justificación. |
+| Evaluación (trial) | Período de 90 días desde el primer arranque en que una instalación sin licencia opera full (Core+BI). Contado por `system_installation.first_boot_at`. |
+| Bloqueo total | Estado post-evaluación sin licencia: solo login/logout/refresh y `/system/license` responden; el resto devuelve 403 `LICENSE_EXPIRED`. |
+| Rescate web | Carga del archivo de licencia desde el navegador (pantalla de bloqueo o PUT `/system/license`), con verificación previa de firma. |
+| `system_installation` | Tabla de fila única con `first_boot_at`: el ancla del trial, sembrada por migración y baseline. |
 
 ## 11. Trazabilidad
 
@@ -263,6 +296,7 @@ hubiera, es política comercial (RN-05), no del sistema.
 
 | Versión | Fecha | Cambio | Autor |
 |:--------|:------|:-------|:------|
+| v2.0 | 2026-09-28 | **Modelo de evaluación y rescate:** sin licencia → trial full (Core+BI) 90 días desde el primer arranque (ancla `system_installation`, migración 20260928100000 + baseline); al vencer → bloqueo total con whitelist de rescate (403 `LICENSE_EXPIRED`) y pantalla FE "licencia requerida" con carga de licencia (PUT `/system/license`, verificación previa, desbloqueo en caliente); licencias Core y Core+BI perpetuas (RN-07/08/09, RF-025..029); `install.sh` fija `LICENSE_ENFORCE=true` por defecto y pide la clave pública; compose deja el mount de licencia escribible para el rescate. RNF-004 enmendada. | renpereiradx + agente |
 | v1.0 | 2026-09-21 | Versión inicial: requerimientos del módulo extraídos del plan y de la implementación auditada. | Ingeniería (ZCode) |
 | v1.2 | 2026-09-22 | RN-07: modelo de compra única sin vencimiento (core y pack BI perpetuos); `licensegen` cambia su default de `-days 365` a `-days 0` (perpetuo); §3 y FAQ alineados — vencimiento/gracia/renovación pasan a ser casos especiales (demo/trial). Runbook de licencias actualizado en el mismo cambio | renpereiradx + agente |
 | v1.1 | 2026-09-21 | Ampliación aprobada: estadísticas relacionales producto↔cliente↔proveedor (RF-021..024, RN-01 ampliada). Implementación planificada en `conductor/PLAN_STATS_RELACIONALES_BI.md`. | Ingeniería (ZCode) |

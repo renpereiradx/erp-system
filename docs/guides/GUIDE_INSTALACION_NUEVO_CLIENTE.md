@@ -29,7 +29,7 @@
 **Del lado del vendor:**
 
 - El **bundle de release**: `erp-release-<versión>.tar.gz` (lo genera `business_management/deploy/scripts/make-release-bundle.sh`).
-- La **licencia del cliente**: `license.json` (generada con `cmd/licensegen`; ver REQ_BIPACK si el cliente compra el pack BI).
+- La **licencia del cliente** si ya compró: `license.json` + `licensing-public.key` (generadas con `cmd/licensegen`; ver RUNBOOK_LICENCIAS_2026-09). Si aún no compró, **no hace falta nada**: la instalación arranca en evaluación full (Core+BI) por 90 días desde el primer arranque; al vencer se bloquea y se activa cargando la licencia (rescate web — REQ_BIPACK v2.0).
 
 ---
 
@@ -99,7 +99,7 @@ Qué hace (12 pasos, todos con salida visible):
 7. Migraciones: base nueva → baseline de schema + estampado de versión; base existente → delta con golang-migrate
 8. Seeds RBAC solo si la base está vacía (9 roles canónicos)
 9. Usuario admin inicial con **contraseña aleatoria** guardada en `/opt/erp/credentials/`
-10. Licencia: si está, `LICENSE_ENFORCE=true`; si no, modo gracia con aviso
+10. Licencia: si está, `LICENSE_ENFORCE=true` y licencia activa; si no, evaluación de 90 días con aviso (REQ_BIPACK v2.0 — el bloqueo al vencer solo se levanta con licencia, vía rescate web)
 11. Levanta el stack completo y espera healthchecks
 12. **Smoke test automático**: health + `/version` + frontend + proxy `/api` (+ redirect HTTPS en server). Si algo falla, el instalador muere con el error visible
 
@@ -111,7 +111,8 @@ Al terminar imprime un resumen con URLs, ubicación de la CA y próximos pasos.
 |:--|:--|
 | Puerto 80/443 ocupado | `ERP_HTTP_PORT=8080 ERP_HTTPS_PORT=8443` antes del comando |
 | Otro PostgreSQL ya existe en el servidor | mover el puerto del stack: `ERP_DB_PORT=5433` |
-| Instalar sin licencia por ahora | omitir `--license` (queda en modo gracia) |
+| Instalar sin licencia por ahora | omitir `--license` (queda en evaluación: 90 días full, luego pantalla de rescate) |
+| Activar un cliente que ya pagó (post-evaluación) | cargar el `license.json` desde la pantalla "Licencia requerida" o `curl -X PUT .../api/v1/system/license` (RUNBOOK §4b) |
 | Probar sin tocar `/opt` | `ERP_ROOT=/tmp/erp-test ./install.sh ...` |
 
 ---
@@ -178,7 +179,8 @@ delta. **Antes de actualizar: verificar que existe el backup de anoche**
 | El instalador muere en "frontend HTTPS no responde" | Otra cosa ocupa 80/443 | Revisar `ss -tln` y usar `ERP_HTTP_PORT/ERP_HTTPS_PORT` |
 | Login OK pero sin datos y sin roles | Bundle sin baseline (muy viejo) | Regenerar bundle (`make-release-bundle.sh` lo exige) |
 | El navegador de las terminales da advertencia TLS | CA no instalada en esa terminal | `GUIDE_TERMINALES_LOCAL.md` |
-| Advertencia "LICENSE_ENFORCE=false" en el instalador | Falta license.json | Copiarla a `/opt/erp/business_management/license/` y re-ejecutar |
+| Pantalla "Licencia requerida" tras instalar | Evaluación agotada sin licencia | Cargar la licencia desde esa misma pantalla (RUNBOOK §4b); no hace falta SSH |
+| El rescate web rechaza la licencia (LICENSE_INVALID) | `LICENSE_PUBLIC_KEY` vacía o distinta a la del par vendedor | Cargar la pública correcta en `.env.docker` y recrear el backend |
 
 ---
 

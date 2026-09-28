@@ -68,3 +68,32 @@ alert()/console.log, pager falso de StockLevelsTable, reload como refresh), prof
 desde overview (kpis.potential_profit nunca existió), error state en InventoryRisk, memo del
 filtro de stock. Gates: vitest 1047/1047, tsc 0, build, lint:design; verificado en vivo las 4
 rutas con datos reales.
+
+---
+
+## REQ_BIPACK v2.0 — Evaluación (trial 90 días) + bloqueo total + rescate web (2026-09-28)
+
+Implementación del modelo aprobado (REQ_BIPACK_LICENCIAMIENTO_BI.md v2.0, RF-025..029,
+RN-08/09): sin licencia válida la instalación corre **full (Core+BI) por 90 días desde el
+primer arranque** — ancla `system_installation.first_boot_at` sembrada por la migración
+`20260928100000_system_installation_anchor` y replicada en el baseline (instalaciones
+existentes: el reloj arranca al aplicar el update). Agotada la ventana: **bloqueo total** —
+middleware router-level `RequireActiveLicense` responde 403 `LICENSE_EXPIRED` en toda ruta
+salvo la whitelist de rescate (login, refresh, logout, health/setup, `/api/v1/system/license`
+GET+PUT); el FE reemplaza la app completa por el gate `LicenseRequiredGate` (evento
+`api:license_expired` desde el dispatcher, before de `module_not_licensed`).
+
+Rescate web: PUT `/api/v1/system/license` (auth-only) acepta el archivo textual, verifica la
+firma ed25519 ANTES de persistir (`ParseVerified` extraído; inválido → 400 `LICENSE_INVALID`
+con el estado intacto), escribe atómicamente vía `LicenseStore.Write` (temp+rename; compose
+saca el `:ro` del mount `./license`) y desbloquea en caliente. Licencias Core
+(`-modules core`) y Core+BI perpetuas (RF-029, RN-07). `Snapshot`/`Entitlement` ganan campos
+aditivos (`mode` licensed|trial|expired, `trial_ends_at`, `blocked`) — el `status` sigue
+describiendo el archivo para diagnóstico. `install.sh` v2.0: flag/wizard
+`--license-public-key` (obligatoria con licencia), copia licencia+key al mount, `.env.docker`
+con `LICENSE_ENFORCE=true` + `LICENSE_TRIAL_DAYS=90`, warn al heredar un `.env.docker` con
+enforce off. Runbook §4b (rescate) + guía de instalación alineadas. Gates: BE build + unit
+(0 fails) + `golangci-lint` verde + integración `TestBILicensing*` (incluye
+`TestBILicensing_TrialBlockAndRescue` E2E con ancla real manipulada); FE vitest 1185/1185
+(gate 5/5, dispatcher, banner trial), tsc 0, `pnpm build`, `lint:design`. gofmt preexistente
+en `internal/measure` corregido en el paso.

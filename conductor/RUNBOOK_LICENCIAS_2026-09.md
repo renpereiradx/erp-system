@@ -1,22 +1,29 @@
-# RUNBOOK — Licencias BI Pack Premium (2026-09)
+# RUNBOOK — Licencias BI Pack Premium (2026-09 · v2.0 trial + rescate)
 
-**Plan:** [PLAN_BI_PACK_PREMIUM.md](./PLAN_BI_PACK_PREMIUM.md) (ADR-1/ADR-4, F6)
-**Implementación:** BE `9dd9942` (business_management), FE `b3ab4eb` (erp-webapp)
-**Audiencia:** vendedor / ops — emisión, instalación, renovación, revocación y deploy prod.
+**Plan:** [PLAN_BI_PACK_PREMIUM.md](./PLAN_BI_PACK_PREMIUM.md) (ADR-1/ADR-4, F6) · **v2.0:** REQ_BIPACK (RF-025..029, RN-08/09)
+**Implementación:** BE `9dd9942` (licencias) + v2.0 2026-09-28 (trial/bloqueo/rescate) · FE `b3ab4eb` + v2.0 (gate de licencia)
+**Audiencia:** vendedor / ops — emisión, instalación, evaluación, bloqueo, rescate web, renovación y deploy prod.
 
 ---
 
 ## 1. Modelo en 60 segundos
 
-- La licencia es un **archivo JSON firmado (ed25519)** que declara `edition`, `customer`,
-  `modules` (`["bi"]`), `issued_at` y `expires_at` (`null` = perpetua).
-- El backend la lee en boot y **hot-reload por mtime**: instalar, renovar o revocar no requiere
-  reinicio.
-- `LICENSE_ENFORCE=false` (default) = fail-open: todo se comporta como licenciado (dev).
-  `LICENSE_ENFORCE=true` = el pack BI solo funciona con licencia vigente; **ni el admin la
-  bypasea**.
-- El FE consulta `entitlements` (login/`/me`) y `GET /api/v1/system/license` para ocultar nav,
-  redirigir rutas BI a `/pedidos` y mostrar banners. El enforcement real es siempre server-side.
+- **Sin licencia:** la instalación corre COMPLETA (Core+BI) en **evaluación por 90 días desde
+  el primer arranque** (ancla en `system_installation.first_boot_at`, sembrada por migración /
+  baseline). Agotados: **bloqueo total** — solo login, refresh, logout y `/system/license`
+  (ver + cargar) responden; el resto devuelve 403 `LICENSE_EXPIRED` y el FE muestra la
+  pantalla "licencia requerida".
+- **Licencia Core:** perpetua (`expires_at: null`, `-modules core`) — BI apagado, ERP Core 100%.
+- **Licencia Core+BI:** perpetua (`expires_at: null`, `-modules bi`) — todo el pack.
+- La licencia es un **archivo JSON firmado (ed25519)**; el backend la lee en boot con
+  **hot-reload por mtime**: instalar, renovar o revocar no requiere reinicio.
+- `LICENSE_ENFORCE=true` (default en installs del instalador) activa el control; **ni el admin
+  lo bypasea**. `false` solo en dev (fail-open, sin trial ni bloqueos).
+- El rescate es **web**: desde la pantalla de bloqueo se carga el `license.json` (PUT
+  `/api/v1/system/license`), el backend verifica la firma antes de persistir y el sistema
+  desbloquea en caliente. No hace falta SSH.
+- El trial NO se reinicia: una licencia vencida (demo) cae al remanente de evaluación; el
+  reloj siempre corre desde el primer arranque.
 
 ## 2. Emisión (máquina del VENDEDOR — la clave privada jamás viaja)
 
@@ -31,11 +38,16 @@ go build -o /tmp/licensegen ./cmd/licensegen
 
 # 2b. Emitir la licencia de un cliente (MODELO NORMAL: compra única, PERPETUA —
 #     sin -days la licencia no vence jamás; decisión de negocio 2026-09-22):
+#   Core+BI (todo el pack):
 /tmp/licensegen issue \
   -key ~/custodia-licencias/vendor.key \
   -customer "Cliente Demo Sucursal Centro" \
   -edition core+bi -modules bi \
   -out ~/entregas/cliente-demo-centro/license.json
+#   Core SIN BI (perpetua, BI apagado — REQ_BIPACK v2.0 RF-029):
+# /tmp/licensegen issue -key ~/custodia-licencias/vendor.key \
+#   -customer "Cliente Core" -edition core -modules core \
+#   -out ~/entregas/cliente-core/license.json
 # Casos especiales ÚNICAMENTE a pedido (demo/trial con plazo):
 #   -days 365            → vence al año
 #   -expires 2027-09-21T12:00:00Z → fecha fija (gana sobre -days).
@@ -44,6 +56,15 @@ go build -o /tmp/licensegen ./cmd/licensegen
 Entrega al cliente: **`license.json` + la clave pública (base64)**. Nunca la privada.
 
 ## 3. Instalación (servidor del CLIENTE)
+
+**Vía instalador (v2.0, recomendada):** `install.sh` acepta `--license <archivo.json>`
+y `--license-public-key <public.key>` (o los pide en el wizard; con licencia la clave es
+obligatoria). Ambos archivos quedan copiados en `$ERP_ROOT/business_management/license/`,
+el mount del contenedor, y el `.env.docker` se genera con `LICENSE_ENFORCE=true` +
+`LICENSE_PUBLIC_KEY` + `LICENSE_TRIAL_DAYS=90`. Sin `--license`, la instalación arranca en
+evaluación (90 días) y ya puede rescatar por web (la pública, si se pasó, hace el resto).
+
+**Manual (servidor existente):**
 
 1. Copiar `license.json` al servidor (default: junto al binario, `./license.json`; cualquier ruta
    sirve configurando `LICENSE_FILE`).
@@ -67,6 +88,29 @@ Entrega al cliente: **`license.json` + la clave pública (base64)**. Nunca la pr
 2. Reemplazar `license.json` en el servidor (copy-over atómico o mv).
 3. Al siguiente request el backend recarga por mtime: `system/license` debe reportar
    `active` con el nuevo vencimiento. **Sin reinicio.**
+
+## 4b. Activación / rescate web (v2.0 — post-evaluación o post-venta)
+
+Cuando la instalación está bloqueada (evaluación agotada sin licencia) o el cliente compró
+después de probar:
+
+1. El cliente entra con su usuario (el login NO está bloqueado): verá la pantalla
+   **"Licencia requerida"** con el estado y el botón **Cargar licencia**.
+2. Entregarle el `license.json` (email/pendrive) y que lo seleccione ahí. Alternativa
+   programática:
+   ```bash
+   curl -s -X PUT -H "Authorization: Bearer <token>" -H "Content-Type: application/json" \
+        --data-binary @license.json http://localhost:5050/api/v1/system/license
+   ```
+3. Respuesta 200 + snapshot `"status":"active"` → el sistema desbloquea **en caliente** (el
+   FE reinicia la app al segundo). Un candidato inválido responde 400 `LICENSE_INVALID` con el
+   motivo y NO pisa la licencia existente.
+4. Si el bloqueo aparece SIN poder loguear (olvidos de contraseña aparte), el path manual
+   sigue siendo copiar el archivo a `$ERP_ROOT/business_management/license/license.json` — el
+   hot-reload lo aplica igual.
+
+Requisito: `LICENSE_PUBLIC_KEY` configurada (el instalador la pide; sin ella el backend no
+puede verificar NINGUNA licencia ni rescatar).
 
 ## 5. Revocación / baja del pack
 
@@ -108,6 +152,10 @@ Una instalación que hoy usa BI **no debe perderlo** al activar enforcement:
 | `status:"expired"` | Venció (+grace consumido) | Renovar (§4) |
 | 403 `MODULE_NOT_LICENSED` con licencia `active` | `modules` de la licencia no incluye `"bi"` | Re-emitir con `-modules bi` |
 | FE no muestra BI tras renovar | Entitlements en cache de sesión | Re-login o esperar al 403+refresh (revocación en caliente) |
+| Pantalla "Licencia requerida" (todo bloqueado) | Evaluación agotada sin licencia | Rescate web (§4b): cargar `license.json` desde la propia pantalla |
+| PUT de licencia → 400 `LICENSE_INVALID` | Firma inválida / clave pública incorrecta / archivo corrupto | Verificar que la pública sea la del par vendedor; re-emitir (§2b) |
+| PUT de licencia → 400 "public key not configured" | `LICENSE_PUBLIC_KEY` vacía | Cargar la pública en `.env.docker` y recrear el contenedor backend |
+| Evaluación ya vencida en un install recién actualizado | El ancla `system_installation` se sembró al aplicar la migración | Normal: 90 días desde el update. Activación adelantada vía §4b |
 
 ## 9. Verificación E2E ejecutada (2026-09-21, dev)
 
