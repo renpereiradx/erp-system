@@ -1,4 +1,4 @@
-# RUNBOOK — Licencias BI Pack Premium (2026-09 · v2.1 trial + rescate)
+# RUNBOOK — Licencias BI Pack Premium (2026-09 · v2.2 trial + rescate + terminales)
 
 **Plan:** [PLAN_BI_PACK_PREMIUM.md](./PLAN_BI_PACK_PREMIUM.md) (ADR-1/ADR-4, F6) · **v2.0:** REQ_BIPACK (RF-025..029, RN-08/09)
 **Implementación:** BE `9dd9942` (licencias) + v2.0 2026-09-28 `441046e` (trial/bloqueo/rescate) + v2.1 2026-09-29 (auditoría: permiso `license:write`, licencia vencida→Core, ancla fail-open) · FE `b3ab4eb` + v2.0 `91b41de` (gate de licencia) + v2.1 (instalación desde Configuración, auto-recuperación del gate)
@@ -13,8 +13,11 @@
   baseline). Agotados: **bloqueo total** — solo login, refresh, logout y `/system/license`
   (ver + cargar) responden; el resto devuelve 403 `LICENSE_EXPIRED` y el FE muestra la
   pantalla "licencia requerida".
-- **Licencia Core:** perpetua (`expires_at: null`, `-modules core`) — BI apagado, ERP Core 100%.
-- **Licencia Core+BI:** perpetua (`expires_at: null`, `-modules bi`) — todo el pack.
+- **Licencia Core:** perpetua (`expires_at: null`, `-modules core`) — BI apagado, ERP Core 100%,
+  **1 terminal POS activa por sucursal** (RN-10: las terminales adicionales son del Premium).
+- **Licencia Core+BI:** perpetua (`expires_at: null`, `-modules bi`) — todo el pack, terminales
+  sin límite. La evaluación vigente también cuenta como Premium para las terminales.
+- Catálogo de paquetes para el cliente (comercial/soporte): `docs/guides/GUIDE_PAQUETES_CLIENTE.md`.
 - La licencia es un **archivo JSON firmado (ed25519)**; el backend la lee en boot con
   **hot-reload por mtime**: instalar, renovar o revocar no requiere reinicio.
 - `LICENSE_ENFORCE=true` (default en installs del instalador) activa el control; **ni el admin

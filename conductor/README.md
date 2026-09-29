@@ -71,6 +71,32 @@ rutas con datos reales.
 
 ---
 
+## REQ_BIPACK v2.2 — Límite de terminales por sucursal sin pack Premium (2026-09-29)
+
+Decisión del dueño: sin el pack BI la instalación opera **1 terminal POS activa por sucursal**;
+el Premium (Core+BI, o la evaluación vigente) habilita terminales adicionales. Implementado en
+BE+FE (v2.2):
+
+- `licensing.Service.TerminalLimitPerBranch()` (0 = ilimitado; sin BI = `TerminalLimitNoPremium`
+  = 1; dev fail-open = ilimitado) + código API `LICENSE_TERMINAL_LIMIT` (403).
+- `devices`: `Reader.CountActiveByBranch` / `HasActiveOlderInBranch` (índice parcial existente);
+  gates en `Service.Create` (2ª activa en la sucursal), `Service.Update` (mudanza/reactivación,
+  excluyéndose a sí misma), `Service.Pair` (terminal no incumbente) — error tipado
+  `TerminalLimitError` → 403 con mensaje comercial.
+- `DeviceBranchMiddleware` gana `TerminalGate{Policy, Counter}`: en OPERACIÓN, la terminal
+  incumbente (primera activa de la sucursal) sigue y las demás responden 403 — cierra el hueco
+  de registrar varias terminales durante la evaluación y seguir operándolas con Core.
+  Best-effort (fallo de conteo deja pasar, como el touch).
+- Wiring: el service de devices se arma en routes con la policy inyectada (lic vive en routes,
+  como el BI); `container.DeviceRepo()` nuevo.
+- FE: aviso comercial en `/configuracion/terminales` sin pack BI (`devices.limit.notice`,
+  es; en hereda por spread) + tests del aviso.
+- Catálogo de paquetes para el cliente: `docs/guides/GUIDE_PAQUETES_CLIENTE.md` (Evaluación /
+  Core / Core+BI Premium, tabla comparativa, activación y upgrade).
+- Tests: unit `TestServiceTerminalLimit` + `TestDeviceBranchMiddleware_TerminalGate`;
+  integración `TestDevices_TerminalLimitByEdition` (evaluación ilimitada → Core 403 + otra
+  sucursal 201 + pair incumbente OK → Premium en caliente 201).
+
 ## REQ_BIPACK v2.1 — Correcciones de auditoría de la v2.0 (2026-09-29)
 
 Auditoría de la implementación v2.0 (hallazgos verificados contra código) y correcciones

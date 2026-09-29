@@ -20,6 +20,7 @@ Las guías del módulo deploy nacen del plan `conductor/PLAN_DEPLOY_ESCALADO_ONP
 
 | Guía | Qué cubre | Estado |
 |:--|:--|:--|
+| [`GUIDE_PAQUETES_CLIENTE.md`](GUIDE_PAQUETES_CLIENTE.md) | Catálogo de paquetes para el cliente: Evaluación 90 días / ERP Core / Core+BI Premium, límites y cómo activar o subir de edición (REQ_BIPACK RN-07/08/09/10) | ✅ Vigente (v1.0, 2026-09-29) |
 | [`GUIDE_INSTALACION_NUEVO_CLIENTE.md`](GUIDE_INSTALACION_NUEVO_CLIENTE.md) | Instalación/actualización desde el bundle con perfiles `laptop` y `server` (RF-DEPLOY-001..003, 011..014) | ✅ Vigente (contra el instalador real, F5) |
 | [`GUIDE_TERMINALES_LOCAL.md`](GUIDE_TERMINALES_LOCAL.md) | Alta de una terminal: navegador, URL, usuario; confianza de la CA interna (RF-DEPLOY-004/005) | ✅ Vigente (F5) |
 | [`GUIDE_MIGRACION_LAPTOP_A_SERVIDOR.md`](GUIDE_MIGRACION_LAPTOP_A_SERVIDOR.md) | Traslado completo con backup etiquetado, restore, verificación y baja de la laptop (RF-DEPLOY-006/007) | ✅ Vigente (F5, recorrido E2E del plan) |
