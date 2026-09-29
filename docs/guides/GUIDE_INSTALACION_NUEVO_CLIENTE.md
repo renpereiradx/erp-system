@@ -6,11 +6,11 @@
 |:--|:--|
 | Módulo | Instalación on-premise de clientes |
 | Código | GUIDE-INST-CLIENTE |
-| Versión | v1.0 |
+| Versión | v1.1 |
 | Estado | Vigente (probada contra el ensayo E2E del plan PLAN_DEPLOY_ESCALADO_ONPREMISE) |
-| Fecha | 2026-09-22 |
+| Fecha | 2026-09-29 |
 | Audiencia | Implementación / soporte |
-| Requerimiento | [`REQ_DEPLOY_DISTRIBUCION_ONPREMISE.md`](../requirements/REQ_DEPLOY_DISTRIBUCION_ONPREMISE.md) (RF-DEPLOY-001..003, 011..014) |
+| Requerimiento | [`REQ_DEPLOY_DISTRIBUCION_ONPREMISE.md`](../requirements/REQ_DEPLOY_DISTRIBUCION_ONPREMISE.md) (RF-DEPLOY-001..003, 011..020) · [`REQ_BIPACK_LICENCIAMIENTO_BI.md`](../requirements/REQ_BIPACK_LICENCIAMIENTO_BI.md) (RN-08/09) |
 
 ---
 
@@ -80,8 +80,13 @@ sudo ./business_management/deploy/scripts/install.sh \
     --profile server \
     --hostname erp.miempresa.local \
     --license ~/ruta/license.json \
+    --license-public-key ~/ruta/licensing-public.key \
     --yes
 ```
+
+> `--license` y `--license-public-key` van SIEMPRE juntos (el instalador lo
+> exige en todos los modos): sin la clave pública el backend no puede verificar
+> la licencia y la instalación correría en evaluación sin avisar.
 
 El instalador es **idempotente**: se puede re-ejecutar sin romper nada (útil si
 algo falla a mitad de camino, y para **actualizar** una instalación: bundle nuevo
@@ -188,4 +193,5 @@ delta. **Antes de actualizar: verificar que existe el backup de anoche**
 
 | Versión | Fecha | Cambio | Autor |
 |:--|:--|:--|:--|
+| v1.1 | 2026-09-29 | Alineación con REQ_BIPACK v2.1 / REQ_DEPLOY v0.8 (auditoría): `--license` exige SIEMPRE `--license-public-key` (el ejemplo canónico ahora los lleva juntos), los updates sin licencia activan la evaluación (90 días desde el update), `license/` se entrega con permisos para el rescate web y el smoke lo verifica, instalación de licencia post-pago también desde Configuración → Licencia | renpereiradx + agente (auditoría ZCode) |
 | v1.0 | 2026-09-22 | Primera versión, escrita contra el instalador real (F2-F3 del plan) y el ensayo E2E | renpereiradx + agente |

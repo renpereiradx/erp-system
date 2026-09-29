@@ -1,7 +1,7 @@
-# RUNBOOK — Licencias BI Pack Premium (2026-09 · v2.0 trial + rescate)
+# RUNBOOK — Licencias BI Pack Premium (2026-09 · v2.1 trial + rescate)
 
 **Plan:** [PLAN_BI_PACK_PREMIUM.md](./PLAN_BI_PACK_PREMIUM.md) (ADR-1/ADR-4, F6) · **v2.0:** REQ_BIPACK (RF-025..029, RN-08/09)
-**Implementación:** BE `9dd9942` (licencias) + v2.0 2026-09-28 (trial/bloqueo/rescate) · FE `b3ab4eb` + v2.0 (gate de licencia)
+**Implementación:** BE `9dd9942` (licencias) + v2.0 2026-09-28 `441046e` (trial/bloqueo/rescate) + v2.1 2026-09-29 (auditoría: permiso `license:write`, licencia vencida→Core, ancla fail-open) · FE `b3ab4eb` + v2.0 `91b41de` (gate de licencia) + v2.1 (instalación desde Configuración, auto-recuperación del gate)
 **Audiencia:** vendedor / ops — emisión, instalación, evaluación, bloqueo, rescate web, renovación y deploy prod.
 
 ---
@@ -19,11 +19,14 @@
   **hot-reload por mtime**: instalar, renovar o revocar no requiere reinicio.
 - `LICENSE_ENFORCE=true` (default en installs del instalador) activa el control; **ni el admin
   lo bypasea**. `false` solo en dev (fail-open, sin trial ni bloqueos).
-- El rescate es **web**: desde la pantalla de bloqueo se carga el `license.json` (PUT
-  `/api/v1/system/license`), el backend verifica la firma antes de persistir y el sistema
-  desbloquea en caliente. No hace falta SSH.
-- El trial NO se reinicia: una licencia vencida (demo) cae al remanente de evaluación; el
-  reloj siempre corre desde el primer arranque.
+- El rescate es **web** y requiere el permiso `license:write` (administrador — v2.1): desde
+  la pantalla de bloqueo **o Configuración → Licencia → "Instalar licencia…"** se carga el
+  `license.json` (PUT `/api/v1/system/license`), el backend verifica la firma antes de
+  persistir (un archivo vencido se rechaza con 400) y el sistema desbloquea en caliente. No
+  hace falta SSH.
+- Una licencia firmada pero VENCIDA (demo) **degrada a Core**: BI apagado, ERP operativo —
+  no bloquea el sistema ni re-regala la evaluación (v2.1). Solo la evaluación agotada sin
+  licencia bloquea; el reloj del trial siempre corre desde el primer arranque.
 
 ## 2. Emisión (máquina del VENDEDOR — la clave privada jamás viaja)
 
@@ -120,15 +123,24 @@ puede verificar NINGUNA licencia ni rescatar).
 - **Expiración natural:** dejar pasar `expires_at` (+ `LICENSE_GRACE_DAYS` si se pactó). El FE
   muestra banner de aviso desde 30 días antes.
 
-## 6. Provisioning de instalaciones existentes (¡antes del flip!)
+## 6. Provisioning de instalaciones existentes (v2.1)
 
-Una instalación que hoy usa BI **no debe perderlo** al activar enforcement:
+Desde REQ_DEPLOY v0.8 el instalador maneja el flip solo:
 
 1. Emitir licencia con BI para el cliente (§2b).
-2. Instalar archivo + `LICENSE_PUBLIC_KEY` (§3, con `LICENSE_ENFORCE=false` todavía).
-3. Verificar `system/license` → `active`.
-4. Flip `LICENSE_ENFORCE=true` y reiniciar (o solo recargar el servicio). El hot-reload cubre el
-   archivo, no las env vars: cambiar `LICENSE_ENFORCE` requiere reinicio.
+2. Correr `install.sh --license <archivo> --license-public-key <clave>` (ambos flags,
+   obligatorios juntos): copia la licencia, embebe/inyecta la clave pública en `.env.docker`
+   y deja `LICENSE_ENFORCE=true`.
+3. Verificar `GET /system/license` → `status: active`.
+
+El camino manual (licencia + `LICENSE_PUBLIC_KEY` con `LICENSE_ENFORCE=false`, verificar
+`active`, recién entonces flip a `true` + reinicio) queda para instalaciones NO gestionadas
+por el instalador: el hot-reload cubre el archivo, no las env vars — cambiar
+`LICENSE_ENFORCE` siempre requiere reinicio.
+
+**Instalación vieja actualizada sin licencia:** el update activa `LICENSE_ENFORCE=true` y la
+evaluación corre 90 días desde la migración del ancla (`system_installation`) — avisar al
+cliente: al vencer, bloqueo con rescate web.
 
 ## 7. Checklist de deploy prod
 

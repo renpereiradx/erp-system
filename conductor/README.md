@@ -71,6 +71,53 @@ rutas con datos reales.
 
 ---
 
+## REQ_BIPACK v2.1 — Correcciones de auditoría de la v2.0 (2026-09-29)
+
+Auditoría de la implementación v2.0 (hallazgos verificados contra código) y correcciones
+aplicadas en BE `3d88261`, FE `356dfb1`, REQ_BIPACK v2.1 + REQ_DEPLOY v0.8:
+
+- **P0 — rescate web roto en Docker**: `license/` quedaba `root:root` 755 y el contenedor
+  corre como `appuser` (1000) → el PUT respondía EACCES justo en el escenario de rescate.
+  Fix: `chown -R 1000:1000 license` en cada corrida del install.sh + probe de escritura en
+  el smoke (`touch /app/license/.rw-probe`) con die accionable.
+- **P1 — PUT auth-any**: cualquier autenticado podía reemplazar la licencia. Fix: permiso
+  `license:write` (migración `20260929105845`, id 192, grant solo F2VLso) aplicado con
+  `RequireModulePermissionOnPath` en el binding de la ruta (licensing sigue
+  dependency-free); GET queda auth-only para todos.
+- **P1 — ancla fail-closed eterno**: el `sync.Once` cacheaba también los ERRORES → un
+  glitch de DB en el primer request bloqueaba el ERP hasta reiniciar el binario. Fix:
+  éxito cacheado para siempre; error transitorio **fail-open como trial** con retry cada
+  30s + timeout 3s + siembra lazy si falta la fila (`ErrNoRows`). Solo "anchor no
+  configurado" (wiring bug) sigue fail-closed.
+- **P1 — licencia paga vencida destruida**: una licencia firmada vencida regalaba BI full
+  dentro de la ventana o bloqueaba TODO pasada la ventana. Fix: modo nuevo `core` — Core
+  ON, pack BI off, nunca bloquea ni re-regala (RN-08/RF-027 enmendadas; FE: badge
+  "Licencia vencida (Core activo)").
+- **P1 — updates en el modelo viejo**: install.sh solo warneaba al heredar un `.env.docker`
+  con enforce off (las instalaciones pre-v2.0 nunca entraban en evaluación). Fix: flip a
+  `LICENSE_ENFORCE=true` sin licencia instalada + inyección de `LICENSE_PUBLIC_KEY` en el
+  `.env.docker` existente + pareja `--license`→`--license-public-key` obligatoria en todos
+  los modos (antes solo el wizard TTY) + paso 10 re-escrito.
+- **P2**: PUT rechaza licencias ya vencidas (400 con la fecha) y mapea fallos de
+  filesystem a 500 `LICENSE_WRITE_FAILED`; `LICENSE_GRACE_DAYS` extiende también el trial;
+  whitelist sin entradas muertas; `LICENSE_TRIAL_DAYS<0` desactiva la evaluación
+  (contrato "0 → 90" del `Config` preservado para los productores de Config).
+- **FE**: botón "Instalar licencia…" en Configuración → Licencia (gated por permiso,
+  invalida `['system-license']` + `refreshEntitlements` → nav BI en caliente sin reload);
+  gate con sondeo de recuperación 30s + `onRecovered` (desmonta si el rescate llegó por
+  otra vía), badge según snapshot, Toaster montado durante el gate, fechas en UTC real;
+  banner danger de fin de evaluación; test del banner autocontradictorio corregido.
+- Gates: BE `go test ./...` + `golangci-lint` verdes, integración `TestBILicensing*` 6/6
+  (nuevo `TestBILicensing_RescueRequiresLicenseWrite`: cajero 403 / admin 200 / GET
+  auth-only); FE vitest 1193/1193, tsc 0, build, lint:design. Smoke E2E con binario real
+  en :5055 (licencias licensegen dev-key): trial full → bloqueo 403 `LICENSE_EXPIRED` con
+  login/snapshot vivos → PUT core (Core ON + BI `MODULE_NOT_LICENSED`) → PUT core+bi (BI
+  ON) → PUT vencida 400 → archivo vencido = `mode: core` → permisos cajero/admin.
+- Gotcha del smoke: el ancla se cachea por proceso en el ÉXITO (primera lectura) —
+  manipular `system_installation` por SQL para probar bloqueo requiere reiniciar la
+  instancia; y firmar el JWT a mano con python lo rechaza `ValidateAccess` (generarlo con
+  `identity.TokenService.NewAccessToken` en un mini-programa Go).
+
 ## REQ_BIPACK v2.0 — Evaluación (trial 90 días) + bloqueo total + rescate web (2026-09-28)
 
 Implementación del modelo aprobado (REQ_BIPACK_LICENCIAMIENTO_BI.md v2.0, RF-025..029,
