@@ -166,8 +166,9 @@ src/domain/<feature>/  ← Lógica de negocio pura (cálculos, validaciones)
 > features nuevas, hooks con estado, listas, data fetching y refactors → auditar contra sus
 > reglas (`rerender-*`, `rendering-*`, `bundle-*`, `client-*`, `js-*`) y corregir o documentar
 > cada hallazgo; en hotfixes triviales aplicarla con criterio. Este proyecto es una SPA Vite
-> sin SSR: las reglas `server-*` no aplican. Dejar el reporte en `conductor/` del repo
-> (ejemplo: `AUDIT_REACT_PERFORMANCE_MAINLAYOUT_FRONTEND.md`).
+> sin SSR: las reglas `server-*` no aplican. Escribir el reporte en `conductor/` del repo
+> SOLO cuando el usuario lo pida explícitamente (ejemplo de reporte previo:
+> `AUDIT_REACT_PERFORMANCE_MAINLAYOUT_FRONTEND.md`).
 
 > Package manager: **pnpm** exclusivamente. Nunca `npm` ni `yarn`.
 
