@@ -1,7 +1,7 @@
 # AGENTS.md — ERP System (Monorepo)
 
 Instrucciones para agentes AI de coding que trabajen en este workspace.
-Última actualización: 2026-09-03
+Última actualización: 2026-09-30
 
 ---
 
@@ -237,6 +237,18 @@ hermes project show erp-system        # Estado del workspace
 5. **Planes en conductor/**: Antes de refactors, documentar el plan en `conductor/` del repo afectado.
 6. **Migraciones SQL**: Solo mediante `make migrate-create`. Nunca modificar migraciones existentes.
 7. **Fases de arquitectura**: Respetar el orden de las fases. No saltar fases ni mezclar contextos.
+8. **Puertos de desarrollo — liberar ANTES de levantar** (`make run`, `pnpm dev`): los procesos dev viven detached y nadie los mata al cerrar la sesión o la terminal; `make run` no detiene la instancia previa, solo intenta bind → `address already in use` (5050 backend, 3001 docs-server, 5173 Vite). Verificar y liberar por PID — fuente de verdad `ss -tlnp`:
+
+   ```bash
+   ss -tlnp | grep -E ':3001|:5050|:5173'   # quién retiene cada puerto
+   kill <PID>                                # liberar
+   ```
+
+   - Backend :5050 corre detached (`nohup ./bin/business_management &`) por workflow: los agentes lo reinician tras cambios BE y queda vivo como instancia compartida. Matarlo solo cuando el owner vaya a correr `make run` él mismo.
+   - `go run` deja binarios temporales llamados `main` (~/.cache/go-build) imposibles de pkill por nombre: matar SIEMPRE por PID de `ss`.
+   - El recipe `run` solo trapea el docs-server: un `make run` interrumpido (terminal cerrada) deja el docs huérfano reteniendo :3001 (systemd --user lo adopta). Si `make run` falla con bind, revisar AMBOS puertos.
+   - Vite :5173 es de vida larga por diseño (reuso entre sesiones). Una segunda instancia salta a :5174 y el backend rechaza CORS (solo permite 5173/3000): matar la previa, no convivir.
+   - `pkill -f <patrón>` puede matchear la propia shell que lo ejecuta si el patrón viaja en su línea de comando (zsh -c …): anclar (`^/ruta/bin`) o matar por PID.
 
 ---
 
