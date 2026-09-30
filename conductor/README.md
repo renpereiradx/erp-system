@@ -17,6 +17,7 @@ frontend a la vez.
 | `PLAN_PEDIDOS_MOSTRADOR_VENDEDOR_CAJA.md` | 🔄 FASE 5 pendiente (ver plan). |
 | `PLAN_CATALOGO_VENDEDOR.md` | 🔄 FASE 3 opcional (integración con `/pedidos`). |
 | `PLAN_MONOROL_DESCUENTOS_CREDITO_CLIENTE.md` | 🔄 A0 prod audit pendiente (deploy blocker). |
+| `PLAN_UNITS_V2_COMPLETACION_2026-09-30.md` | 📋 **Propuesto**: análisis de viabilidad UOM verificado contra código + fases F1-F6 (bugs núcleo `update_sale_item`/modal compras → presupuestos/requisiciones → catálogo único → inventario → BI → manufacturing). |
 
 > **Cierre 2026-09-17**: `PLAN_AUDIT_BI_INTELIGENCIA_NEGOCIOS_2026-09-14.md` COMPLETADO (5/5
 > fases: backend gate duro, auditoría 50 páginas, fixes P0/P1/P2, migración .tsx/FSD + tokens,
