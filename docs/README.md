@@ -4,7 +4,7 @@ Este directorio registra **textualmente los requerimientos** de cada módulo o s
 System: *qué debe hacer el sistema y por qué*, escrito para que tanto ingeniería como
 personas sin formación técnica (dirección, comerciales, soporte) puedan revisarlo y entenderlo.
 
-Última actualización: 2026-09-29 (auditoría de licencias v2.1 + límite de terminales RN-10 v2.2 + GUIDE_PAQUETES_CLIENTE)
+Última actualización: 2026-09-30 (GUIDE_HOSTING_NUBE: propuesta de alojamiento en nube, gratis → pago)
 
 ---
 
