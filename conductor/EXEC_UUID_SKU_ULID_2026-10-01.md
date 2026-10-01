@@ -81,9 +81,12 @@ variante → `variant.sku`.
 1. **BI / read models**: TopProductsOverview y dashboards BI siguen mostrando `product_id` (los
    payloads de analítica no traen sku; tocaría los 41 read models — fuera de alcance).
 2. **Reservas** (ReservationHistory/Dashboard): dominio reservas sin sku en payload.
-3. **Búsqueda por producto** (`granularity=product`, /catalogo): no matchea ni expone `products.sku`
-   aún (los pickers del flujo comercial sí, vía búsqueda plana). Si el catálogo necesita buscar por
-   SKU, tocar el predicado del search repo (o añadir sku a la MV).
+3. ~~**Búsqueda por producto** (`granularity=product`)~~ **RESUELTO 2026-10-01 (BE f268e31, follow-up de
+   auditoría)**: `AdvancedSearch` por producto ahora matchea `products.sku` (ILIKE, join `psku` — mismo
+   patrón que la búsqueda plana) y expone `sku` en el payload (aditivo). Nota: la redacción original
+   decía "/catalogo", pero /catalogo ya usa la búsqueda plana (`granularity=variant`,
+   `useCatalogProducts.ts:112`) y buscaba SKU desde F2 — el diferido real era la cadena por-producto
+   (fallback legacy y consumidores del contrato product-granularity).
 4. **F4** (normalizar `purchase_requisition_details.product_id` varchar(50)→27): omitido — ULID cabe
    en varchar(50); riesgo sin beneficio.
 5. **Rutas financieras** `get_product_enriched_by_*` (DB functions) no exponen sku. Afecta a
@@ -114,3 +117,8 @@ read-only con JWT dev: `POST /products/search/advanced` por SKU → fila base co
 `shortid` ausente de producto/variante. Hallazgos: **P3** `go.mod` anota `oklog/ulid/v2` como
 `// indirect` siendo dependencia directa (correr `go mod tidy`); nota operativa: la instancia :5050
 corre vía `go run` (proceso `main`), no el binario canónico de `bin/`. Sin hallazgos bloqueantes.
+
+**Follow-ups de auditoría ejecutados en la misma fecha (BE `f268e31`)**: (1) diferido §6.3 cerrado —
+`granularity=product` matchea y expone `sku` (smoke: SKU exacto + parcial + nombre sin regresión);
+(2) `go mod tidy` corrido (ulid a directas); (3) backend relanzado con el patrón canónico
+(`nohup ./bin/business_management`, `server_starting` 20:36:42).
