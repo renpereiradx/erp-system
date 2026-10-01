@@ -86,8 +86,11 @@ variante → `variant.sku`.
    SKU, tocar el predicado del search repo (o añadir sku a la MV).
 4. **F4** (normalizar `purchase_requisition_details.product_id` varchar(50)→27): omitido — ULID cabe
    en varchar(50); riesgo sin beneficio.
-5. **Rutas financieras** `get_product_enriched_by_*` (DB functions) no exponen sku — solo afecta
-   `/products/info/search` (fallback legacy de los pickers).
+5. **Rutas financieras** `get_product_enriched_by_*` (DB functions) no exponen sku. Afecta a
+   `/products/{id}/info`, `/products/info/barcode/{barcode}`, `/products/info/search/{name}` y
+   `/products/financial/*` (fallback legacy de los pickers; corregido en auditoría 2026-10-01: el texto
+   original decía "solo /products/info/search" — `/{id}/info` verificado en vivo respondiendo 200 sin
+   `sku`). Los flujos principales (listado y búsqueda plana) sí traen sku.
 6. **shortid** sigue vivo para users/parties/setup/admin-init (13 call sites) — misma deuda de lib
    archivada, alcance distinto.
 
@@ -100,3 +103,14 @@ variante → `variant.sku`.
   dependen de esos nombres.
 - El update de producto envía `sku: undefined` cuando el campo va vacío (no borra el SKU; el BE no
   soporta borrarlo).
+
+## 8. Auditoría independiente (2026-10-01)
+
+Verificado de punta a punta por un segundo agente: gates re-ejecutados en limpio (golangci-lint 0,
+vitest 1357/1357, tsc 0, tests BE de paquetes tocados ok; error de `tests/integration` confirmado
+preexistente en el commit padre `ecb79f8`); DB dev 103/103 SKUs únicos + `uq_products_sku`; smoke vivo
+read-only con JWT dev: `POST /products/search/advanced` por SKU → fila base con `sku`,
+`GET /products/list` 5/5 con sku, `/{id}/info` sin sku (= diferido §6.5, alcance corregido arriba);
+`shortid` ausente de producto/variante. Hallazgos: **P3** `go.mod` anota `oklog/ulid/v2` como
+`// indirect` siendo dependencia directa (correr `go mod tidy`); nota operativa: la instancia :5050
+corre vía `go run` (proceso `main`), no el binario canónico de `bin/`. Sin hallazgos bloqueantes.
