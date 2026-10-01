@@ -100,3 +100,51 @@ saldo; venta parcial (Gs. 1.000 de 3.630) → 200 con
 
 `go test ./internal/documents/...` + `go build`; `npx vitest --run`,
 `npx tsc --noEmit`, `pnpm build`, `pnpm lint:design` en verde.
+
+---
+
+# Extensión 2026-10-01 — Impresión de presupuestos (ticket + PDF)
+
+Misma pieza sobre la página de presupuestos (`/comercial/presupuestos`), cuyos
+botones "Imprimir"/"PDF" existían muertos (sin onClick).
+
+## BE
+
+- Migración `20260930212951_create_budget_documents`: tabla
+  `documents.budget_documents` espejo de sale_documents con FK a
+  `transactions.budget_orders` (los IDs BUD-… violan la FK de sale_documents).
+- Renderer: `DocumentSaleData.DocKind` (SALE zero-value | BUDGET) + ValidUntil.
+  Ticket presupuesto: rótulo "Presupuesto: <id>", "Válido hasta", sin
+  subtotal/IVA/pagos/SALDO, footer "PRESUPUESTO - NO VALIDO COMO COMPROBANTE".
+  PDF: título "PRESUPUESTO — NO FISCAL", solo descuentos+total, metadata doc
+  "Presupuesto <id>".
+- Port `BudgetDataSource` + Deps.Budgets/BudgetDocs; service
+  RenderBudgetTicket/PrintBudgetTicket/GetBudgetComprobantePDF (recordPrint
+  generalizado a `recordDocumentPrint(store,…)`).
+- Wiring: `budgetDataSourceBridge` sobre BudgetService (resuelve ISO code por
+  currency_id, igual que ventas); `BudgetDocumentRepo` en platform/postgres.
+- `BudgetOrder.BranchID` expuesto (GetByID) para encabezado/RECEIPT correctos
+  por sucursal.
+- Rutas documents gated igual (documents:read): budgets/{id}/ticket/render,
+  ticket/print, comprobante.pdf.
+- Smoke dev:5050: render 200 con PRESUPUESTO+vigencia+total correcto y sin
+  IVA/saldo; PDF 200 (33.5KB) cacheado en budget_documents; print sin
+  impresora → 404 tipado.
+
+## FE
+
+- `features/budgets/` nuevo slice: `useBudgetDocuments` (gate documents:read +
+  printConfigured + print/downloadPdf con toasts) y `BudgetPrintModal`
+  (post-aprobación, Enter imprime).
+- `BudgetDetail`: botones Imprimir/PDF cableados; al Aprobar se abre el modal
+  con total y vigencia (espejo del checkout de ventas).
+- `BudgetManagement`: acción de fila "Imprimir PDF" cableada; botón muerto de
+  toolbar "Imprimir" eliminado (no imprimía nada).
+- i18n `budgets.print.*` es/en; +9 tests (modal 6, detalle 3); el test
+  preexistente de BudgetDetail (otra sesión) extendido con QueryClientProvider.
+
+## Gates
+
+go test documents/sale/postgres OK (falla preexistente audit_scope de otra
+área); vitest 1343/1343, tsc 0, build, lint:design limpio.
+
