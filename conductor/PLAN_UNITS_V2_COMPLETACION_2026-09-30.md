@@ -1,6 +1,6 @@
 # PLAN_UNITS_V2_COMPLETACION — Unidades de medida: análisis de viabilidad y fases de completación
 
-**Fecha:** 2026-09-30 · **Estado:** 📋 Propuesto (hallazgos verificados contra código al 2026-09-30; ejecución pendiente de aprobación)
+**Fecha:** 2026-09-30 · **Estado:** ✅ F1-F3 EJECUTADOS (2026-10-02, hallazgos verificados contra código; ver §9 registro de ejecución). F4-F6 pendientes de decisión de negocio.
 **Scope:** Cross-repo — Backend Go + SQL (`business_management`) y Frontend (`erp-webapp`)
 **Antecedentes:**
 - `conductor/PLAN_UNITS_CONVERSIONES_2026-09-24.md` (registro v1 de este dir)
@@ -199,3 +199,101 @@ Esfuerzo: alto.
 - `unit` en payloads siempre lowercase (CHECKs SQL case-sensitive).
 - Repos con WIP ajeno uncommitted → stage por rutas explícitas.
 - Tests de Radix Select requieren los stubs de PointerEvent del vitest.setup (ya presentes).
+
+---
+
+## 9. Registro de ejecución (2026-10-02)
+
+### F1 — Cerrado ✅ (BE + FE)
+
+1. **B1 `update_sale_item`**: migración `20261002103000_update_sale_item_per_product_conversion`
+   (dump+anclas): guard EXISTS + `convert_units_for_product` en las dos conversiones.
+   Smoke data-driven en dev DB (BEGIN/ROLLBACK): conversión GLOBAL box→kg ×10 vs
+   ESPECÍFICA ×20 — editar la línea 1→2 box descontó **20 kg** (con la función vieja
+   habría descontado 10). Bonus: el trigger de INSERT de `sales_order_details` también
+   descontó con el factor específico.
+2. **B2 validación temprana compras**: la cascada de conversión Go se movió a
+   `internal/shared` (`ScopedConversion` + `FindConversionFactor`, única implementación Go —
+   sale y purchase delegan); `purchase.UnitConversion` gana `ProductID`;
+   `OrderService.SetConversionReader` + validación en `validateCompleteRequest`
+   (`shared.ValidateUnit` + factor elegida→base, fetch lazy, modos degradados nil-safe);
+   wiring: `NewPurchaseConversionBridge` (measure→purchase) + `Conversions` en
+   `PurchaseDeps`. Tests: 4 casos nuevos (código inválido, sin conversión,
+   específica+global, degradado).
+3. **Hallazgo P0 NUEVO (F9): la derivación de precio del POS estaba INVERTIDA** —
+   `SalesNew.resolveModalUnitOriginalPrice` multiplicaba por `resolveUnitFactor(base→elegida)`
+   (recíproco del SQL): 1 ton con base kg a 5.000 mostraba **5** en vez de **5.000.000**;
+   es exactamente el bug "417 vs 60.000" que el SQL corrigió el 09-26 pero que quedó
+   invertido en FE (la dirección solo se nota con filas de una sola dirección: globals
+   están sembradas en ambos sentidos y lo enmascaraba). Fix: dominio nuevo
+   `src/domain/units/deriveUnitPrice.ts` (precio registrado → base × factor(elegida→base)
+   → base + `matchesUnit=false`), SalesNew delega; 11 tests de regresión.
+4. **F1-FE modal compras reactivo**: `usePurchasesLogic` fetchea conversiones al abrir el
+   modal (fail-silent) + guarda `unit_costs_summary` por unidad; `handleModalUnitChange`
+   recalcula costo (registrado → base × factor vía deriveUnitPrice) y el hint preventivo
+   `modalUnitConversionHint` (sin NI costo NI conversión); gating de decimales con
+   `isDecimalUnit` al confirmar (floor para enteras, 0 se bloquea); `PurchaseProductModal`
+   consume `handleModalUnitChange` + hint (`purchases.product_modal.unit_no_conversion`,
+   es/en). Modo edición también carga costos por unidad. Tests: 7 del hook real (mocks en
+   frontera de servicios) + 3 del modal (combobox Radix + hint).
+
+### F2 — Cerrado ✅
+
+1. **Presupuestos decimales** (`BudgetCreate.tsx`): gating `isDecimalUnit` igual que
+   requisiciones (min/step por unidad + floor onBlur para enteras + mínimo 0,01/1).
+   Tests: 3 (0,5 kg sobrevive; 1,5 box → 1; 0,5 box bloqueado).
+2. **B3 CHECK requisiciones**: migración `20261002113000_requisition_unit_check_canonical`
+   — CHECK alineado a los 33 valores canónicos (mismo orden que `shared.AllowedUnits`).
+   Smoke: `pair`/`sqft` entran, `bushel` sigue rechazado.
+3. **B4 variant_id**: migración `20261002114000_budget_requisition_variant_id` — columnas
+   `variant_id` en `budget_order_details` + `purchase_requisition_details` (FK a
+   product_variants); `create_budget_order` persiste variant (guard FIX-2) **y también la
+   columna `unit` que descartaba**; `convert_budget_to_sale` incluye variant_id en el
+   payload (process_sale_with_reserve ya lo consumía). Go: `BudgetOrderDetail`/
+   `RequisitionDetail`/`CreateRequisitionDetailItem` ganan `VariantID` + repos. Smoke E2E:
+   presupuesto con variante → venta vende la VARIANTE (antes: producto base).
+4. **Decisión documentada**: presupuestos/requisiciones siguen en `base_unit` fija (sin
+   selector de unidad) — el workflow de cotización/requerimiento no exige multi-unidad;
+   la conversión real ocurre al vender/comprar. Si un módulo futuro la pide, el selector
+   es `UnitSelect` + factor (patrón ya probado).
+
+### F3 — Cerrado ✅ (mínimo vital según el propio plan)
+
+1. **Tabla `products.units` física: DIFERIDA.** Los CHECKs SQL no pueden subqueeryar:
+   derivarlos de una tabla exige triggers de validación (refactor caro sobre CHECKs
+   históricos). Mínimo vital ejecutado: las listas quedaron alineadas — `shared.AllowedUnits`
+   (33) = CHECK `products.base_unit` (33) = CHECK requisiciones (33, fix B3) = catálogo FE
+   (32+sqft=33). Manufacturing (14) sigue siendo vertical propia (F6).
+2. **`UnitSelect` consume `GET /units`** (`{value,description,category}`, cache por sesión
+   vía `src/services/unitsService.ts`): la LISTA de valores es canónica del backend; los
+   labels/categorías siguen viniendo del catálogo local (es-PY curado); fail-silent →
+   catálogo local. Mock global en `vitest.setup.ts` (los tests re-moquean si necesitan filas).
+3. **`validMeasurableUnits` sincronizada**: +`ton` (pesable que estaba excluido).
+4. **Catálogo FE sincronizado**: +`sqft` (faltaba; el canónico lo tiene).
+5. **`ProductFormModal`**: Select duplicado reemplazado por `UnitSelect` (mismo selector que
+   ventas/compras; respeta inmutabilidad en edición y error styling).
+6. **`UnitConversionsPage`**: inputs de TEXTO LIBRE reemplazados por `UnitSelect`
+   (`extraUnits` preserva valores legacy registrados) + **i18n completa** (34 keys es/en;
+   fin de los títulos/headers/toasts hardcoded).
+
+### Gates y verificación (2026-10-02)
+
+- **BE**: `go test ./...` 0 FAIL (incl. `tests/integration`), `golangci-lint run` limpio,
+  `make build` OK. Migraciones aplicadas a dev DB (`make migrate-up`, versión
+  `20261002114000`); objetos verificados (CHECK 33, 2 columnas variant, funciones parcheadas).
+  Backend detached relanzado (`server_starting port=:5050`, 0 errores frescos, /health OK).
+- **FE**: `npx vitest --run` **1396/1396**, `tsc --noEmit` 0, `pnpm build` OK,
+  `pnpm lint:design` "Código nuevo limpio".
+- Smokes SQL con BEGIN/ROLLBACK sobre dev DB (sin fixtures persistidos).
+- **Fix colateral**: `internal/category/http_test.go` — `mockTax` sin `AutoClassifyCategory`
+  (rotura preexistente de c7662a5 que dejaba `go test ./...` sin compilar).
+
+### Pendiente (decisiones de negocio, no rompe nada posponer)
+
+- **F4** inventario con unidades (ajustes con `p_unit`, `stock_transactions.unit`,
+  transferencias con unidad).
+- **F5** BI con cantidades normalizadas (⚠️ comunica cambios de números históricos antes).
+- **F6** manufacturing (vertical propia).
+- Deuda menor heredada: B7 parcial (BI suma sin normalizar — es F5), B8, B9
+  (`resolve_tax_rate_for_transaction` ignora `p_unit`), F6-FE (tickets client-side sin
+  unidad), selector de unidad en ajustes de precio/costo (opcional F3.5).
