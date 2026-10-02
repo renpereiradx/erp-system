@@ -1,6 +1,6 @@
 # PLAN_UNITS_V2_COMPLETACION — Unidades de medida: análisis de viabilidad y fases de completación
 
-**Fecha:** 2026-09-30 · **Estado:** ✅ F1-F3 EJECUTADOS (2026-10-02, hallazgos verificados contra código; ver §9 registro de ejecución). F4-F6 pendientes de decisión de negocio.
+**Fecha:** 2026-09-30 · **Estado:** ✅ F1-F4 EJECUTADOS (F1-F3 el 2026-10-02; F4 el 2026-10-02, ver §9). F5-F6 pendientes de decisión de negocio.
 **Scope:** Cross-repo — Backend Go + SQL (`business_management`) y Frontend (`erp-webapp`)
 **Antecedentes:**
 - `conductor/PLAN_UNITS_CONVERSIONES_2026-09-24.md` (registro v1 de este dir)
@@ -288,12 +288,84 @@ Esfuerzo: alto.
 - **Fix colateral**: `internal/category/http_test.go` — `mockTax` sin `AutoClassifyCategory`
   (rotura preexistente de c7662a5 que dejaba `go test ./...` sin compilar).
 
+### F4 — Cerrado ✅ (2026-10-02, BE + FE)
+
+1. **Migración `20261002123000_inventory_units_f4`** (dump+anclas desde dev DB):
+   - `stock_transactions.unit VARCHAR(20)` — unidad en la que el ORIGEN expresó la
+     cantidad; `quantity_change`/`before`/`after` siguen SIEMPRE base. Backfill inferido:
+     todo el histórico se expresó en base → `unit = products.base_unit` (0 filas quedan
+     NULL). Sin CHECK de catálogo a propósito: no replicar la lista en un sexto lugar
+     (riesgo transversal #1); valida Go + guards SQL.
+   - `branch_transfer_items.unit VARCHAR(20)` (NULL = base): unidad de TODAS las
+     `quantity_*` del ítem (el CHECK de progresión sigue consistente).
+   - `register_stock_movement` gana `p_unit` (12° param): convierte el delta a base con
+     `convert_units_for_product` y persiste `unit = COALESCE(p_unit, base)`.
+   - `manage_stock_adjustment` gana `p_unit` (8°): `p_new_quantity` viene en `p_unit`, se
+     convierte a base ANTES del diff; old/new persisten base y el original viaja en
+     metadata (`requested_unit`/`requested_quantity`).
+   - Trigger `trg_apply_transfer_stock_movements`: convierte `item.unit → base` al
+     registrar TRANSFER_OUT/TRANSFER_IN.
+   - **Hallazgo del smoke: ambigüedad de overloads** — crear la firma de 12 params sin
+     soltar la de 11 deja los callers con NULLs sin tipo sin mejor candidato ("could not
+     choose a best candidate", el 12° con DEFAULT hace viable la firma nueva para esas
+     llamadas). Fix: `DROP FUNCTION` previo de la firma corta en up y down (mismo
+     conflicto de aridad que ya resolvió 20260715162522). Smoke lo cazó antes del commit.
+2. **Validación temprana Go (patrón B2/F1)**: `shared.ValidateUnit` + factor con
+   `shared.FindConversionFactor` (fetch lazy, degradado nil-safe) en
+   `AdjustmentService.Insert`, `TransactionService.Register/RegisterBatch` (fail-fast
+   all-or-nothing) y `BranchService.CreateBranchTransfer` (puerto `UnitConversionLookup`
+   + bridge measure→identity; `ProductTypeInfo` gana `BaseUnit` via bridge de catalog).
+   Wiring perezoso: los accessors del container resuelven el bridge en el primer request
+   (SetInventoryDeps corre ANTES que SetMeasureDeps → llamar `MeasureService()` ahí
+   panea el arranque; lo demostró el primer relanzamiento).
+3. **Repos/HTTP**: `POST /manual_adjustment` y `/stock-transactions` aceptan `unit`
+   (el delta/`new_quantity` viaja en ESA unidad); `StockTransaction`/history devuelven
+   `Unit`; transfers create/detail persisten y devuelven `unit`.
+4. **FE movimientos** (`/movimientos-stock`): fila con `UnitSelect` (base default) +
+   hint del factor (`1 Caja = 10 Kilogramo (kg)`) o hint de error sin conversión (bloquea
+   Guardar y el submit); gating de decimales por la unidad ELEGIDA; el delta viaja en la
+   unidad elegida y el backend convierte. Dominio puro: `buildPayloadFromForm` con
+   `unitContext {unit, unitFactor}` (preview y payload comparten el MISMO
+   `resolveUnitFactor` — no hay cuarta cascada). Cambiar unidad resetea el valor.
+5. **FE transferencias** (`CreateTransferModal`): columna Unidad con `UnitSelect` por
+   fila + hint del factor / error sin conversión (bloquea el submit con toast accionable
+   en vez de NO_CONVERSION a mitad del workflow); payload lleva `unit` (omitida = base);
+   `TransferDetailModal` muestra la unidad del ítem cuando existe;
+   `PreloadedTransferItem` gana `base_unit` opcional.
+6. **Tests**: BE `service_unit_validation_test.go` (9 casos ajustes/movimientos/batch) +
+   `branch_transfer_units_test.go` (validación directa + integración CreateBranchTransfer,
+   fake retiene ítems). FE: `movements.test.ts` (6: payload con unidad, target vs base,
+   precisión g→kg), `MovementFormUnit.test.tsx` (3: hint error bloquea, hint factor guarda,
+   submit entrega unitFactor), `BranchTransfers.test.tsx` +2 (hint+payload con unit,
+   sin conversión bloquea el POST).
+
+#### Verificación F4 (2026-10-02)
+
+- Smokes SQL (BEGIN/ROLLBACK, dev DB): ajuste en g (500 g → old 37.20 / new 0.50 +
+  metadata requested_unit=g), movimiento 12 args (250 g → +0.25 kg, unit=g), legacy 11
+  args (unit=kg), NO_CONVERSION en movimiento y en SHIP de transferencia; transferencia
+  g→SHIP/RECEIVE movió ±0.5 kg entre sucursales.
+- Smokes HTTP con dev-JWT: ajuste `unit:g` (37.5 ✓), `bushel` → 400 INVALID_INPUT
+  temprano, `/stock-transactions` con `unit:g` (delta 0.25 + read-back Unit=g), batch con
+  unidad inválida all-or-nothing, transferencia creada con `unit:"g"` (id 231, cancelada
+  para cerrar; stock restaurado a 37.2). Nits documentados: `/manual_adjustment` mantiene
+  `new_quantity: int` (contrato legacy; decimales de base van por /stock-transactions,
+  camino que ya usa el FE) y el rechazo temprano de transfers responde 500 (mapeo de
+  errores de CreateBranchTransfer es preexistente para todas sus validaciones).
+- Gates BE: `go test ./...` 0 FAIL, `golangci-lint run` limpio (fix colateral: gofmt
+  preexistente en `internal/sale/domain.go`, `internal/purchase/domain.go`,
+  `sale_service_test.go`, entró con c315ade), `make build` OK; backend detached
+  relanzado y sano (`server_starting port=:5050`, /health OK).
+- Gates FE: vitest **1407/1407**, `tsc --noEmit` 0, `pnpm build` OK,
+  `pnpm lint:design` "Código nuevo limpio". Audited contra vercel-react-best-practices
+  (fetch único al montar, useQuery staleTime, sin hallazgos).
+
 ### Pendiente (decisiones de negocio, no rompe nada posponer)
 
-- **F4** inventario con unidades (ajustes con `p_unit`, `stock_transactions.unit`,
-  transferencias con unidad).
 - **F5** BI con cantidades normalizadas (⚠️ comunica cambios de números históricos antes).
 - **F6** manufacturing (vertical propia).
-- Deuda menor heredada: B7 parcial (BI suma sin normalizar — es F5), B8, B9
+- Deuda menor heredada: B7 parcial (BI suma sin normalizar — es F5; también afecta
+  `v_pending_transfers` cuando la transferencia usa unidad ≠ base), B8, B9
   (`resolve_tax_rate_for_transaction` ignora `p_unit`), F6-FE (tickets client-side sin
-  unidad), selector de unidad en ajustes de precio/costo (opcional F3.5).
+  unidad), selector de unidad en ajustes de precio/costo (opcional F3.5),
+  `new_quantity` int en `/manual_adjustment` (decimales de base → /stock-transactions).
