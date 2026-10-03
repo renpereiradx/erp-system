@@ -1,6 +1,6 @@
 # PLAN_UNITS_V2_COMPLETACION — Unidades de medida: análisis de viabilidad y fases de completación
 
-**Fecha:** 2026-09-30 · **Estado:** ✅ F1-F5 EJECUTADOS (F1-F4 el 2026-10-02; F5 el 2026-10-02, ver §9). F6 pendiente de decisión de negocio.
+**Fecha:** 2026-09-30 · **Estado:** ✅ F1-F5 EJECUTADOS (2026-10-02, registro en §9) y **AUDITADOS independientemente (2026-10-03)** → `AUDIT_UNITS_V2_F1_F5_2026-10-03.md`: F1/F2/F3/F5 aprobadas; **F4 aprobada con 2 reparos puntuales** (ajustes `int`/scan int64 + gating FE movimientos). F6 pendiente de decisión de negocio.
 **Scope:** Cross-repo — Backend Go + SQL (`business_management`) y Frontend (`erp-webapp`)
 **Antecedentes:**
 - `conductor/PLAN_UNITS_CONVERSIONES_2026-09-24.md` (registro v1 de este dir)
