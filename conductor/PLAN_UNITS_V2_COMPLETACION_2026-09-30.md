@@ -1,6 +1,6 @@
 # PLAN_UNITS_V2_COMPLETACION — Unidades de medida: análisis de viabilidad y fases de completación
 
-**Fecha:** 2026-09-30 · **Estado:** ✅ F1-F4 EJECUTADOS (F1-F3 el 2026-10-02; F4 el 2026-10-02, ver §9). F5-F6 pendientes de decisión de negocio.
+**Fecha:** 2026-09-30 · **Estado:** ✅ F1-F5 EJECUTADOS (F1-F4 el 2026-10-02; F5 el 2026-10-02, ver §9). F6 pendiente de decisión de negocio.
 **Scope:** Cross-repo — Backend Go + SQL (`business_management`) y Frontend (`erp-webapp`)
 **Antecedentes:**
 - `conductor/PLAN_UNITS_CONVERSIONES_2026-09-24.md` (registro v1 de este dir)
@@ -360,12 +360,74 @@ Esfuerzo: alto.
   `pnpm lint:design` "Código nuevo limpio". Audited contra vercel-react-best-practices
   (fetch único al montar, useQuery staleTime, sin hallazgos).
 
+### F5 — Cerrado ✅ (2026-10-02, BE + FE)
+
+1. **Migración `20261002150000_bi_normalized_units` (ADITIVA, sin dump+anclas):**
+   - Función `products.convert_qty_to_base(product_id, quantity, unit, base_unit)`: fast-path
+     identidad (unit NULL o = base, el caso dominante — sin plpgsql ni lookups por fila),
+     delega en `convert_units_for_product` (la cascada canónica; NO hay cuarta implementación)
+     y **devuelve NULL en NO_CONVERSION** → los SUM/AVG saltan la fila en vez de tumbar el
+     reporte por datos históricos sin factor (el FE bloquea ese alta desde F1/F4).
+   - `v_pending_transfers` (deuda F4/B7): suma `quantity_*` por ítem convertido a base
+     (join products; los ítems pueden traer unidad elegida desde F4). Sin consumidores Go/FE
+     hoy — cambio sin riesgo.
+2. **BE normalización (~35 sitios en 7 repos)**: helper Go `biBaseQtyExpr`/`sdBaseQty`
+   (`analytics_sql.go`, junto a `sdRevenue`/`sdCost`) inyecta la expresión; los
+   `quantity * unit_price` (dinero) quedan intactos por ser agnósticos a unidad. Alcance:
+   `analytics_sales_repo` (13: performance, trends, by-category/product, top-bottom+HAVING,
+   by-seller, velocity×3+HAVING, compare, dashboard×3), `analytics_sales_relational_repo`
+   (top-products compartido + buyers; **exponen `base_unit` por fila**), `analytics_purchase_repo`
+   (ProductSuppliers: units + denominador de avg_unit_price → plata por unidad base),
+   `analytics_inventory_repo` (turnover×2, ABC, daily_demand de reorder/forecast — normalizar
+   la demanda CORRIGE `days_until_stockout`, que comparaba stock base contra demanda en unidad
+   elegida —, slow movers), `analytics_dashboard_repo` (top products), `analytics_financial_repo`
+   (margins ×4), `analytics_forecast_repo` (sales_velocity, recent_trend, demand por
+   categoría/producto) y `analytics_profitability_repo` (×5).
+3. **Modelos int→float64** solo en campos alimentados por las sumas convertidas (13 campos:
+   SalesPerformance.TotalUnits, SalesTrendPoint.Units, CategorySalesData/ProductSalesData/
+   SellerSalesData.UnitsSold, SalesComparisonPeriod.TotalUnits + Diff.UnitsChange,
+   CategoryTurnover/ProductTurnover/ABCProduct.UnitsSold, CategoryMargins/ProductMargins.UnitsSold,
+   ProfitabilitySummary.TotalUnitsSold + ProductProfitabilityDetail/CategoryProfitability/
+   TrendPoint.UnitsSold, CategoryDemand/ProductDemand.HistoricalUnits). Go serializa 37 como
+   `37` — el JSON solo cambia con decimales pesables. ProductContribution queda int (sin
+   consumidor). Filas relacionales ya eran float64: solo ganan `base_unit` (`json:"base_unit,omitempty"`).
+4. **FE**: celda `units` de los 4 drill-downs muestra la UOM real ("40 kg") vía helper puro
+   `formatDrilldownUnits` (fallback "N uds." sin base_unit — fixtures viejos siguen verdes);
+   menú de fila con la misma UOM (`bi.relational.menu.summary` pierde el "uds." horneado);
+   contadores AGREGADOS relabelados a "(base)": ProductsCategories KPI (`bi.sales.col.unitsBase`),
+   CustomerSellerInsights columna vendedores + PeriodComparison card (`bi.insights.col.unitsSoldBase`,
+   celda pierde el sufijo " uds." que mentía con kg). Tablas por-producto quedan "Unidades"
+   (cada fila es la base de ESE producto). Keys nuevas es/en.
+5. **⚠️ Números históricos cambian** (F5.3): los contadores de unidades dejaron de mezclar
+   kg/cajas/unidades — comunicar al cliente antes de desplegar. El A/B del ABC lo cazó en
+   dev: productos con ventas reales en unidad ≠ base difieren (17 → 17,4).
+
+#### Verificación F5 (2026-10-02)
+
+- Smoke SQL (dev DB, BEGIN/ROLLBACK): conversión específica carton→kg ×20 → 2 carton + 3 kg
+  = **43 kg**; sin conversión la fila carton se EXCLUYE (sum=3); fast-paths identidad; vista
+  v_pending_transfers ejecuta (4 filas, TRF-2026 fixtures con decimales).
+- Smoke HTTP (dev-JWT real user/role): **30 endpoints 200** (performance, trends, by-*,
+  top-bottom, velocity, compare, dashboard sales, inventory ×8, profitability ×6,
+  financial profit-margins, forecast ×4, dashboard top-products) + 4 drill-downs devolviendo
+  `base_unit` por fila (ej. "PAPA KG PY" units 25 base_unit "kg").
+- Gates BE: `go test ./...` 42 paquetes OK 0 FAIL, `golangci-lint run` limpio (gofmt
+  colateral en sales_repo/relational.go), `make build` OK; backend detached relanzado y sano
+  (`server_starting port=:5050`, /health OK). Fix de tests: `nonsargable_ab_test` alinea el
+  lado "legacy" del A/B al cálculo normalizado (el test compara la EQUIVALENCIA del refactor
+  CTE, ya no la semántica de unidades) y escanea float.
+- Gates FE: vitest **1408/1408** (+1 test de UOM en celda y menú), `tsc --noEmit` 0,
+  `pnpm build` OK, `pnpm lint:design` "Código nuevo limpio".
+
 ### Pendiente (decisiones de negocio, no rompe nada posponer)
 
-- **F5** BI con cantidades normalizadas (⚠️ comunica cambios de números históricos antes).
 - **F6** manufacturing (vertical propia).
-- Deuda menor heredada: B7 parcial (BI suma sin normalizar — es F5; también afecta
-  `v_pending_transfers` cuando la transferencia usa unidad ≠ base), B8, B9
-  (`resolve_tax_rate_for_transaction` ignora `p_unit`), F6-FE (tickets client-side sin
-  unidad), selector de unidad en ajustes de precio/costo (opcional F3.5),
-  `new_quantity` int en `/manual_adjustment` (decimales de base → /stock-transactions).
+- Deuda menor heredada: B8, B9 (`resolve_tax_rate_for_transaction` ignora `p_unit`),
+  F6-FE (tickets client-side sin unidad), selector de unidad en ajustes de precio/costo
+  (opcional F3.5), `new_quantity` int en `/manual_adjustment` (decimales de base →
+  /stock-transactions), casts `::int` pre-existentes en contadores de `stock_movements`
+  (ya base; truncan decimales kg — fuera del alcance B7), fallback "N uds." hardcodeado en
+  `formatDrilldownUnits` (i18n pendiente si algún día se localiza el sufijo).
+- Nota de operación: `TestAuditBranchScopeIntegracion` es estado-acumulativo contra dev DB
+  (falla con N×corridas, pasa aislado con `-count=1`) — flakiness PRE-EXISTENTE detectado
+  en esta sesión, no relacionado con F5.
