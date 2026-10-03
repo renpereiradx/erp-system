@@ -1,6 +1,6 @@
 # PLAN_UNITS_V2_COMPLETACION — Unidades de medida: análisis de viabilidad y fases de completación
 
-**Fecha:** 2026-09-30 · **Estado:** ✅ F1-F5 EJECUTADOS (2026-10-02, registro en §9) y **AUDITADOS independientemente (2026-10-03)** → `AUDIT_UNITS_V2_F1_F5_2026-10-03.md`: F1/F2/F3/F5 aprobadas; **F4 aprobada con 2 reparos puntuales** (ajustes `int`/scan int64 + gating FE movimientos). F6 pendiente de decisión de negocio.
+**Fecha:** 2026-09-30 · **Estado:** ✅ **F1-F5 CERRADOS** (ejecutados 2026-10-02, auditados 2026-10-03, **reparos de auditoría A1-A3 ejecutados y verificados en vivo 2026-10-03** — BE `fd4e7bf`, FE `310bcaa`, ver §10). F6 manufacturing pendiente de decisión de negocio.
 **Scope:** Cross-repo — Backend Go + SQL (`business_management`) y Frontend (`erp-webapp`)
 **Antecedentes:**
 - `conductor/PLAN_UNITS_CONVERSIONES_2026-09-24.md` (registro v1 de este dir)
@@ -431,3 +431,35 @@ Esfuerzo: alto.
 - Nota de operación: `TestAuditBranchScopeIntegracion` es estado-acumulativo contra dev DB
   (falla con N×corridas, pasa aislado con `-count=1`) — flakiness PRE-EXISTENTE detectado
   en esta sesión, no relacionado con F5.
+
+---
+
+## 10. Cierre — reparos de auditoría ejecutados (2026-10-03)
+
+Los 2 reparos de F4 hallados por `AUDIT_UNITS_V2_F1_F5_2026-10-03.md` fueron ejecutados
+y verificados, completando el cierre de F1-F5:
+
+1. **A1+A2 — ajustes manuales float64 end-to-end** (BE `fd4e7bf`):
+   `ManualAdjustment.New/OldQuantity` y el payload de `POST /manual_adjustment` pasaron de
+   `int` a `float64` (el parámetro SQL `p_new_quantity` ya era `numeric` — Go era el único
+   clamp); `AdjustmentRepo.List` escanea las columnas `numeric` a `sql.NullFloat64` (antes
+   `NullInt64` → 500 con filas fraccionales); el listado ahora expone `Unit` recuperado de
+   `metadata.requested_unit` (`null` en filas pre-F4). **Smoke en vivo contra la fila
+   disparadora**: `GET /manual_adjustment/1/10` con binario relanzado → 200 con
+   `OldQuantity:37.2, NewQuantity:37.5, Unit:"g"` (antes: 500). La fila id=9 de smoke se
+   PRESERVA conscientemente: documenta un cambio de stock real (borrarla descuadraría
+   historia vs stock).
+2. **A3 — gating decimal en movimientos de stock** (FE `310bcaa`): `truncateForUnit`
+   (`Math.trunc`, hacia cero — nunca mueve más stock del tipeado, también en deltas
+   negativos) aplicado al guardar la fila y como guardia en el submit; "0,5" en unidad
+   entera NO se pierde silenciosamente: bloquea con `stockMovements.errors.integer_unit_zero`
+   (es; en hereda por spread). Misma política que POS/compras/presupuestos/requisiciones.
+   +2 tests (trunca 1,5→1 al guardar; 0,5 bloquea el registro).
+3. **Gates de cierre**: BE `go test ./...` 0 FAIL + `golangci-lint` limpio + `make build`;
+   FE vitest **1410/1410** (+2), `tsc --noEmit` 0, `pnpm build`, `lint:design` limpio.
+   Backend detached relanzado (:5050, `server_starting` fresco, /health OK).
+
+**Queda pendiente solo F6 (manufacturing)** + la deuda menor documentada en la auditoría
+(A4-A8: silent bump transferencias, avg filas sin factor, fallbacks "uds." stale, snapshot
+schema, sugerencia de precio no re-derivada) y la nota operativa de comunicar al cliente el
+cambio de números históricos de BI antes de desplegar.

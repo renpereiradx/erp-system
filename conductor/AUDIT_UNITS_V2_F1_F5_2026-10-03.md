@@ -146,3 +146,20 @@ floor, transferencias round+clamp). Fix: mismo patrón que `usePurchasesLogic.ts
 2. A4-A8 quedan como deuda menor documentada (ninguna rompe flujo actual).
 3. **F6 (manufacturing)** permanece pendiente, sin cambios en su evaluación.
 4. Comunicar al cliente el cambio de números históricos de BI (F5) antes de desplegar.
+
+---
+
+## Addendum — reparos ejecutados y verificados (2026-10-03, mismo día)
+
+**A1+A2 cerrados (BE `fd4e7bf`)**: `float64` end-to-end en ajustes (dominio + payload +
+scan `NullFloat64`) + `Unit` desde `metadata.requested_unit` en el listado. Verificación en
+vivo contra la fila disparadora (binario relanzado): `GET /manual_adjustment/1/10` → **200**
+con `OldQuantity:37.2, NewQuantity:37.5, Unit:"g"` (antes: 500). Decisión: la fila id=9 de
+smoke se preserva (documenta un cambio de stock real; borrarla descuadraría historia).
+
+**A3 cerrado (FE `310bcaa`)**: `truncateForUnit` (trunc hacia cero, seguro para deltas
+negativos) al guardar la fila y en el submit; 0,5 en unidad entera bloquea con
+`stockMovements.errors.integer_unit_zero` en vez de perderse. +2 tests.
+
+**F4 pasa a ✅ APROBADA plena. F1-F5 quedan CERRADOS** (ver §10 del plan). Gates de cierre:
+BE tests 0 FAIL + lint + build; FE vitest 1410/1410 + tsc 0 + build + lint:design.
