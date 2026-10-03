@@ -1,6 +1,6 @@
 # PLAN_UNITS_V2_COMPLETACION — Unidades de medida: análisis de viabilidad y fases de completación
 
-**Fecha:** 2026-09-30 · **Estado:** ✅ **F1-F5 CERRADOS** (ejecutados 2026-10-02, auditados 2026-10-03, **reparos de auditoría A1-A3 ejecutados y verificados en vivo 2026-10-03** — BE `fd4e7bf`, FE `310bcaa`, ver §10). F6 manufacturing pendiente de decisión de negocio.
+**Fecha:** 2026-09-30 · **Estado:** ✅ **F1-F5 CERRADOS** (ejecutados 2026-10-02, auditados 2026-10-03, **reparos de auditoría A1-A3 ejecutados y verificados en vivo 2026-10-03** — BE `fd4e7bf`, FE `310bcaa`, ver §10). **F6 rediseñado (2026-10-03) tras revisión de diseño del módulo de manufactura** (§11: producción rota desde 2026-04 + UI inexistente + cero uso → F6.0-F6.3; puntos de decisión del owner en §11.4).
 **Scope:** Cross-repo — Backend Go + SQL (`business_management`) y Frontend (`erp-webapp`)
 **Antecedentes:**
 - `conductor/PLAN_UNITS_CONVERSIONES_2026-09-24.md` (registro v1 de este dir)
@@ -162,12 +162,15 @@ Esfuerzo: medio-alto (toca el corazón del inventario).
 
 Esfuerzo: medio.
 
-### F6 — Manufacturing (opcional)
+### F6 — Manufacturing (rediseñado 2026-10-03 tras revisión de diseño — ver §11)
 
-Integrar `base_unit` + conversiones en recetas/supplies; unificar su lista CHECK con el
-catálogo. Vertical propia.
+No es solo integrar unidades: la revisión pre-F6 encontró la producción **rota desde
+2026-04** (bug `branch_id` probado en vivo), la UI **inexistente** (eliminada en la migración
+JS→TS y nunca reconstruida) y **cero uso** del módulo. F6 queda redefinido en 4 sub-fases:
+F6.0 reparación del bug → F6.1 unidades → F6.2 reconstrucción FE → F6.3 limpieza.
+Detalle completo y puntos de decisión en §11.
 
-Esfuerzo: alto.
+Esfuerzo: F6.0+F6.1 medio; F6.2 alto (feature nueva); F6.3 bajo.
 
 ### Decisiones explícitas diferidas (documentar, no implementar)
 
@@ -463,3 +466,81 @@ y verificados, completando el cierre de F1-F5:
 (A4-A8: silent bump transferencias, avg filas sin factor, fallbacks "uds." stale, snapshot
 schema, sugerencia de precio no re-derivada) y la nota operativa de comunicar al cliente el
 cambio de números históricos de BI antes de desplegar.
+
+---
+
+## 11. F6 — Manufactura: revisión de diseño y alcance rediseñado (2026-10-03)
+
+Verificación pedida por el owner antes de ejecutar F6: propósito, diseño actual y mejora.
+Método: 2 exploraciones (BE+SQL, FE) con file:line + verificación en vivo en dev DB.
+
+### 11.1 Propósito y arquitectura actual
+
+El módulo responde a **producción propia con costeo**: comprar insumos (harina, azúcar),
+registrar una receta por producto fabricado, registrar producción manual que **incrementa el
+stock del producto terminado** vía la maquinaria central (`register_stock_movement` tipo
+`PRODUCTION`), y reportar rentabilidad (costo de producción vs precio de venta).
+
+**La decisión arquitectónica central es BUENA y conviene conservarla**: los insumos son un
+**canal de costos deliberadamente aislado** del inventario (comentarios en el schema: "NO
+forman parte del inventario", supply_purchases "solo auditoría y control de costos"), y la
+producción es una envoltura fina sobre el stock core. Eso evita duplicar la lógica de
+inventario y deja el producto terminado vendible por el flujo normal (`product_type
+'PRODUCTION'`). Piezas: HTTP fino → service de validación mínima → repo SQL + 2 funciones
+plpgsql (`register_supply_purchase`, `register_manual_production`) → vistas branch-aware
+para reportes. Sin triggers, sin lifecycle de lotes, sin consumo de insumos al producir
+(la receta es "informativa, NO se valida" — comentario del propio schema).
+
+### 11.2 Hallazgos de la revisión (verificados)
+
+| # | Hallazgo | Evidencia | Severidad |
+|:--|:---|:---|:---|
+| M1 | **La producción está ROTA desde 2026-04-02**: `register_manual_production` inserta `manufacturing_batches` SIN `branch_id`, columna NOT NULL desde `20260402154500` — todo llamado falla (excepción → `success:false`). Además su SELECT de stock nuevo no filtra por sucursal. Verificado en vivo: función sin `branch_id` + tabla `is_nullable=NO`. | baseline `:3336-3342`; INSERT vivo sin branch_id; 0 filas en batches | 🔴 |
+| M2 | **La UI NO existe**: el panel JSX (2025, tab del modal de producto) se eliminó en la migración JS→TS (9d225b6c jun-2026, 4a0f05d8 ago-2026) y nunca se reconstruyó — 0 rutas, 0 servicios. El usuario hoy solo puede crear productos PRODUCTION y ajustarles stock manualmente. | FE: grep manufactur en App.tsx/navigation = 0 | 🔴 |
+| M3 | **Cero uso**: dev DB con 0 batches, 0 supplies, 0 supply_purchases, 0 recipes; 1 producto PRODUCTION. Nadie extrañó M1/M2 → confirma módulo sin usuarios. | DB en vivo 2026-10-03 | 🔵 contexto |
+| M4 | **Unidades aisladas (6ª copia de la lista)**: CHECK de `manufacturing_supplies` con 14 valores propio; unit texto libre en Go (default "kg" SOLO al crear — update con vacío revienta el CHECK); sin `shared.ValidateUnit`, sin conversiones; `quantity_per_unit` de la receta mezcla unidad de insumo vs base del producto sin conversión. | `service.go:25-27`; baseline `:15146` | 🟠 (era el F6 original) |
+| M5 | **Costeo estimado huérfano**: `calculate_estimated_production_cost` (Σ receta × AVG costo de compras) existe en SQL sin caller Go ni ruta — la pieza más valiosa del costeo nunca se expuso. | `manufacturing_system.sql:516-578` | 🟠 |
+| M6 | Código muerto/drift: 3 métodos del servicio sin ruta (GetSupplyByID, GetSupplyPurchaseByID, GetManufacturingBatchByID); permisos duplicados 125/126 vs 150/151; drift `MANUFACTURED` (Go/vistas) vs `PRODUCTION` (CHECK vivo); `products.tabs.manufacturing` key i18n muerta; script de diseño con vistas reemplazadas. | ver informes de exploración | 🟡 |
+| M7 | Tests: 3 tests de shape de error solamente; sin tests de compras/producción/recetas/repo. | `http_test.go` | 🟡 |
+
+### 11.3 F6 rediseñado
+
+> F6 original ("integrar unidades, vertical propia") puliría un módulo muerto. El rediseño
+> ataca primero lo que lo mantiene muerto (bug + UI) y después integra unidades.
+
+- **F6.0 — Reparación (pre-requisito, sin esto nada del módulo funciona)**: migración que
+  reescriba `register_manual_production`: pasar `p_branch_id` (o derivarlo del usuario como
+  las vistas branch-aware), incluirlo en el INSERT, y filtrar por sucursal el SELECT de
+  stock. Smoke BEGIN/ROLLBACK en dev (producción OK + lote con branch + stock del producto
+  en su sucursal). Esfuerzo: bajo.
+- **F6.1 — Unidades (scope original de F6)**: CHECK de `manufacturing_supplies` → 33
+  canónicos (cierra la 6ª copia); `shared.ValidateUnit` en Go para supply/purchase/recipe +
+  default "kg" también en update (o unit requerida); producción acepta `p_unit` → convierte
+  a base con `convert_units_for_product` (producto terminado sigue en base); receta guarda
+  la unidad del insumo y el costeo convierte (insumo→base del producto) usando la cascada
+  canónica; exponer `calculate_estimated_production_cost` (cierra M5). Esfuerzo: medio.
+- **F6.2 — Reconstrucción FE (la razón real de que el módulo esté muerto)**: vertical nueva
+  en "Logística e Inventario" (navigation.ts:316+), patrón card-con-tabla §6.3 +
+  PageHeader/EnhancedModal + i18n es/en + `UnitSelect` con hints de factor (patrón F4 ya
+  probado en MovementForm). Scope propuesto (MVP→completo): listado de insumos con CRUD +
+  compras de insumos; receta por producto (editor — nunca existió) + costo estimado;
+  registrar producción (cantidad + unidad + costo + notas → batch); resumen de producción y
+  rentabilidad. Gated `manufacturing:read/write`. Esfuerzo: alto (feature nueva).
+- **F6.3 — Limpieza**: rutas para los 3 métodos muertos o DELETE de ellos (decidir);
+  permisos duplicados 125/126 fuera; unificar `MANUFACTURED`→`PRODUCTION` en Go/vistas;
+  key muerta `products.tabs.manufacturing`; actualizar docs API (MANUFACTURING_API.md);
+  tests BE (service con mocks por puerto — hoy casi inexistentes) + FE del feature.
+  Esfuerzo: bajo.
+
+### 11.4 Puntos de decisión del owner (bloquean F6.2, no F6.0/F6.1)
+
+1. **¿Scope del FE?** MVP (insumos + producción + resumen) vs completo (+ receta editable +
+   compras de insumos + rentabilidad). Recomendado: completo — sin receta y sin compras, el
+   costeo estimado (M5) no tiene datos de dónde salir.
+2. **¿Los insumos deben descontar stock real del inventario?** Diseño actual: NO (canal de
+   costos). Recomendado: mantener — convertir insumos en `products` con stock sería otro
+   proyecto (inventario doble, compras, ventas de insumos).
+3. **¿La receta se valida/consume al producir?** Actual: informativa. Recomendado:
+   mantener informativo en esta fase; el consumo real exige decisión 2.
+
+Orden de ejecución sugerido: F6.0 → F6.1 → F6.3 (barato, mientras el FE no existe) → F6.2.
