@@ -1,6 +1,6 @@
 # PLAN_UNITS_V2_COMPLETACION — Unidades de medida: análisis de viabilidad y fases de completación
 
-**Fecha:** 2026-09-30 · **Estado:** ✅ **PLAN COMPLETO (F1-F6)** — F1-F5 cerrados y auditados (§9-§10); F6 rediseñado tras revisión de diseño (§11) y ejecutado completo: F6.0/F6.1/F6.3 (§11.5) + **F6.2 reconstrucción FE (§11.6, 2026-10-04 — BE `69c1f60`, FE `ee914cb`)**. Deuda menor: docs API + A4-A8.
+**Fecha:** 2026-09-30 · **Estado:** ✅ **PLAN COMPLETO Y DEUDA CERRADA (F1-F6 + A4-A8 + docs API)** — F1-F5 cerrados y auditados (§9-§10); F6 rediseñado tras revisión de diseño (§11) y ejecutado completo: F6.0/F6.1/F6.3 (§11.5) + F6.2 reconstrucción FE (§11.6, 2026-10-04 — BE `69c1f60`, FE `ee914cb`); deuda menor docs API + A4-A8 cerrada (§12, 2026-10-04 — BE `d97c117`, FE `cf31024`).
 **Scope:** Cross-repo — Backend Go + SQL (`business_management`) y Frontend (`erp-webapp`)
 **Antecedentes:**
 - `conductor/PLAN_UNITS_CONVERSIONES_2026-09-24.md` (registro v1 de este dir)
@@ -641,3 +641,65 @@ Radix Tabs NO se activa con click DOM (necesita secuencia de puntero) → click 
 **F6 COMPLETO.** PLAN_UNITS_V2 cerrado en su totalidad (F1-F6). Deuda menor restante: docs
 API (MANUFACTURING_API.md con los endpoints de estimated-cost y unit de producción) y la
 deuda A4-A8 de la auditoría F1-F5.
+
+---
+
+## 12. Cierre de deuda menor: docs API + reparos A4-A8 (2026-10-04)
+
+No hay fase F7: el plan terminaba en F6 (la "F7" del §4 era el hallazgo FE de i18n de
+UnitConversionsPage, cerrado en F3.4). El único trabajo restante era la deuda menor
+documentada — cerrada en esta sesión (**BE `d97c117`, FE `cf31024`**):
+
+1. **Docs API (deuda F6.2)**: `MANUFACTURING_API.md` actualizado contra el código y la DB
+   viva — catálogo canónico de 33 unidades (era la lista vieja de 14), `unit` en
+   `POST /manufacturing/production` con la semántica F6.0/F6.1 (conversión a base, lote/
+   stock/costo en base, original en metadata, resolución de sucursal y ejemplo real del
+   error `NO_CONVERSION`), el response nuevo (`quantity_requested`/`requested_unit`/
+   `branch_id`), y el endpoint `GET /recipes/{product_id}/estimated-cost` documentado con
+   la forma de respuesta de la función SQL (§13 nuevo; reportes renumerados 14-16).
+2. **A4 — transferencias sin silent bump** (FE): `CreateTransferModal` ya no hace
+   `Math.max(1, Math.round(qty))` (0,4 → 1 movía MÁS stock del tipeado). Política del
+   sistema: trunc hacia cero al enviar + bloqueo en submit con toast accionable
+   (`transfers.quantityIntegerRequired`, es; en hereda) cuando la cantidad no sobrevive
+   el trunc. +2 tests (0,5 box bloquea sin POST; 1,6 box → payload 1).
+3. **A5 — `avg_unit_price` con denominador alineado** (BE): nuevo helper
+   `sdBaseQtyCoalesced` (`analytics_sql.go`): las filas sin conversión aportan su cantidad
+   cruda al DENOMINADOR del promedio (el numerador ya contaba toda la plata) en
+   product-suppliers, product-buyers y supplier top-products. Smoke en vivo contra dev con
+   el binario viejo vs nuevo: 3 clientes de /buyers con avg en **0** lo recuperaron
+   (60000/1, 60000/1, 26000/1) y un promedio inflado se corrigió (41500 → 27666.67: una
+   compra sin conversión aportaba plata sin cantidad); los otros 2 drill-downs quedaron
+   byte-idénticos (datos convertibles). ⚠️ Los números históricos del drill-down de
+   compradores cambian — mismo aviso de comunicación que F5.3.
+4. **A6 — fallbacks stale de `t()`**: los 3 sitios de `bi.relational.menu.summary`
+   (ProductBuyers/CustomerTopProducts/SupplierTopProducts) alineados con la key real
+   (`{units} · {purchases} compras · {total}`, sin "uds." horneado → sin doble UOM si la
+   key se pierde). El fallback de `formatDrilldownUnits` (`N uds.`) sigue diferido
+   documentado (no es fallback de t(); i18n del sufijo solo si algún día se localiza).
+5. **A7 — snapshot de funciones de stock regenerado** (BE):
+   `database/schema/functions/stock_transaction_functions.sql` reescrito desde
+   `pg_get_functiondef` sobre la DB viva con cabecera "no se ejecuta": firma post-F4 de
+   `register_stock_movement` (12 params) y `manage_stock_adjustment` (8), las 3
+   sobrecargas históricas del wrapper `register_stock_transaction` (9/10/11 — conviven en
+   la DB), `validate_stock_consistency` (2 params) y eliminadas del snapshot 2 funciones
+   que ya no existen en vivo (get_product_transaction_history,
+   inventory_discrepancy_report).
+6. **A8 — sugerencia de precio sigue a la unidad** (FE): en el modal de compras,
+   `handleModalUnitChange` re-deriva la sugerencia ×1.3 con el costo de la unidad nueva
+   (quedaba el del costo anterior). Flag `modalSalePriceTouched`: precio tipeado por el
+   usuario o comprometido de una línea en edición NUNCA se pisa (modo margen ya reaccionaba
+   por sí solo). El modal recibe `handleModalSalePriceChange` en vez del setter crudo.
+   +3 tests (sugerencia sigue al costo 5.000→6.500 / 100.000→130.000; precio tipeado
+   sobrevive; línea en edición sobrevive).
+
+**Gates de cierre (2026-10-04):** BE `go test ./...` 0 FAIL, `golangci-lint run` limpio,
+`make build` OK, backend detached relanzado (`server_starting port=:5050`, /health OK, sin
+errores frescos). FE vitest **1422/1422** (+5), `tsc --noEmit` 0, `pnpm build` OK,
+`lint:design` "Código nuevo limpio". Smoke A5 comparativo viejo-vs-nuevo descrito en §12.3.
+
+**PLAN_UNITS_V2_COMPLETACION: CERRADO AL 100%** (F1-F6 + deuda A4-A8 y docs API). La deuda
+restante es solo la documentada como decisión diferida: `new_quantity` int en
+`/manual_adjustment` (resuelto por A1+A2 → ya no aplica), `MANUFACTURED` superpset
+defensivo, fallback `N uds.` de `formatDrilldownUnits`, casts `::int` pre-existentes en
+contadores de `stock_movements`, y comunicar al cliente los números históricos de BI
+(F5.3 + §12.3) antes de desplegar.
