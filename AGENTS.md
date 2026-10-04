@@ -1,7 +1,7 @@
 # AGENTS.md — ERP System (Monorepo)
 
 Instrucciones para agentes AI de coding que trabajen en este workspace.
-Última actualización: 2026-09-30
+Última actualización: 2026-10-04
 
 ---
 
@@ -249,6 +249,17 @@ hermes project show erp-system        # Estado del workspace
    - El recipe `run` solo trapea el docs-server: un `make run` interrumpido (terminal cerrada) deja el docs huérfano reteniendo :3001 (systemd --user lo adopta). Si `make run` falla con bind, revisar AMBOS puertos.
    - Vite :5173 es de vida larga por diseño (reuso entre sesiones). Una segunda instancia salta a :5174 y el backend rechaza CORS (solo permite 5173/3000): matar la previa, no convivir.
    - `pkill -f <patrón>` puede matchear la propia shell que lo ejecuta si el patrón viaja en su línea de comando (zsh -c …): anclar (`^/ruta/bin`) o matar por PID.
+9. **Versionado**: al cerrar un hito verificado, taggear `vX.Y.Z` en AMBOS repos y sincronizar `package.json`. Convención completa en la sección **Versionado y Releases**.
+
+---
+
+## Versionado y Releases
+
+- **SemVer** `vMAJOR.MINOR.PATCH`, mismo número en backend y frontend por release. MAJOR: ruptura de contract API, migración que exige intervención de datos o cambio de flujo de instalación. MINOR: features nuevas visibles (módulos, endpoints, pantallas). PATCH: fixes sin features.
+- Los tags se crean sobre `dev` (línea viva) al cerrar el hito; `git tag` NO viaja con `git push` simple → `git push origin dev --tags`.
+- **Identificación en runtime**: `make build` inyecta `git describe --tags` al binario vía ldflags (`internal/platform/version`) y `GET /version` (sin auth) lo reporta junto a `commit` y `build_date` — así se identifica qué versión corre una instalación de cliente. Worktree con cambios sin commit → reporta `vX.Y.Z-dirty` (build no reproducible; commitear antes de emitir un bundle).
+- **Frontend**: sincronizar `"version"` de `package.json` con el tag en cada release (mismo número, sin prefijo `v`).
+- Hitos anteriores a v1.0.0 (2026-10-04) no tienen tag: identificarlos por SHA de commit.
 
 ---
 
