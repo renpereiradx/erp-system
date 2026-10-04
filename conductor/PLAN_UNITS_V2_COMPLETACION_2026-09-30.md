@@ -1,6 +1,6 @@
 # PLAN_UNITS_V2_COMPLETACION — Unidades de medida: análisis de viabilidad y fases de completación
 
-**Fecha:** 2026-09-30 · **Estado:** ✅ **F1-F5 CERRADOS** (ejecutados 2026-10-02, auditados 2026-10-03, **reparos de auditoría A1-A3 ejecutados y verificados en vivo 2026-10-03** — BE `fd4e7bf`, FE `310bcaa`, ver §10). **F6 rediseñado (2026-10-03) tras revisión de diseño del módulo de manufactura** (§11: producción rota desde 2026-04 + UI inexistente + cero uso → F6.0-F6.3; puntos de decisión del owner en §11.4).
+**Fecha:** 2026-09-30 · **Estado:** ✅ **F1-F5 CERRADOS** (auditados + reparos A1-A3 verificados en vivo 2026-10-03 — BE `fd4e7bf`, FE `310bcaa`, §10). **F6: revisión de diseño (§11) + F6.0/F6.1/F6.3 EJECUTADOS (2026-10-04, §11.5 — producción reparada y unit-aware, costo estimado expuesto, limpieza)**. **Solo F6.2 (reconstrucción FE) pendiente** — decisiones de scope del owner en §11.4.
 **Scope:** Cross-repo — Backend Go + SQL (`business_management`) y Frontend (`erp-webapp`)
 **Antecedentes:**
 - `conductor/PLAN_UNITS_CONVERSIONES_2026-09-24.md` (registro v1 de este dir)
@@ -544,3 +544,52 @@ para reportes. Sin triggers, sin lifecycle de lotes, sin consumo de insumos al p
    mantener informativo en esta fase; el consumo real exige decisión 2.
 
 Orden de ejecución sugerido: F6.0 → F6.1 → F6.3 (barato, mientras el FE no existe) → F6.2.
+
+### 11.5 Registro de ejecución F6.0 + F6.1 + F6.3 (2026-10-04)
+
+**F6.0+F6.1 — migraciones (aplicadas a dev, `20261004111405`, dirty=false):**
+
+1. `20261004111404_manufacturing_production_branch_and_unit`: `register_manual_production`
+   reescrita con firma de 9 params (`p_branch_id`, `p_unit`, ambos DEFAULT NULL; DROP previo
+   de la firma de 7 — gotcha de overloads de F4). Resolución de sucursal con la misma
+   precedencia que las vistas branch-aware (param > metadata > sucursal default del usuario
+   > main). Unidad: fast-path identidad; si no, `convert_units_for_product` (NO_CONVERSION
+   accionable); lote/stock/cost_per_unit quedan en **base**, el original viaja en metadata
+   (`requested_unit`/`requested_quantity`/`quantity_base`) y la transacción registra la
+   unidad base — mismo patrón que `manage_stock_adjustment` (F4). `register_stock_movement`
+   se llama directo (12 args) con la cantidad YA convertida y `p_unit` NULL (pasarla
+   double-convertiría).
+2. `20261004111405_manufacturing_supplies_unit_check_canonical`: CHECK de
+   `manufacturing_supplies.unit` → los 33 canónicos (los 14 valores viejos ⊂ canónico, sin
+   backfill). Cierra la 6ª copia de la lista.
+
+**Go:** service valida unidad con `shared.ValidateUnit` en create/update de insumos
+(normaliza lowercase+trim; update ahora también aplica el default "kg" — antes un unit
+vacío revienta el CHECK); producción acepta `unit` y pasa el `branchID` que el handler ya
+resolvía y descartaba; repo llama con 9 args. **Costo estimado expuesto** (cierra M5):
+`GET /manufacturing/recipes/{product_id}/estimated-cost?quantity=N` → función SQL viva sin
+drift; su costeo ya es unit-consistente (receta en unidad del insumo × costo promedio de
+compras del mismo insumo — **no requiere conversión**; decisión documentada: la semántica
+de `quantity_per_unit` es "cantidad del insumo, en la unidad del insumo, por 1 base del
+producto"). Tests: `service_units_test.go` (12 casos: defaults, normalización, rechazo
+temprano, passthrough unit/branch al puerto).
+
+**F6.3 — limpieza:** 3 métodos muertos eliminados (GetSupplyByID, GetSupplyPurchaseByID,
+GetManufacturingBatchByID — port+service+repo, sin rutas ni callers); permisos 125/126 ya
+NO existen en la DB viva (solo 150/151 — la dup era historia de migración, sin acción);
+`MANUFACTURED` queda como **superpset defensivo documentado** (el CHECK de product_type lo
+prohíbe y las vistas matchean el superpset — no se toca sale_service por un case muerto);
+keys i18n muertas `products.tabs.manufacturing` eliminadas (FE: es/products.js +
+i18n.legacy.js es/en).
+
+**Smokes (2026-10-04):** SQL BEGIN/ROLLBACK 6/6 — 2 box con específica ×24 → lote 48 base
+con `branch_id=1`, stock +48 en ESA sucursal, transacción `unit=base` + metadata
+`requested_unit=box/quantity=2`, `cost_per_unit=48000/48=1000`; branch derivado con param
+NULL (=1); unidad sin conversión → `success:false` NO_CONVERSION sin lote fantasma. HTTP
+(dev-JWT, binario relanzado detached): `POST /manufacturing/production` con unidad base →
+**200 — primer registro de producción exitoso desde 2026-04** (lote + stock 7→8,
+restaurado en el cleanup); `bushel` → 400 temprano con shape estándar;
+`estimated-cost?quantity=2` → 200. Residuos: 0 (batch/tx/stock verificados).
+
+**Pendiente de F6:** solo **F6.2 (reconstrucción FE)** — bloqueada en las decisiones de
+scope §11.4; actualizar docs API (MANUFACTURING_API.md) junto a F6.2.

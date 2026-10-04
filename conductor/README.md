@@ -17,7 +17,7 @@ frontend a la vez.
 | `PLAN_PEDIDOS_MOSTRADOR_VENDEDOR_CAJA.md` | 🔄 FASE 5 pendiente (ver plan). |
 | `PLAN_CATALOGO_VENDEDOR.md` | 🔄 FASE 3 opcional (integración con `/pedidos`). |
 | `PLAN_MONOROL_DESCUENTOS_CREDITO_CLIENTE.md` | 🔄 A0 prod audit pendiente (deploy blocker). |
-| `PLAN_UNITS_V2_COMPLETACION_2026-09-30.md` | ✅ **F1-F5 CERRADOS** (auditados + reparos A1-A3 verificados en vivo — BE `fd4e7bf`, FE `310bcaa`). **F6 rediseñado (§11, 10-03)**: revisión de manufactura halló producción rota desde 2026-04 (branch_id) + UI inexistente + cero uso → F6.0 reparación / F6.1 unidades / F6.2 FE nuevo / F6.3 limpieza; decisión de scope pendiente del owner (§11.4). |
+| `PLAN_UNITS_V2_COMPLETACION_2026-09-30.md` | ✅ **F1-F5 CERRADOS** + **F6.0/F6.1/F6.3 EJECUTADOS (§11.5, 10-04, BE `1ff9fe1`)**: producción reparada y unit-aware (primer registro exitoso desde abril, smoke-proven), CHECK insumos canónico 33, costo estimado expuesto, limpieza. **Solo F6.2 (FE rebuild) pendiente** — scope §11.4 en manos del owner. |
 
 > **Cierre 2026-09-17**: `PLAN_AUDIT_BI_INTELIGENCIA_NEGOCIOS_2026-09-14.md` COMPLETADO (5/5
 > fases: backend gate duro, auditoría 50 páginas, fixes P0/P1/P2, migración .tsx/FSD + tokens,
