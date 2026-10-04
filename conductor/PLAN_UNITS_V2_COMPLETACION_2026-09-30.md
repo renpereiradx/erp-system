@@ -1,6 +1,6 @@
 # PLAN_UNITS_V2_COMPLETACION — Unidades de medida: análisis de viabilidad y fases de completación
 
-**Fecha:** 2026-09-30 · **Estado:** ✅ **F1-F5 CERRADOS** (auditados + reparos A1-A3 verificados en vivo 2026-10-03 — BE `fd4e7bf`, FE `310bcaa`, §10). **F6: revisión de diseño (§11) + F6.0/F6.1/F6.3 EJECUTADOS (2026-10-04, §11.5 — producción reparada y unit-aware, costo estimado expuesto, limpieza)**. **Solo F6.2 (reconstrucción FE) pendiente** — decisiones de scope del owner en §11.4.
+**Fecha:** 2026-09-30 · **Estado:** ✅ **PLAN COMPLETO (F1-F6)** — F1-F5 cerrados y auditados (§9-§10); F6 rediseñado tras revisión de diseño (§11) y ejecutado completo: F6.0/F6.1/F6.3 (§11.5) + **F6.2 reconstrucción FE (§11.6, 2026-10-04 — BE `69c1f60`, FE `ee914cb`)**. Deuda menor: docs API + A4-A8.
 **Scope:** Cross-repo — Backend Go + SQL (`business_management`) y Frontend (`erp-webapp`)
 **Antecedentes:**
 - `conductor/PLAN_UNITS_CONVERSIONES_2026-09-24.md` (registro v1 de este dir)
@@ -593,3 +593,51 @@ restaurado en el cleanup); `bushel` → 400 temprano con shape estándar;
 
 **Pendiente de F6:** solo **F6.2 (reconstrucción FE)** — bloqueada en las decisiones de
 scope §11.4; actualizar docs API (MANUFACTURING_API.md) junto a F6.2.
+
+### 11.6 F6.2 — Reconstrucción FE ejecutada (2026-10-04, BE `69c1f60`, FE `ee914cb`)
+
+El owner aprobó ejecutar "a criterio experto" → decisiones de §11.4 tomadas según lo
+recomendado: **scope completo** (insumos + compras + recetas + producción + reportes),
+insumos SIN stock real (diseño conservado), receta informativa.
+
+**Qué se construyó** (feature `src/features/manufacturing/` + servicio
+`src/services/manufacturingService.ts`, 16 archivos):
+
+- **Ruta `/manufactura`** en "Logística e Inventario" (nav gated `manufacturing:read`,
+  icono Factory; PermissionGuard en App.tsx; página delegada fina en `pages/`).
+- **Tab Insumos**: tabla enriquecida §6.3 (compras/cant/costo prom/última/estado) + alta y
+  edición con `UnitSelect` (unidades canónicas F6.1) + **registrar compra** (costo con
+  formateo de miles moneyInput, total en vivo, proveedor/factura/notas) + historial de
+  compras por insumo.
+- **Tab Recetas**: picker de productos SOLO `PRODUCTION` (búsqueda plana) + **editor de
+  receta (nunca existió)** con picker de insumos + **card de costo estimado** (endpoint
+  F6.1, detalle por insumo) + quitar ingrediente. Semántica documentada en la UI:
+  cantidad del insumo (unidad del insumo) por 1 base del producto.
+- **Tab Producción**: registrar producción con **UnitSelect + hint del factor + preview en
+  base** (patrón F4: `resolveUnitFactor`, sin conversión bloquea con mensaje accionable),
+  **gating decimal A3** (trunc hacia cero; 0,5 en unidad entera bloquea), costo total con
+  moneyInput, código de lote opcional; tablas de lotes + resumen + rentabilidad.
+- **i18n es/en completo** (~110 claves por idioma, diccionario propio en ambos índices);
+  hooks de datos con guard anti-carrera; normalizador defensivo en el servicio.
+
+**Tests (7)**: shell + empty §6.3 + fila con stats + alta con default kg + hint del factor
+con preview + payload unit lowercase + bloqueos (entera 0,5 / sin conversión). El mock de
+i18n resuelve el **diccionario es REAL** (path punteado): una key faltante revienta el
+test en vez de ocultarse.
+
+**Verificación:** gates FE vitest **1417/1417** (+7), tsc 0, build, lint:design limpio.
+**Smoke browser E2E contra dev** (dev-JWT localStorage + IAB): página viva en nav, alta de
+insumo E2E (toast + fila), compra E2E (total "Gs. 30.000", stats refrescadas: 1 compra,
+10 kg, Gs. 3.000 prom, fecha), tab Producción completo. **El smoke cazó 1 bug BE real**:
+`produced_recently` NULL de la vista FULL JOIN reventaba el scan a bool →
+`GET /manufacturing/reports/production` 500 (fix `COALESCE` en el repo, BE `69c1f60`,
+backend relanzado y re-verificado en vivo). Residuo de smoke limpiado por SQL (0 filas).
+
+**Gotchas IAB de la sesión:** el click de Playwright muere en actionability sobre la página
+(el botón ES clickeable — `elementFromPoint` lo confirma) → despachar click DOM directo;
+Radix Tabs NO se activa con click DOM (necesita secuencia de puntero) → click coordenado
+`cua.click` sobre el trigger; inputs React controlados vía setter nativo + evento `input`.
+
+**F6 COMPLETO.** PLAN_UNITS_V2 cerrado en su totalidad (F1-F6). Deuda menor restante: docs
+API (MANUFACTURING_API.md con los endpoints de estimated-cost y unit de producción) y la
+deuda A4-A8 de la auditoría F1-F5.
