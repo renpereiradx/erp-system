@@ -144,7 +144,7 @@ src/domain/<feature>/  ← Lógica de negocio pura (cálculos, validaciones)
 | :-------------------------- | :------------- | :---------------------------------------------------- |
 | Products                    | ✅ Completo    | TSX, Zod, glass-mica/acrylic, hooks puros             |
 | Purchases                   | ✅ Completo    | Feature-Sliced, `usePurchasesLogic`, domain pricing   |
-| Sales                       | 🔄 En progreso | `useSalesLogic` en extracción, domain calculations ✅ |
+| Sales                       | ✅ Completo    | `useSalesLogic` purgado (2026-10-05, FE e52c737); feature 100% TS, dominio en `domain/sale/` |
 | Clientes, Proveedores, etc. | ⏳ Pendiente   | Sin feature-sliced aún                                |
 
 ### Reglas Críticas para Agentes en el Frontend
