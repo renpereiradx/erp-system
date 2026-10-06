@@ -31,6 +31,35 @@
 - El **bundle de release**: `erp-release-<versión>.tar.gz` (lo genera `business_management/deploy/scripts/make-release-bundle.sh`).
 - La **licencia del cliente** si ya compró: `license.json` + `licensing-public.key` (generadas con `cmd/licensegen`; ver RUNBOOK_LICENCIAS_2026-09). Si aún no compró, **no hace falta nada**: la instalación arranca en evaluación full (Core+BI) por 90 días desde el primer arranque; al vencer se bloquea y se activa cargando la licencia (rescate web — REQ_BIPACK v2.0).
 
+### 2.1 Cargar licencia + clave pública en el bundle (lado vendedor)
+
+Para que el instalador **autodetecte** la pareja, ambos archivos viajan DENTRO
+del bundle, en `business_management/` y con esos nombres exactos. El `.tar.gz`
+generado por `make-release-bundle.sh` **no los incluye**: copiarlos y
+re-empaquetar. Reemplazar `<v>` por la versión del bundle.
+
+```bash
+cd ~/dev/erp-system/business_management/dist/erp-release-<v>/
+
+# renombrar la pública al nombre que el instalador busca + traer la licencia:
+cp ~/custodia-licencias/public.key business_management/licensing-public.key
+cp ~/entregas/<cliente>/license.json business_management/license.json
+
+# re-empaquetar (el .tar.gz viejo no contiene los archivos agregados):
+cd ..
+tar czf erp-release-<v>.tar.gz erp-release-<v>/
+```
+
+Notas:
+
+- `sha256sum -c SHA256SUMS` en el cliente sigue pasando: el manifiesto verifica
+  solo los archivos que lista; los agregados se ignoran.
+- ¿El cliente aún no compró? Se puede omitir el `license.json` (evaluación de
+  90 días), pero **incluir igual la clave pública**: el rescate web del día del
+  bloqueo la necesita.
+- Los flags `--license` / `--license-public-key` (§5) son equivalentes; meterlos
+  en el bundle solo ahorra tipearlos.
+
 ---
 
 ## 3. El bundle: qué es y cómo verificarlo
@@ -193,5 +222,6 @@ delta. **Antes de actualizar: verificar que existe el backup de anoche**
 
 | Versión | Fecha | Cambio | Autor |
 |:--|:--|:--|:--|
+| v1.2 | 2026-10-06 | §2.1 nuevo: cargar licencia + clave pública dentro del bundle (autodetección del wizard) y re-empaquetar el `.tar.gz` | renpereiradx + agente |
 | v1.1 | 2026-09-29 | Alineación con REQ_BIPACK v2.1 / REQ_DEPLOY v0.8 (auditoría): `--license` exige SIEMPRE `--license-public-key` (el ejemplo canónico ahora los lleva juntos), los updates sin licencia activan la evaluación (90 días desde el update), `license/` se entrega con permisos para el rescate web y el smoke lo verifica, instalación de licencia post-pago también desde Configuración → Licencia | renpereiradx + agente (auditoría ZCode) |
 | v1.0 | 2026-09-22 | Primera versión, escrita contra el instalador real (F2-F3 del plan) y el ensayo E2E | renpereiradx + agente |

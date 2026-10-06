@@ -88,7 +88,7 @@ copy docker\env.docker.example .env.docker   # y editar credenciales
 docker compose --profile laptop up -d --build
 ```
 
-- Frontend: `http://localhost:8081` · Backend: `http://127.0.0.1:8080` (solo loopback).
+- Frontend: `http://localhost:18081` · Backend: `http://127.0.0.1:18080` (solo loopback; PostgreSQL del stack en `127.0.0.1:5433` si se levanta).
 - PostgreSQL sigue siendo el nativo del host: `DB_HOST=host.docker.internal` funciona en
   Windows y en Linux (el compose añade `extra_hosts: host-gateway`).
 - Redis corre interno de la red compose; **nunca** se publica al host.
@@ -138,7 +138,7 @@ conecta nada. Flujo:
 | Backend no conecta a PG desde Docker | `DB_HOST=localhost` dentro del contenedor | Usar `host.docker.internal` |
 | `pg_hba.conf` rechaza conexión | Subred de Docker no permitida | Agregar `172.17.0.0/16` y reiniciar el servicio |
 | Ayer conectaba, hoy no (WSL) | IP de WSL cambió al reiniciar | `update-wsl-ip.ps1` + revisar `DB_HOST` |
-| "port already in use" al levantar compose | Otro proceso en 8080/8081 | `netstat -ano | findstr :8080` → `taskkill /PID <PID> /F`, o cambiar `ERP_BACKEND_PORT`/`ERP_FRONTEND_PORT` |
+| "port already in use" al levantar compose | Otro proceso en 18080/18081 | `netstat -ano | findstr :18081` → `taskkill /PID <PID> /F`, o cambiar `ERP_BACKEND_PORT`/`ERP_FRONTEND_PORT` |
 | Frontend levanta pero sin datos | `VITE_API_URL` horneada al build no apunta al backend | En dev: `http://localhost:5050`; en Docker laptop, la imagen se construye con `.env.production` — reconstruir con `--build` si cambió |
 
 ---
@@ -147,4 +147,5 @@ conecta nada. Flujo:
 
 | Versión | Fecha | Cambio | Autor |
 |:--|:--|:--|:--|
+| v1.1 | 2026-10-06 | Puertos del compose laptop actualizados a los defaults nuevos: frontend `18081`, backend loopback `18080`, PG del stack `5433` (BE `9e998e8`) | renpereiradx + agente |
 | v1.0 | 2026-09-22 | Consolidación desde 3 documentos dispersos (F1 del plan de deploy); borrados los originales | renpereiradx + agente |

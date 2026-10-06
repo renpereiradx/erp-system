@@ -33,12 +33,29 @@
 
 ## 2. Emisión (máquina del VENDEDOR — la clave privada jamás viaja)
 
+> **Cómo leer esta sección si no sos desarrollador:** cada recuadro gris es una
+> lista de comandos para la **terminal** de la computadora del vendedor; se
+> tipea **una línea por vez** y se aprieta Enter. `~/` significa "mi carpeta
+> personal" (ej. `/home/miusuario`), y las carpetas que falten se crean solas.
+> Analogía de las dos claves: la **privada** es tu firma manuscrita — con ella
+> se "firma" cada licencia y NADIE más debe verla; la **pública** es la forma
+> de comprobar que una firma es tuya — viaja al cliente y no es secreto.
+
 ```bash
-cd business_management
+# 0) Construir la herramienta de licencias (una vez por máquina; necesita Go
+#    y el repo del ERP — pedir a desarrollo si no los tenés):
+cd ~/dev/erp-system/business_management     # ajustar a dónde esté el repo
 go build -o /tmp/licensegen ./cmd/licensegen
 
-# 2a. Par de claves (una vez por "marca" / llave maestra):
+# 2a. Par de claves — UNA sola vez en la vida del negocio (la "llave maestra"
+#     con la que se firmarán TODAS las licencias de TODOS los clientes):
 /tmp/licensegen keygen -private ~/custodia-licencias/vendor.key -public ~/custodia-licencias/public.key
+chmod 600 ~/custodia-licencias/vendor.key   # solo tu usuario puede leerla
+
+# 2a-bis. BACKUP YA: copiar la carpeta ~/custodia-licencias/ a un pendrive o
+#     bóveda FUERA de esta máquina. Si se pierde la privada, no se pueden
+#     emitir licencias nuevas para los clientes que ya la usan; si se filtra,
+#     cualquiera podría fabricarse licencias propias.
 #   → private: hex seed, chmod 600. CUSTODIA FUERA DEL REPO (backup offline del vendedor).
 #   → public:  base64; este valor es el que recibe el cliente.
 
@@ -59,7 +76,30 @@ go build -o /tmp/licensegen ./cmd/licensegen
 #   -expires 2027-09-21T12:00:00Z → fecha fija (gana sobre -days).
 ```
 
-Entrega al cliente: **`license.json` + la clave pública (base64)**. Nunca la privada.
+Entrega al cliente: **`license.json` + la clave pública**. Nunca la privada. La forma más simple de entregarlos es meter ambos DENTRO del bundle (§2c): el instalador los detecta solo.
+
+### 2c. Cargar licencia + clave en el bundle (recomendado — autodetección)
+
+El instalador busca la pareja dentro del bundle, en `business_management/`,
+con esos nombres exactos (`license.json` y `licensing-public.key`). El
+`.tar.gz` que genera `make-release-bundle.sh` NO los trae: copiarlos y
+re-empaquetar. Reemplazar `<v>` por la versión del bundle (ej. `v1.0.0-4-g01ed28a`).
+
+```bash
+cd ~/dev/erp-system/business_management/dist/erp-release-<v>/
+cp ~/custodia-licencias/public.key business_management/licensing-public.key
+cp ~/entregas/<cliente>/license.json business_management/license.json
+
+cd ..    # re-empaquetar: el .tar.gz viejo no contiene los archivos nuevos
+tar czf erp-release-<v>.tar.gz erp-release-<v>/
+```
+
+- `sha256sum -c SHA256SUMS` en el cliente sigue dando OK: el manifiesto
+  verifica solo los archivos listados; los agregados se ignoran.
+- Cliente sin licencia todavía: incluir **igual** la clave pública (habilita
+  el rescate web cuando compre); sin `license.json` arranca la evaluación de
+  90 días.
+- Detalle completo del lado del cliente: `GUIDE_INSTALACION_NUEVO_CLIENTE.md` §2.1 y §5.
 
 ## 3. Instalación (servidor del CLIENTE)
 
