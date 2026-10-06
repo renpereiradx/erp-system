@@ -21,6 +21,7 @@ Las guías del módulo deploy nacen del plan `conductor/PLAN_DEPLOY_ESCALADO_ONP
 | Guía | Qué cubre | Estado |
 |:--|:--|:--|
 | [`GUIDE_PAQUETES_CLIENTE.md`](GUIDE_PAQUETES_CLIENTE.md) | Catálogo de paquetes para el cliente: Evaluación 90 días / ERP Core / Core+BI Premium, límites y cómo activar o subir de edición (REQ_BIPACK RN-07/08/09/10) | ✅ Vigente (v1.0, 2026-09-29) |
+| [`RUNBOOK_LICENCIAS.md`](RUNBOOK_LICENCIAS.md) | Emisión, instalación, evaluación, bloqueo, rescate web, renovación y revocación de licencias — paso a paso para vendedor/ops (RNF-BIPACK-007) | ✅ Vigente (v2.2; movido de `conductor/` 2026-10-06) |
 | [`GUIDE_INSTALACION_NUEVO_CLIENTE.md`](GUIDE_INSTALACION_NUEVO_CLIENTE.md) | Instalación/actualización desde el bundle con perfiles `laptop` y `server` (RF-DEPLOY-001..003, 011..014) | ✅ Vigente (contra el instalador real, F5) |
 | [`GUIDE_TERMINALES_LOCAL.md`](GUIDE_TERMINALES_LOCAL.md) | Alta de una terminal: navegador, URL, usuario; confianza de la CA interna (RF-DEPLOY-004/005); móviles y tablets: WiFi del local o remoto por Tailscale (RF-DEPLOY-008) | ✅ Vigente (F5; v1.2 móviles) |
 | [`GUIDE_MIGRACION_LAPTOP_A_SERVIDOR.md`](GUIDE_MIGRACION_LAPTOP_A_SERVIDOR.md) | Traslado completo con backup etiquetado, restore, verificación y baja de la laptop (RF-DEPLOY-006/007) | ✅ Vigente (F5, recorrido E2E del plan) |
@@ -34,6 +35,7 @@ Las guías del módulo deploy nacen del plan `conductor/PLAN_DEPLOY_ESCALADO_ONP
 
 | Versión | Fecha | Cambio | Autor |
 |:--|:--|:--|:--|
+| v0.5 | 2026-10-06 | `RUNBOOK_LICENCIAS.md` movido de `conductor/` a `docs/guides/` (regla del owner: guías vivas en docs/, planes efímeros en conductor/); refs actualizadas en GUIDE_INSTALACION y REQ_BIPACK | renpereiradx + agente |
 | v0.4 | 2026-09-30 | Nueva `GUIDE_HOSTING_NUBE.md` (v0.1): catálogo de alojamiento en nube, estado Propuesta — excepción documentada a la regla de "lo implementado": es evaluación para el cliente, el procedimiento real queda pendiente en su §10 | renpereiradx + agente |
 | v0.3 | 2026-09-22 | F5: las 4 guías del módulo deploy escritas contra la implementación real (F2–F4) | renpereiradx + agente |
 | v0.2 | 2026-09-22 | F1: consolidación del material de deploy disperso — `GUIDE_ENTORNO_DEV_WINDOWS.md` absorbe `WINDOWS_SETUP.md` (BE), `DOCKER_WINDOWS_POSTGRES_GUIDE.md` y `DOCKER_WSL_GUIDE.md` (FE); el resto obsoleto borrado | renpereiradx + agente |

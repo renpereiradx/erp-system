@@ -29,7 +29,7 @@
 **Del lado del vendor:**
 
 - El **bundle de release**: `erp-release-<versión>.tar.gz` (lo genera `business_management/deploy/scripts/make-release-bundle.sh`).
-- La **licencia del cliente** si ya compró: `license.json` + `licensing-public.key` (generadas con `cmd/licensegen`; ver RUNBOOK_LICENCIAS_2026-09). Si aún no compró, **no hace falta nada**: la instalación arranca en evaluación full (Core+BI) por 90 días desde el primer arranque; al vencer se bloquea y se activa cargando la licencia (rescate web — REQ_BIPACK v2.0).
+- La **licencia del cliente** si ya compró: `license.json` + `licensing-public.key` (generadas con `cmd/licensegen`; ver [`RUNBOOK_LICENCIAS.md`](RUNBOOK_LICENCIAS.md)). Si aún no compró, **no hace falta nada**: la instalación arranca en evaluación full (Core+BI) por 90 días desde el primer arranque; al vencer se bloquea y se activa cargando la licencia (rescate web — REQ_BIPACK v2.0).
 
 ### 2.1 Cargar licencia + clave pública en el bundle (lado vendedor)
 
@@ -146,7 +146,7 @@ Al terminar imprime un resumen con URLs, ubicación de la CA y próximos pasos.
 | Puerto 80/443 ocupado | `ERP_HTTP_PORT=8080 ERP_HTTPS_PORT=8443` antes del comando |
 | Otro PostgreSQL ya existe en el servidor | mover el puerto del stack: `ERP_DB_PORT=5433` |
 | Instalar sin licencia por ahora | omitir `--license` (queda en evaluación: 90 días full, luego pantalla de rescate) |
-| Activar un cliente que ya pagó (post-evaluación) | cargar el `license.json` desde la pantalla "Licencia requerida" o `curl -X PUT .../api/v1/system/license` (RUNBOOK §4b) |
+| Activar un cliente que ya pagó (post-evaluación) | cargar el `license.json` desde la pantalla "Licencia requerida" o `curl -X PUT .../api/v1/system/license` ([RUNBOOK_LICENCIAS.md](RUNBOOK_LICENCIAS.md) §4b) |
 | Probar sin tocar `/opt` | `ERP_ROOT=/tmp/erp-test ./install.sh ...` |
 
 ---
@@ -213,7 +213,7 @@ delta. **Antes de actualizar: verificar que existe el backup de anoche**
 | El instalador muere en "frontend HTTPS no responde" | Otra cosa ocupa 80/443 | Revisar `ss -tln` y usar `ERP_HTTP_PORT/ERP_HTTPS_PORT` |
 | Login OK pero sin datos y sin roles | Bundle sin baseline (muy viejo) | Regenerar bundle (`make-release-bundle.sh` lo exige) |
 | El navegador de las terminales da advertencia TLS | CA no instalada en esa terminal | `GUIDE_TERMINALES_LOCAL.md` |
-| Pantalla "Licencia requerida" tras instalar | Evaluación agotada sin licencia | Cargar la licencia desde esa misma pantalla (RUNBOOK §4b); no hace falta SSH |
+| Pantalla "Licencia requerida" tras instalar | Evaluación agotada sin licencia | Cargar la licencia desde esa misma pantalla ([RUNBOOK_LICENCIAS.md](RUNBOOK_LICENCIAS.md) §4b); no hace falta SSH |
 | El rescate web rechaza la licencia (LICENSE_INVALID) | `LICENSE_PUBLIC_KEY` vacía o distinta a la del par vendedor | Cargar la pública correcta en `.env.docker` y recrear el backend |
 
 ---

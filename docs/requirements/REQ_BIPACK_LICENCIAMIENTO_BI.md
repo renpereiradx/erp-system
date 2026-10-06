@@ -9,7 +9,7 @@
 | Versión del documento | v2.2 |
 | Estado | Implementado (F0-F6, 2026-09-21) · v1.1 estadísticas relacionales (2026-09-22) · v2.0 modelo de evaluación y rescate (2026-09-28) · v2.1 correcciones de auditoría (2026-09-29) · v2.2 límite de terminales sin pack (RN-10) — trazabilidad en las tablas RF/RN |
 | Fecha | 2026-09-29 (v2.2) |
-| Fuentes | [conductor/PLAN_BI_PACK_PREMIUM.md](../conductor/PLAN_BI_PACK_PREMIUM.md) (plan + decisiones ADR 1-7) · [conductor/RUNBOOK_LICENCIAS_2026-09.md](../conductor/RUNBOOK_LICENCIAS_2026-09.md) (operación) |
+| Fuentes | [conductor/PLAN_BI_PACK_PREMIUM.md](../conductor/PLAN_BI_PACK_PREMIUM.md) (plan + decisiones ADR 1-7) · [guides/RUNBOOK_LICENCIAS.md](../guides/RUNBOOK_LICENCIAS.md) (operación) |
 | Implementación | Backend `9dd9942` + `146172c` · v2.0: `441046e` · Frontend `b3ab4eb` + `26178ff` · v2.0: `91b41de` · Wrapper `809b549` + v2.0 `d95489b` · v2.1 (auditoría): correcciones del 2026-09-29 |
 | Audiencia | Dirección, comerciales, soporte, ingeniería |
 
@@ -197,7 +197,7 @@ Complementos del modelo de estados:
 | RNF-BIPACK-004 | La implementación no debe introducir estado de licenciamiento en DB **fuera del ancla del trial**: v2.0 enmienda esta regla y agrega exactamente una migración (`system_installation`, fila única). El archivo de licencia sigue siendo la única fuente de entitlements. | Obligatorio | Implementado (enmendada v2.0) | Migración `20260928100000` (única) · el gate sigue leyendo `license.json` |
 | RNF-BIPACK-005 | El contrato con el frontend debe ser aditivo: un backend sin el módulo de licencias debe seguir funcionando con frontends nuevos y viceversa. | Obligatorio | Implementado | Campo `entitlements` omitible; FE fail-open sin dato |
 | RNF-BIPACK-006 | La verificación de licencia no debe agregar costo perceptible a las consultas (verificación de metadatos del archivo, no re-verificación criptográfica por consulta). | Obligatorio | Implementado | Re-chequeo por mtime; benchmark en plan |
-| RNF-BIPACK-007 | La operación del proveedor (emisión, renovación, revocación, alta de instalaciones existentes) debe estar documentada paso a paso en un runbook. | Obligatorio | Implementado | `conductor/RUNBOOK_LICENCIAS_2026-09.md` |
+| RNF-BIPACK-007 | La operación del proveedor (emisión, renovación, revocación, alta de instalaciones existentes) debe estar documentada paso a paso en un runbook. | Obligatorio | Implementado | `docs/guides/RUNBOOK_LICENCIAS.md` |
 | RNF-BIPACK-008 | El módulo no debe depender de conectividad a internet ni realizar reportes externos (licenciamiento local, sin telemetría). | Obligatorio | Implementado | Revisión de código: sin llamadas de red en licensing |
 
 ## 8. Reglas de negocio
@@ -286,7 +286,7 @@ hubiera, es política comercial (RN-05), no del sistema.
 | Artefacto | Ubicación |
 |:----------|:----------|
 | Plan con decisiones (ADR-1..7) | [conductor/PLAN_BI_PACK_PREMIUM.md](../conductor/PLAN_BI_PACK_PREMIUM.md) |
-| Runbook de operación | [conductor/RUNBOOK_LICENCIAS_2026-09.md](../conductor/RUNBOOK_LICENCIAS_2026-09.md) |
+| Runbook de operación | [guides/RUNBOOK_LICENCIAS.md](../guides/RUNBOOK_LICENCIAS.md) |
 | Implementación backend | `business_management` · `9dd9942` (F1-F2) · `146172c` (F5-F6 docs) |
 | Implementación frontend | `erp-webapp` · `b3ab4eb` (F3-F4) · `26178ff` (docs) |
 | Registro de cierre | wrapper `809b549` |

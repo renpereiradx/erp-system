@@ -1,6 +1,6 @@
 # RUNBOOK — Licencias BI Pack Premium (2026-09 · v2.2 trial + rescate + terminales)
 
-**Plan:** [PLAN_BI_PACK_PREMIUM.md](./PLAN_BI_PACK_PREMIUM.md) (ADR-1/ADR-4, F6) · **v2.0:** REQ_BIPACK (RF-025..029, RN-08/09)
+**Plan:** [PLAN_BI_PACK_PREMIUM.md](../../conductor/PLAN_BI_PACK_PREMIUM.md) (ADR-1/ADR-4, F6) · **v2.0:** REQ_BIPACK (RF-025..029, RN-08/09)
 **Implementación:** BE `9dd9942` (licencias) + v2.0 2026-09-28 `441046e` (trial/bloqueo/rescate) + v2.1 2026-09-29 (auditoría: permiso `license:write`, licencia vencida→Core, ancla fail-open) · FE `b3ab4eb` + v2.0 `91b41de` (gate de licencia) + v2.1 (instalación desde Configuración, auto-recuperación del gate)
 **Audiencia:** vendedor / ops — emisión, instalación, evaluación, bloqueo, rescate web, renovación y deploy prod.
 
@@ -76,6 +76,22 @@ chmod 600 ~/custodia-licencias/vendor.key   # solo tu usuario puede leerla
 #   -expires 2027-09-21T12:00:00Z → fecha fija (gana sobre -days).
 ```
 
+> **Varios clientes / correr `issue` varias veces:** es el flujo normal.
+> `keygen` se corre UNA sola vez en la vida del negocio (se niega a pisar una
+> clave privada existente; correrlo de nuevo con otras rutas crearía un segundo
+> par = otra "marca" — no hacerlo sin decisión explícita). `issue` se corre una
+> vez por cliente: cada llamada escribe un archivo **independiente** firmado
+> con el **mismo** par de claves, y el comando NO lleva registro de lo emitido
+> — la carpeta `~/entregas/<cliente>/` ES ese registro. Ojo: `-out` sobre un
+> archivo existente lo **sobrescribe sin aviso**; un subfolder por cliente lo
+> evita.
+
+> **Roles de las dos carpetas:** `~/custodia-licencias/` es la **bóveda** —
+> solo el par maestro; la privada jamás sale y nada más entra. `~/entregas/
+> <cliente>/` es la **salida** — las licencias que viajan a cada cliente.
+> Regla corta: `-key` siempre apunta a la custodia (lee), `-out` siempre a
+> entregas (escribe).
+
 Entrega al cliente: **`license.json` + la clave pública**. Nunca la privada. La forma más simple de entregarlos es meter ambos DENTRO del bundle (§2c): el instalador los detecta solo.
 
 ### 2c. Cargar licencia + clave en el bundle (recomendado — autodetección)
@@ -99,7 +115,7 @@ tar czf erp-release-<v>.tar.gz erp-release-<v>/
 - Cliente sin licencia todavía: incluir **igual** la clave pública (habilita
   el rescate web cuando compre); sin `license.json` arranca la evaluación de
   90 días.
-- Detalle completo del lado del cliente: `GUIDE_INSTALACION_NUEVO_CLIENTE.md` §2.1 y §5.
+- Detalle completo del lado del cliente: [`GUIDE_INSTALACION_NUEVO_CLIENTE.md`](GUIDE_INSTALACION_NUEVO_CLIENTE.md) §2.1 y §5.
 
 ## 3. Instalación (servidor del CLIENTE)
 
