@@ -76,6 +76,16 @@ chmod 600 ~/custodia-licencias/vendor.key   # solo tu usuario puede leerla
 #   -expires 2027-09-21T12:00:00Z → fecha fija (gana sobre -days).
 ```
 
+**Flags de edición y módulos (qué significa cada uno):**
+
+| Flag | Valores | Qué hace |
+|:--|:--|:--|
+| `-edition` | `core` · `core+bi` (default) | Etiqueta **comercial**: es el texto que muestra *Configuración → Licencia* del cliente. Es **informativo** — no prende ni apaga nada. El backend solo exige que no venga vacío, pero usar únicamente estos dos valores del catálogo ([`GUIDE_PAQUETES_CLIENTE.md`](GUIDE_PAQUETES_CLIENTE.md)): cualquier otro string se mostraría tal cual en la pantalla del cliente. |
+| `-modules` | `bi` · `core` | El que **manda** de verdad: con `bi` el pack BI queda habilitado y las terminales POS no tienen límite; sin `bi` la instalación corre como ERP Core con 1 terminal POS activa por sucursal (RN-10). |
+
+Regla práctica: `-edition core+bi -modules bi` para Premium, `-edition core
+-modules core` para Core — siempre ambos alineados con lo que compró el cliente.
+
 > **Varios clientes / correr `issue` varias veces:** es el flujo normal.
 > `keygen` se corre UNA sola vez en la vida del negocio (se niega a pisar una
 > clave privada existente; correrlo de nuevo con otras rutas crearía un segundo
