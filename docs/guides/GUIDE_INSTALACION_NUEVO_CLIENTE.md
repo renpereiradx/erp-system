@@ -215,6 +215,20 @@ delta. **Antes de actualizar: verificar que existe el backup de anoche**
 | El navegador de las terminales da advertencia TLS | CA no instalada en esa terminal | `GUIDE_TERMINALES_LOCAL.md` |
 | Pantalla "Licencia requerida" tras instalar | Evaluación agotada sin licencia | Cargar la licencia desde esa misma pantalla ([RUNBOOK_LICENCIAS.md](RUNBOOK_LICENCIAS.md) §4b); no hace falta SSH |
 | El rescate web rechaza la licencia (LICENSE_INVALID) | `LICENSE_PUBLIC_KEY` vacía o distinta a la del par vendedor | Cargar la pública correcta en `.env.docker` y recrear el backend |
+| `error: Dirty database version <X>` en el paso 7 | Una migración quedó interrumpida a mitad (terminal cerrada, corte, o un bug de migración — el `20261004190603` con `OWNER TO dev_user` lo causaba; corregido en BE `9a91a32`) | Recuperación *dirty* (abajo) y re-ejecutar el instalador |
+
+**Recuperación de base *dirty* (paso 7):** forzar la última versión que
+completó y dejar que el instalador re-aplique el delta (las migraciones usan
+`CREATE OR REPLACE` / idempotencia, re-aplicar es seguro):
+
+```bash
+cd /opt/erp/business_management
+PG_PASSWORD="$(sudo grep -E '^DB_PASSWORD=' .env.docker | cut -d= -f2-)"
+sudo docker compose --profile laptop run --rm --entrypoint sh migrate -c \
+  "migrate -path /migrations -database 'postgresql://erp_app:$PG_PASSWORD@postgres:5432/erp_db?sslmode=disable' force <versión_limpia>"
+# <versión_limpia> = la migración ANTERIOR a la que quedó dirty (si dirty es N, forzar N-1)
+# luego re-ejecutar install.sh: aplica el delta desde esa versión
+```
 
 ---
 
@@ -222,6 +236,7 @@ delta. **Antes de actualizar: verificar que existe el backup de anoche**
 
 | Versión | Fecha | Cambio | Autor |
 |:--|:--|:--|:--|
+| v1.3 | 2026-10-06 | §8: recuperación de base *dirty* del paso 7 (force última versión limpia + re-run) — reproducido y verificado en la VM de prueba | renpereiradx + agente |
 | v1.2 | 2026-10-06 | §2.1 nuevo: cargar licencia + clave pública dentro del bundle (autodetección del wizard) y re-empaquetar el `.tar.gz` | renpereiradx + agente |
 | v1.1 | 2026-09-29 | Alineación con REQ_BIPACK v2.1 / REQ_DEPLOY v0.8 (auditoría): `--license` exige SIEMPRE `--license-public-key` (el ejemplo canónico ahora los lleva juntos), los updates sin licencia activan la evaluación (90 días desde el update), `license/` se entrega con permisos para el rescate web y el smoke lo verifica, instalación de licencia post-pago también desde Configuración → Licencia | renpereiradx + agente (auditoría ZCode) |
 | v1.0 | 2026-09-22 | Primera versión, escrita contra el instalador real (F2-F3 del plan) y el ensayo E2E | renpereiradx + agente |
