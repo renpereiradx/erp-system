@@ -6,7 +6,7 @@
 |:------|:------|
 | Documento | Guía comercial de venta (playbook) |
 | Código | SALES-001 |
-| Versión | v1.2 |
+| Versión | v1.3 |
 | Fecha | 2026-10-07 |
 | Proveedor | **Code Dynamic** — estudio de desarrollo de software (contacto: +595 995 639 582 · codedynamicdev@gmail.com) |
 | Audiencia | Owner / comercial (leer antes de cada reunión) |
@@ -41,7 +41,7 @@ pasamos a decir "ERP completo" sin cambiar nada más.
 ## 3. Elevator pitch (30 segundos, para decir literal)
 
 > "Es un sistema de gestión para comercios. Usted vende por código de barras o por
-> búsqueda, el stock se descuenta solo y por sucursal, compra a proveedores, emite
+> búsqueda, el inventario (stock) se descuenta solo y por sucursal, compra a proveedores, emite
 > factura electrónica de SIFEN, controla caja y cuentas de clientes, y ve en una sola
 > pantalla qué vendió, qué le conviene reponer y quién le debe.
 > Se instala en su propia computadora — sus datos quedan en su negocio — y no paga
@@ -50,7 +50,7 @@ pasamos a decir "ERP completo" sin cambiar nada más.
 
 Versión ultra-corta (10 segundos, para WhatsApp):
 
-> "Vendé, controlá stock de todas tus sucursales y facturá electronicamente desde un
+> "Vendé, controlá el inventario de todas tus sucursales y facturá electrónicamente desde un
 > solo sistema. Instalado en tu computadora, sin mensualidad. Probalo gratis 30 días."
 
 ---
@@ -83,13 +83,13 @@ Cada fila: **qué decir** (beneficio) → qué es en realidad (para que usted se
 | Qué decir al cliente | Qué es por dentro |
 |:--|:--|
 | "Vendé rápido: escaneás el código o buscás por nombre, cobrás e imprimís el ticket. También pedidos de mostrador, presupuestos imprimibles y reservas con agenda." | Módulo Ventas: POS con carrito, atajos de teclado, presupuestos, reservas acopladas |
-| "El stock se descuenta solo, sucursal por sucursal. Transferís mercadería entre locales con control y veés cada movimiento." | Inventario multi-sucursal: stock con alcance por sucursal, transferencias con permisos, movimientos |
+| "El inventario (stock) se descuenta solo, sucursal por sucursal. Transferís mercadería entre locales con control y veés cada movimiento." | Inventario multi-sucursal: stock con alcance por sucursal, transferencias con permisos, movimientos |
 | "Comprás a proveedores con órdenes y recibís la mercadería que actualiza el stock. Llevás lo que les debés y hasta cuánto te queda pagar." | Compras: órdenes, requisiciones, pagos a proveedores, cuentas por pagar con antigüedad |
 | "Factura electrónica de SIFEN desde el mismo sistema, con los libros fiscales listos para su contador." | SIFEN: facturación electrónica, libros legales IVA compras/ventas, tasas de IVA |
 | "Caja: apertura, movimientos, cierre del día. Sabés lo que entró y lo que salió, en cada sucursal." | Finanzas operativas: caja, movimientos, flujo de caja |
 | "Sabés al instante quién te debe y desde cuándo, con el estado de cuenta de cada cliente." | Cuentas por cobrar: aging, perfil de crédito por cliente, estado de cuenta |
 | "Si fabricás o armás kits, el sistema te descuenta los ingredientes y te da el producto terminado." | Manufactura + conversión de unidades |
-| "Apartás mercadería para un cliente y queda en una agenda; al concretar, ya es una venta sin re-cargar nada." | Reservas: stock reservado + agenda, acopladas a ventas (ReserveSvc/ScheduleSvc) |
+| "El sistema tiene manejo de reservas con agenda: apartás mercadería para un cliente y, al concretar, ya es una venta sin re-cargar nada." | Reservas: stock reservado + agenda, acopladas a ventas (ReserveSvc/ScheduleSvc) |
 | "Reportes que antes pedías a un contador: qué vendió cada vendedor, qué productos dejan más ganancia, mapa de calor de ventas." | Pack BI Premium: dashboards, drill-downs relacionales, rentabilidad, pronósticos |
 | "Cada empleado ve solo lo que le corresponde: su sucursal, sus permisos, y todo queda auditado." | Usuarios, roles, sucursales, auditoría completa |
 
@@ -104,7 +104,7 @@ Cada fila: **qué decir** (beneficio) → qué es en realidad (para que usted se
    (Nube de terceros = sus datos en la computadora de otro.)
 3. **Hecho para Paraguay.** Guaraníes, factura electrónica SIFEN nativa, IVA, libros
    fiscales, todo en español.
-4. **Multi-sucursal de verdad.** Stock, ventas, caja y permisos por sucursal, con
+4. **Multi-sucursal de verdad.** Inventario, ventas, caja y permisos por sucursal, con
    transferencias controladas entre locales — no "otra copia del sistema" por local.
 5. **Prueba completa de 30 días.** El sistema entero, sin recortes ni funciones
    demo, gratis. Si no le convence, no compró nada.
@@ -192,11 +192,11 @@ clientes con saldos, ventas de la semana), impresora configurada, JWT de admin a
 
 | # | Paso | Qué remarcar |
 |:--|:--|:--|
-| 1 | Login y elección de sucursal | "Cada sucursal ve SU stock; el dueño ve todo." |
+| 1 | Login y elección de sucursal | "Cada sucursal ve SU inventario; el dueño ve todo." |
 | 2 | Venta rápida: buscar por nombre y por código, carrito, cobrar (teclas 1-9 = formas de pago) | "Más rápido que anotar en un cuaderno." |
 | 3 | Imprimir ticket con saldo pendiente | "Cuenta corriente sin planillas." |
 | 4 | Presupuesto: crear, imprimir, convertir en venta | "El cliente que hoy 'lo pienso' queda registrado." |
-| 5 | Stock: ver stock por sucursal + transferir | "Sé qué hay en cada local, sin llamar por teléfono." |
+| 5 | Inventario: ver por sucursal + transferir | "Sé qué hay en cada local, sin llamar por teléfono." |
 | 6 | Compra a proveedor y recepción | "Recibo mercadería y el stock se actualiza solo." |
 | 7 | Caja: apertura y cierre con diferencia | "Cierra caja en 2 minutos, no en 40." |
 | 8 | Cliente moroso: aging + estado de cuenta | "Quién le debe y desde cuándo, en una pantalla." |
@@ -240,6 +240,7 @@ Nunca atar una fecha ("este año", "el mes que viene") — vender lo que existe 
 
 | Versión | Fecha | Cambio | Autor |
 |:--|:--|:--|:--|
+| v1.3 | 2026-10-07 | Terminología: "stock" → "inventario (stock)" en todo el material de venta (módulo del flyer ahora "Inventario (stock)"); reservas más visibles: en el listado de capacidades del flyer y §5 reformulado como "manejo de reservas con agenda"; fix acento "electrónicamente" en pitch corto | renpereiradx + agente |
 | v1.2 | 2026-10-07 | Evaluación 90→30 días (REQ_BIPACK v2.3); proveedor **Code Dynamic** con contacto real en ficha; módulo Reservas como fila propia en §5 (verificado: stock reservado + agenda acopladas a ventas); flyer regenerado (30 días, contacto real, módulos Reservas y Multi-moneda) | renpereiradx + agente |
 | v1.0 | 2026-10-07 | Primera versión: posicionamiento, pitch, módulos, objeciones, demo, paquetes | agente + renpereiradx |
 | v1.1 | 2026-10-07 | Endurecido el no-ERP: la respuesta a "¿es un ERP?" ya no afirma la categoría; prohibido "maneja todo el negocio"; flyer regenerado con titular y pack Core sin sobre-promesa (PDF/PNG/HTML actualizados) | agente + renpereiradx |
