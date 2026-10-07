@@ -1,7 +1,7 @@
 # AGENTS.md — ERP System (Monorepo)
 
 Instrucciones para agentes AI de coding que trabajen en este workspace.
-Última actualización: 2026-10-04
+Última actualización: 2026-10-07
 
 ---
 
@@ -258,7 +258,8 @@ hermes project show erp-system        # Estado del workspace
 - **SemVer** `vMAJOR.MINOR.PATCH`, mismo número en backend y frontend por release. MAJOR: ruptura de contract API, migración que exige intervención de datos o cambio de flujo de instalación. MINOR: features nuevas visibles (módulos, endpoints, pantallas). PATCH: fixes sin features.
 - Los tags se crean sobre `dev` (línea viva) al cerrar el hito; `git tag` NO viaja con `git push` simple → `git push origin dev --tags`.
 - **Identificación en runtime**: `make build` inyecta `git describe --tags` al binario vía ldflags (`internal/platform/version`) y `GET /version` (sin auth) lo reporta junto a `commit` y `build_date` — así se identifica qué versión corre una instalación de cliente. Worktree con cambios sin commit → reporta `vX.Y.Z-dirty` (build no reproducible; commitear antes de emitir un bundle).
-- **Frontend**: sincronizar `"version"` de `package.json` con el tag en cada release (mismo número, sin prefijo `v`).
+- **Frontend**: sincronizar `"version"` de `package.json` con el tag en cada release (mismo número, sin prefijo `v`). Ese sync alimenta la UI: el badge de versión FE se inyecta al build (`__APP_VERSION__`) y no requiere pasos extra de release.
+- **Versión en la UI** (PLAN_VERSION_UI_FRONTEND_2026-10-07): SOLO `SystemVersionBadge` (`src/components/`) renderiza versiones — sidebar, login, settings, branch selection. La comparación FE vs BE detecta instalaciones parcialmente actualizadas. Prohibido un literal `"vX.Y.Z"` en `src/` (guard `version-literal` en `lint:design`; excepciones: `src/domain/version/`, tests, pragma `allow-version` para refs de specs externas como SIFEN v1.2 / MT §11.1.1). Los payloads de auditoría `system_version` derivan de `FE_APP_VERSION` (`src/domain/version/feVersion.ts`), nunca un número propio.
 - Hitos anteriores a v1.0.0 (2026-10-04) no tienen tag: identificarlos por SHA de commit.
 
 ---
