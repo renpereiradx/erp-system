@@ -280,6 +280,7 @@ hermes project show erp-system        # Estado del workspace
 - Validación: Zod en formularios, con feedback visual inmediato
 - Autofill: todo `<form>` lleva `autoComplete="off"` y los campos de contraseña `autoComplete="new-password"` (login: `username`/`current-password`) — evita que el navegador guarde datos del ERP en su autofill (terminales compartidas del cliente; ver `docs/guides/GUIDE_TERMINALES_LOCAL.md` §4)
 - i18n: `src/lib/i18n.js` siempre — nunca strings hardcoded de UI
+- Branding UI: ninguna cadena visible dice "ERP" ni promete "ERP completo" — el producto se muestra como "sistema de gestión comercial" (sidebar, login, settings, branch selection, `<title>`, títulos de pestaña, footers de reportes impresos). Excepción: nombres de edición del licenciamiento (ERP Core, Core + BI Premium). Posicionamiento completo: `docs/sales/GUIA_VENTAS.md` §2.
 - Temas: Fluent 2 con tokens en `design/tokens.json` (Tailwind 4 `@theme`; modo oscuro vía clase `.dark`)
 - TypeScript: todos los archivos nuevos en `.tsx`/`.ts`, sin `.jsx`/`.js`
 - Performance: seguir la skill `vercel-react-best-practices` del workspace (ver reglas críticas de frontend)
