@@ -8,7 +8,7 @@
 
 ## 1. Modelo en 60 segundos
 
-- **Sin licencia:** la instalación corre COMPLETA (Core+BI) en **evaluación por 90 días desde
+- **Sin licencia:** la instalación corre COMPLETA (Core+BI) en **evaluación por 30 días desde
   el primer arranque** (ancla en `system_installation.first_boot_at`, sembrada por migración /
   baseline). Agotados: **bloqueo total** — solo login, refresh, logout y `/system/license`
   (ver + cargar) responden; el resto devuelve 403 `LICENSE_EXPIRED` y el FE muestra la
@@ -124,7 +124,7 @@ tar czf erp-release-<v>.tar.gz erp-release-<v>/
   verifica solo los archivos listados; los agregados se ignoran.
 - Cliente sin licencia todavía: incluir **igual** la clave pública (habilita
   el rescate web cuando compre); sin `license.json` arranca la evaluación de
-  90 días.
+  30 días.
 - Detalle completo del lado del cliente: [`GUIDE_INSTALACION_NUEVO_CLIENTE.md`](GUIDE_INSTALACION_NUEVO_CLIENTE.md) §2.1 y §5.
 
 ## 3. Instalación (servidor del CLIENTE)
@@ -133,8 +133,8 @@ tar czf erp-release-<v>.tar.gz erp-release-<v>/
 y `--license-public-key <public.key>` (o los pide en el wizard; con licencia la clave es
 obligatoria). Ambos archivos quedan copiados en `$ERP_ROOT/business_management/license/`,
 el mount del contenedor, y el `.env.docker` se genera con `LICENSE_ENFORCE=true` +
-`LICENSE_PUBLIC_KEY` + `LICENSE_TRIAL_DAYS=90`. Sin `--license`, la instalación arranca en
-evaluación (90 días) y ya puede rescatar por web (la pública, si se pasó, hace el resto).
+`LICENSE_PUBLIC_KEY` + `LICENSE_TRIAL_DAYS=30`. Sin `--license`, la instalación arranca en
+evaluación (30 días) y ya puede rescatar por web (la pública, si se pasó, hace el resto).
 
 **Manual (servidor existente):**
 
@@ -208,7 +208,7 @@ por el instalador: el hot-reload cubre el archivo, no las env vars — cambiar
 `LICENSE_ENFORCE` siempre requiere reinicio.
 
 **Instalación vieja actualizada sin licencia:** el update activa `LICENSE_ENFORCE=true` y la
-evaluación corre 90 días desde la migración del ancla (`system_installation`) — avisar al
+evaluación corre 30 días desde la migración del ancla (`system_installation`) — avisar al
 cliente: al vencer, bloqueo con rescate web.
 
 ## 7. Checklist de deploy prod
@@ -236,7 +236,7 @@ cliente: al vencer, bloqueo con rescate web.
 | Pantalla "Licencia requerida" (todo bloqueado) | Evaluación agotada sin licencia | Rescate web (§4b): cargar `license.json` desde la propia pantalla |
 | PUT de licencia → 400 `LICENSE_INVALID` | Firma inválida / clave pública incorrecta / archivo corrupto | Verificar que la pública sea la del par vendedor; re-emitir (§2b) |
 | PUT de licencia → 400 "public key not configured" | `LICENSE_PUBLIC_KEY` vacía | Cargar la pública en `.env.docker` y recrear el contenedor backend |
-| Evaluación ya vencida en un install recién actualizado | El ancla `system_installation` se sembró al aplicar la migración | Normal: 90 días desde el update. Activación adelantada vía §4b |
+| Evaluación ya vencida en un install recién actualizado | El ancla `system_installation` se sembró al aplicar la migración | Normal: 30 días desde el update. Activación adelantada vía §4b |
 
 ## 9. Verificación E2E ejecutada (2026-09-21, dev)
 

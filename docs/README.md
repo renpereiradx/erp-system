@@ -188,7 +188,7 @@ Reglas de las guías:
 
 | Documento | Código | Módulo | Estado | Versión |
 |:----------|:-------|:-------|:-------|:--------|
-| [REQ_BIPACK_LICENCIAMIENTO_BI.md](requirements/REQ_BIPACK_LICENCIAMIENTO_BI.md) | BIPACK | Licenciamiento — BI Pack Premium (Core vs Core+BI) + evaluación 90 días | Implementado · v2.2: trial full + bloqueo total + rescate web (`license:write`) + límite de terminales por sucursal sin pack (RN-10) | v2.2 |
+| [REQ_BIPACK_LICENCIAMIENTO_BI.md](requirements/REQ_BIPACK_LICENCIAMIENTO_BI.md) | BIPACK | Licenciamiento — BI Pack Premium (Core vs Core+BI) + evaluación 30 días | Implementado · v2.3: trial full + bloqueo total + rescate web (`license:write`) + límite de terminales por sucursal sin pack (RN-10) | v2.2 |
 | [REQ_DEPLOY_DISTRIBUCION_ONPREMISE.md](requirements/REQ_DEPLOY_DISTRIBUCION_ONPREMISE.md) | DEPLOY | Distribución y despliegue on-premise (perfiles, terminales, sucursales) | Implementado (reservas de sitio: Tailscale/SSH) · v0.8: instalador licensing-aware (RF-017..020) | v0.8 |
 | [REQ_VENTAS.md](requirements/REQ_VENTAS.md) | VENTAS | Ventas — POS, pedidos de mostrador, cuenta corriente, anulaciones | Borrador (backfill módulo existente) | v0.1 |
 

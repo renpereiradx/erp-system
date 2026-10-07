@@ -20,5 +20,5 @@ Reglas de este directorio:
    comparte con clientes.
 3. El material hereda el posicionamiento vigente: **sistema de gestión comercial
    integral** — la categoría "ERP" se usa en los nombres de edición (ERP Core,
-   ERP Core + BI Premium) pero nunca se promete "ERP completo" (ver GUIA_VENTAS §1).
+   ERP Core + BI Premium) pero nunca se promete "ERP completo" ni "es un ERP" (ver GUIA_VENTAS §2).
 4. Idioma: español, lenguaje de cliente (sin tecnicismos internos).

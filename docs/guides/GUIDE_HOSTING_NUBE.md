@@ -114,7 +114,7 @@ suelen requerir **tarjeta de crédito internacional**.
 | Condiciones | Tarjeta internacional para verificar identidad (no se cobra); riesgo conocido de que Oracle **reclame servidores "dormidos"** (un ERP usado a diario no es problema); el ARM de São Paulo a veces queda "sin capacidad" y hay que reintentar la creación |
 | Comunidad | Consenso: es la única opción gratis apta para un servicio real; con reparos por los recortes de 2026 y la experiencia de signup |
 
-**Veredicto:** excelente para la evaluación de 90 días o un negocio chico con
+**Veredicto:** excelente para la evaluación de 30 días o un negocio chico con
 presupuesto cero, aceptando que "gratis" depende de las reglas de Oracle.
 
 ### 6.2 Gratis de plataformas PaaS (Render, Railway, Koyeb, Fly.io) — solo pruebas
@@ -188,7 +188,7 @@ Fuentes concretas en §11.
 
 | Escenario del cliente | Opción recomendada | Costo orientativo |
 |:--|:--|:--|
-| **Evaluación 90 días / negocio chico, presupuesto cero** | Oracle Always Free São Paulo (si hay tarjeta internacional y se consigue capacidad ARM) | US$0 |
+| **Evaluación 30 días / negocio chico, presupuesto cero** | Oracle Always Free São Paulo (si hay tarjeta internacional y se consigue capacidad ARM) | US$0 |
 | Evaluación sin tarjeta internacional | Lightsail o Vultr São Paulo 1 mes | ~US$5–6 |
 | **Negocio real, 1–2 sucursales** | VPS São Paulo 2 vCPU / 4 GB (Hostinger KVM 1, Vultr o Lightsail) + snapshot diario + backup externo | **US$10–25/mes** |
 | Multi-sucursal, BI con datos grandes | Cloud grande en `sa-east-1` o VPS 8 GB, con backups gestionados | US$25–50/mes |

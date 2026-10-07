@@ -19,7 +19,7 @@
 | | **Evaluación** | **ERP Core** | **ERP Core + BI Premium** |
 |:--|:--|:--|:--|
 | **Qué es** | El sistema completo, gratis, para conocerlo antes de pagar | La compra estándar: todo el ERP operativo | La compra completa: ERP + inteligencia de negocios |
-| **Duración** | **90 días** desde la primera instalación | **Perpetua** (no vence nunca) | **Perpetua** (no vence nunca) |
+| **Duración** | **30 días** desde la primera instalación | **Perpetua** (no vence nunca) | **Perpetua** (no vence nunca) |
 | **Módulos ERP** (ventas, compras, inventario, producción, fiscal/SIFEN, caja, clientes, proveedores) | ✔ Todos | ✔ Todos | ✔ Todos |
 | **Módulo BI** (dashboards, analíticas de ventas/compras/inventario, rentabilidad, pronósticos, auditoría) | ✔ Todos durante la evaluación | ✘ No incluido | ✔ Todos |
 | **Terminales POS por sucursal** | Sin límite | **1 terminal activa por sucursal** | Sin límite |
@@ -35,10 +35,10 @@
 ### 3.1 Evaluación (sin licencia)
 
 - Se instala el sistema y **arranca solo**, sin licencia y sin llamar al
-  proveedor: todo funciona (Core + BI) durante **90 días corridos** desde la
+  proveedor: todo funciona (Core + BI) durante **30 días corridos** desde la
   primera instalación.
 - El reloj no se reinicia: reinstalar o borrar la licencia no devuelve días.
-- Desde 30 días antes del fin aparece un aviso en pantalla con los días
+- En los últimos 10 días aparece un aviso en pantalla con los días
   restantes.
 - **Al vencer:** el sistema se bloquea por completo (no se pierde ningún dato).
   Se desbloquea al cargar la licencia comprada — ver §4.
@@ -77,10 +77,10 @@ aplicarlo.
 
 ## 5. Preguntas frecuentes
 
-- **¿La evaluación tiene alguna función recortada?** No: durante los 90 días el
+- **¿La evaluación tiene alguna función recortada?** No: durante los 30 días el
   sistema es idéntico al pack Premium, terminales incluidas. Es el producto
   real, para evaluarlo de verdad.
-- **¿Qué pasa si dejamos pasar los 90 días?** El sistema se bloquea, pero los
+- **¿Qué pasa si dejamos pasar los 30 días?** El sistema se bloquea, pero los
   datos quedan intactos. Al cargar la licencia comprada todo vuelve al segundo.
 - **¿El Core vence algún día?** No. Las licencias compradas (Core y Premium)
   son perpetuas: no hay renovación ni suscripción.

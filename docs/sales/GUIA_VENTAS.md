@@ -6,8 +6,9 @@
 |:------|:------|
 | Documento | Guía comercial de venta (playbook) |
 | Código | SALES-001 |
-| Versión | v1.0 |
+| Versión | v1.2 |
 | Fecha | 2026-10-07 |
+| Proveedor | **Code Dynamic** — estudio de desarrollo de software (contacto: +595 995 639 582 · codedynamicdev@gmail.com) |
 | Audiencia | Owner / comercial (leer antes de cada reunión) |
 | Fuente de verdad funcional | `docs/requirements/` + código (todo lo listado acá existe HOY) |
 
@@ -17,15 +18,18 @@
 
 **El producto es un "sistema de gestión comercial integral" para comercios del Paraguay.**
 
-- ✅ Decir: "sistema de gestión", "sistema de gestión integral", "el sistema que maneja
-  todo el negocio: vender, comprar, stock, facturación electrónica, reportes".
-- ✅ Decir si preguntan "¿es un ERP?": "Sí, en el sentido de que todo está integrado en
+- ✅ Decir: "sistema de gestión", "sistema de gestión integral", "el sistema que ordena
+  la operación comercial: vender, comprar, stock, facturación electrónica, reportes".
+- ✅ Decir si preguntan "¿es un ERP?": no afirmar la categoría (prometer "ERP" es
+  prometer contabilidad). "Es un sistema de gestión integral: todo queda integrado en
   un solo sistema. Está pensado para comercios como el suyo, sin la complejidad de un
   SAP."
-- ❌ NO decir: "ERP completo", "le reemplaza al contador", "tiene contabilidad",
-  "tiene nómina". Hoy NO tiene contabilidad general ni sueldos (ver §7).
+- ❌ NO decir: "ERP completo", "es un ERP", "le reemplaza al contador", "tiene
+  contabilidad", "tiene nómina", "maneja todo el negocio". Hoy NO tiene contabilidad
+  general ni sueldos (ver §7), y "todo" invita exactamente a esa pregunta.
 - Los nombres de los paquetes (Evaluación / **ERP Core** / **ERP Core + BI Premium**)
-  sí llevan "ERP": están bien, se mantienen.
+  sí llevan "ERP": son nombres de edición del licenciamiento, no promesas de alcance,
+  y se mantienen.
 
 **Por qué importa:** si vendemos "ERP completo", la primera pregunta del cliente es
 "¿y la contabilidad?" y la respuesta "todavía no" mancha todo lo demás. Si vendemos
@@ -41,13 +45,13 @@ pasamos a decir "ERP completo" sin cambiar nada más.
 > factura electrónica de SIFEN, controla caja y cuentas de clientes, y ve en una sola
 > pantalla qué vendió, qué le conviene reponer y quién le debe.
 > Se instala en su propia computadora — sus datos quedan en su negocio — y no paga
-> mensualidad: se compra una vez. Y puede probarlo gratis por 90 días, completo,
+> mensualidad: se compra una vez. Y puede probarlo gratis por 30 días, completo,
 > antes de decidir."
 
 Versión ultra-corta (10 segundos, para WhatsApp):
 
 > "Vendé, controlá stock de todas tus sucursales y facturá electronicamente desde un
-> solo sistema. Instalado en tu computadora, sin mensualidad. Probalo gratis 90 días."
+> solo sistema. Instalado en tu computadora, sin mensualidad. Probalo gratis 30 días."
 
 ---
 
@@ -85,6 +89,7 @@ Cada fila: **qué decir** (beneficio) → qué es en realidad (para que usted se
 | "Caja: apertura, movimientos, cierre del día. Sabés lo que entró y lo que salió, en cada sucursal." | Finanzas operativas: caja, movimientos, flujo de caja |
 | "Sabés al instante quién te debe y desde cuándo, con el estado de cuenta de cada cliente." | Cuentas por cobrar: aging, perfil de crédito por cliente, estado de cuenta |
 | "Si fabricás o armás kits, el sistema te descuenta los ingredientes y te da el producto terminado." | Manufactura + conversión de unidades |
+| "Apartás mercadería para un cliente y queda en una agenda; al concretar, ya es una venta sin re-cargar nada." | Reservas: stock reservado + agenda, acopladas a ventas (ReserveSvc/ScheduleSvc) |
 | "Reportes que antes pedías a un contador: qué vendió cada vendedor, qué productos dejan más ganancia, mapa de calor de ventas." | Pack BI Premium: dashboards, drill-downs relacionales, rentabilidad, pronósticos |
 | "Cada empleado ve solo lo que le corresponde: su sucursal, sus permisos, y todo queda auditado." | Usuarios, roles, sucursales, auditoría completa |
 
@@ -101,7 +106,7 @@ Cada fila: **qué decir** (beneficio) → qué es en realidad (para que usted se
    fiscales, todo en español.
 4. **Multi-sucursal de verdad.** Stock, ventas, caja y permisos por sucursal, con
    transferencias controladas entre locales — no "otra copia del sistema" por local.
-5. **Prueba completa de 90 días.** El sistema entero, sin recortes ni funciones
+5. **Prueba completa de 30 días.** El sistema entero, sin recortes ni funciones
    demo, gratis. Si no le convence, no compró nada.
 
 ---
@@ -148,7 +153,7 @@ Cada fila: **qué decir** (beneficio) → qué es en realidad (para que usted se
 > formato antes de prometer importación automática — hoy la carga es asistida.)*
 
 **"¿Y si no me gusta?"**
-> "Lo prueba 90 días gratis, completo. Si a mitad de camino decide que no, sus datos
+> "Lo prueba 30 días gratis, completo. Si a mitad de camino decide que no, sus datos
 > se exportan y no debe nada."
 
 **"¿Mi gente lo va a poder usar? No son de computadora."**
@@ -161,8 +166,8 @@ Cada fila: **qué decir** (beneficio) → qué es en realidad (para que usted se
 
 | | **Evaluación** | **ERP Core** | **ERP Core + BI Premium** |
 |:--|:--|:--|:--|
-| Qué es | El sistema completo para probar | La compra estándar | La compra completa |
-| Duración | 90 días gratis | **Perpetua** | **Perpetua** |
+| Qué es | El sistema completo para probar | La compra estándar | El paquete más completo |
+| Duración | 30 días gratis | **Perpetua** | **Perpetua** |
 | Módulos de gestión | Todos | Todos | Todos |
 | BI (dashboards, analítica) | Sí, durante la prueba | No | Sí |
 | Terminales POS | Sin límite | 1 activa por sucursal | Sin límite |
@@ -196,7 +201,7 @@ clientes con saldos, ventas de la semana), impresora configurada, JWT de admin a
 | 7 | Caja: apertura y cierre con diferencia | "Cierra caja en 2 minutos, no en 40." |
 | 8 | Cliente moroso: aging + estado de cuenta | "Quién le debe y desde cuándo, en una pantalla." |
 | 9 | BI: dashboard de ventas + drill-down hasta el detalle | "De 'vendimos más o menos' a 'este producto, en esta sucursal, esta vendedora'." |
-| 10 | Configuración → Licencia (días restantes) | "Los 90 días corren desde que instala. El sistema completo." |
+| 10 | Configuración → Licencia (días restantes) | "Los 30 días corren desde que instala. El sistema completo." |
 
 **Qué NO demostrar todavía** (limitaciones conocidas):
 - Inutilización de comprobantes SIFEN (fallo conocido pendiente de fix).
@@ -235,4 +240,6 @@ Nunca atar una fecha ("este año", "el mes que viene") — vender lo que existe 
 
 | Versión | Fecha | Cambio | Autor |
 |:--|:--|:--|:--|
+| v1.2 | 2026-10-07 | Evaluación 90→30 días (REQ_BIPACK v2.3); proveedor **Code Dynamic** con contacto real en ficha; módulo Reservas como fila propia en §5 (verificado: stock reservado + agenda acopladas a ventas); flyer regenerado (30 días, contacto real, módulos Reservas y Multi-moneda) | renpereiradx + agente |
 | v1.0 | 2026-10-07 | Primera versión: posicionamiento, pitch, módulos, objeciones, demo, paquetes | agente + renpereiradx |
+| v1.1 | 2026-10-07 | Endurecido el no-ERP: la respuesta a "¿es un ERP?" ya no afirma la categoría; prohibido "maneja todo el negocio"; flyer regenerado con titular y pack Core sin sobre-promesa (PDF/PNG/HTML actualizados) | agente + renpereiradx |
