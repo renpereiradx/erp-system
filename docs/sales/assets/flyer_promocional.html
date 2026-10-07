@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="es-PY">
+<head>
+<meta charset="UTF-8">
+<title>Flyer promocional — Sistema de gestión comercial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,400,0..1,0&display=block" rel="stylesheet">
+<style>
+  :root {
+    --c-bg: #f5f7fa;
+    --c-primary: #0078D4;
+    --c-primary-dark: #005A9E;
+    --c-deep: #10314e;
+    --c-text: #17293c;
+    --c-muted: #55677a;
+    --c-line: rgba(0, 90, 158, 0.16);
+  }
+
+  html, body { margin: 0; padding: 0; background: var(--c-bg); }
+
+  .poster {
+    width: 794px;
+    position: relative;
+    background: var(--c-bg);
+    font-family: 'Inter', 'Liberation Sans', sans-serif;
+    color: var(--c-text);
+    text-align: left;
+  }
+
+  .material-symbols-outlined {
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    display: inline-block;
+    line-height: 1;
+    letter-spacing: normal;
+    white-space: nowrap;
+    direction: ltr;
+    -webkit-font-smoothing: antialiased;
+    font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+  }
+
+  /* ---------- Header band ---------- */
+  .band {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, var(--c-primary) 0%, var(--c-primary-dark) 100%);
+    color: #ffffff;
+    padding: 46px 48px 42px;
+  }
+  .band .deco {
+    position: absolute;
+    right: -90px;
+    top: -110px;
+    width: 320px;
+    height: 320px;
+    border: 1.5px solid rgba(255, 255, 255, 0.16);
+    border-radius: 50%;
+  }
+  .band .deco2 {
+    position: absolute;
+    right: 40px;
+    bottom: -140px;
+    width: 220px;
+    height: 220px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 50%;
+  }
+  .kicker {
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 3.2px;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.78);
+    margin: 0 0 16px;
+  }
+  h1 {
+    margin: 0 0 18px;
+    font-size: 54px;
+    line-height: 1.07;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    color: #ffffff;
+  }
+  .sub {
+    margin: 0 0 22px;
+    font-size: 21px;
+    line-height: 1.45;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.93);
+    max-width: 620px;
+  }
+  .featline {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+    color: rgba(255, 255, 255, 0.88);
+  }
+  .featline span { margin-right: 14px; }
+  .featline span + span::before {
+    content: "·";
+    margin-right: 14px;
+    color: rgba(255, 255, 255, 0.55);
+  }
+
+  /* ---------- Section titles ---------- */
+  .sec { padding: 34px 48px 6px; }
+  .sec-title {
+    margin: 0 0 22px;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 2.6px;
+    text-transform: uppercase;
+    color: var(--c-primary);
+  }
+
+  /* ---------- Modules (typography list, no cards) ---------- */
+  .modules {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 40px;
+    row-gap: 21px;
+  }
+  .mod { display: flex; gap: 13px; align-items: flex-start; }
+  .mod .material-symbols-outlined {
+    font-size: 27px;
+    color: var(--c-primary);
+    margin-top: 1px;
+  }
+  .mod h3 {
+    margin: 0 0 3px;
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--c-deep);
+  }
+  .mod p {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.42;
+    color: var(--c-muted);
+  }
+
+  /* ---------- Diferenciales ---------- */
+  .dif {
+    margin-top: 30px;
+    padding-top: 28px;
+    border-top: 1px solid var(--c-line);
+  }
+  .dif-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px 28px;
+  }
+  .dif-item { flex: 1 1 300px; display: flex; gap: 11px; align-items: flex-start; }
+  .dif-item .material-symbols-outlined {
+    font-size: 23px;
+    color: var(--c-primary);
+    margin-top: 1px;
+  }
+  .dif-item h3 { margin: 0 0 3px; font-size: 16.5px; font-weight: 800; color: var(--c-deep); }
+  .dif-item p { margin: 0; font-size: 14.5px; line-height: 1.4; color: var(--c-muted); }
+
+  /* ---------- Paquetes ---------- */
+  .packs {
+    margin-top: 30px;
+    padding-top: 28px;
+    border-top: 1px solid var(--c-line);
+  }
+  .pack-row { display: flex; flex-wrap: wrap; }
+  .pack { flex: 1 1 0; min-width: 190px; padding: 0 26px; }
+  .pack + .pack { border-left: 1px solid var(--c-line); }
+  .pack:first-child { padding-left: 0; }
+  .pack:last-child { padding-right: 0; }
+  .pack .name {
+    margin: 0 0 8px;
+    font-size: 12.5px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--c-primary);
+  }
+  .pack .big { margin: 0 0 7px; font-size: 23px; font-weight: 900; color: var(--c-deep); letter-spacing: -0.2px; }
+  .pack p { margin: 0; font-size: 14.5px; line-height: 1.45; color: var(--c-muted); }
+
+  /* ---------- CTA band ---------- */
+  .cta {
+    margin-top: 36px;
+    background: var(--c-deep);
+    color: #ffffff;
+    padding: 34px 48px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+  }
+  .cta h2 { margin: 0 0 7px; font-size: 27px; font-weight: 900; letter-spacing: -0.3px; }
+  .cta p { margin: 0; font-size: 15.5px; line-height: 1.45; color: rgba(255, 255, 255, 0.82); }
+  .contact { text-align: right; }
+  .contact .wa {
+    margin: 0 0 5px;
+    font-size: 17.5px;
+    font-weight: 800;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+  .contact .wa .material-symbols-outlined { font-size: 21px; }
+  .contact .mail { margin: 0; font-size: 14px; color: rgba(255, 255, 255, 0.72); }
+
+  /* ---------- Browser preview auto-scale ---------- */
+  @media screen {
+    html {
+      height: auto;
+      display: flex;
+      justify-content: center;
+      background: var(--c-bg);
+    }
+    body {
+      transform-origin: top center;
+      scale: min(1, calc(100vw / 794));
+      margin: 0 auto;
+      box-shadow: 0 0 60px rgba(16, 49, 78, 0.25);
+    }
+  }
+</style>
+</head>
+<body>
+<div class="poster">
+
+  <header class="band">
+    <div class="deco"></div>
+    <div class="deco2"></div>
+    <p class="kicker">Sistema de gestión comercial · Paraguay</p>
+    <h1>Todo tu negocio<br>en un solo sistema.</h1>
+    <p class="sub">Ventas, stock, compras y facturación electrónica — pensado para comercios con una o varias sucursales.</p>
+    <p class="featline"><span>Guaraníes</span><span>SIFEN</span><span>Multi-sucursal</span><span>Sin mensualidad</span></p>
+  </header>
+
+  <section class="sec">
+    <h2 class="sec-title">Qué hace el sistema</h2>
+    <div class="modules">
+      <div class="mod">
+        <span class="material-symbols-outlined">point_of_sale</span>
+        <div><h3>Ventas y caja</h3><p>Vendé por código o nombre y cobrá en segundos, con ticket impreso.</p></div>
+      </div>
+      <div class="mod">
+        <span class="material-symbols-outlined">inventory_2</span>
+        <div><h3>Inventario</h3><p>Stock por sucursal, siempre al día, con transferencias entre locales.</p></div>
+      </div>
+      <div class="mod">
+        <span class="material-symbols-outlined">local_shipping</span>
+        <div><h3>Compras</h3><p>Órdenes a proveedores, recepción de mercadería y cuentas por pagar.</p></div>
+      </div>
+      <div class="mod">
+        <span class="material-symbols-outlined">receipt_long</span>
+        <div><h3>Factura electrónica</h3><p>SIFEN nativo, con libros fiscales listos para tu contador.</p></div>
+      </div>
+      <div class="mod">
+        <span class="material-symbols-outlined">account_balance_wallet</span>
+        <div><h3>Cuentas por cobrar</h3><p>Quién te debe y desde cuándo, en una sola pantalla.</p></div>
+      </div>
+      <div class="mod">
+        <span class="material-symbols-outlined">precision_manufacturing</span>
+        <div><h3>Producción</h3><p>Kits y fabricación con descuento automático de insumos.</p></div>
+      </div>
+      <div class="mod">
+        <span class="material-symbols-outlined">monitoring</span>
+        <div><h3>Reportes BI</h3><p>Qué vendés, qué te rinde más y qué conviene reponer.</p></div>
+      </div>
+      <div class="mod">
+        <span class="material-symbols-outlined">storefront</span>
+        <div><h3>Multi-sucursal</h3><p>Cada local con su stock, su caja y sus permisos.</p></div>
+      </div>
+    </div>
+
+    <div class="dif">
+      <h2 class="sec-title">Por qué elegirlo</h2>
+      <div class="dif-row">
+        <div class="dif-item">
+          <span class="material-symbols-outlined">check_circle</span>
+          <div><h3>Sin mensualidad</h3><p>Compra única, licencia perpetua. Sin cuotas anuales.</p></div>
+        </div>
+        <div class="dif-item">
+          <span class="material-symbols-outlined">check_circle</span>
+          <div><h3>Tus datos en tu negocio</h3><p>Instalado en tu propia computadora, no en la nube ajena.</p></div>
+        </div>
+        <div class="dif-item">
+          <span class="material-symbols-outlined">check_circle</span>
+          <div><h3>Hecho para Paraguay</h3><p>Guaraníes, IVA, SIFEN y libros fiscales incluidos.</p></div>
+        </div>
+        <div class="dif-item">
+          <span class="material-symbols-outlined">check_circle</span>
+          <div><h3>Prueba real de 90 días</h3><p>El sistema completo, gratis y sin recortes.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="packs">
+      <h2 class="sec-title">Paquetes</h2>
+      <div class="pack-row">
+        <div class="pack">
+          <p class="name">Evaluación</p>
+          <p class="big">90 días gratis</p>
+          <p>Todo el sistema, para probarlo de verdad antes de decidir.</p>
+        </div>
+        <div class="pack">
+          <p class="name">ERP Core</p>
+          <p class="big">Compra única</p>
+          <p>Gestión completa, licencia perpetua. Una terminal por sucursal.</p>
+        </div>
+        <div class="pack">
+          <p class="name">Core + BI Premium</p>
+          <p class="big">Compra única</p>
+          <p>Todo lo anterior más reportes BI y terminales sin límite.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="cta">
+    <div>
+      <h2>Probalo gratis por 90 días</h2>
+      <p>Coordinamos la instalación y la carga inicial de tus productos, sin costo.</p>
+    </div>
+    <div class="contact">
+      <p class="wa"><span class="material-symbols-outlined">call</span>+595 9XX XXX XXX</p>
+      <p class="mail">demo@tusistema.com.py</p>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>

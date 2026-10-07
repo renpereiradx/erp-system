@@ -14,6 +14,7 @@ personas sin formación técnica (dirección, comerciales, soporte) puedan revis
 |:-----------|:----------------------|:----------|:--------------|
 | **`docs/requirements/`** | **¿QUÉ debe hacer el sistema y POR QUÉ?** (requerimientos por módulo) | Todas (híbrido: informativo + formal) | Vivo: se actualiza cuando cambia el alcance |
 | **`docs/guides/`** | **¿CÓMO se instala, actualiza y opera una instalación?** (guías operativas paso a paso) | Implementación / soporte (híbrido) | Vivo: se actualiza cuando cambia el procedimiento |
+| **`docs/sales/`** | **¿QUÉ decirle a un cliente para venderle?** (playbook + material promocional) | Comercial / owner | Vivo: se actualiza cuando cambian paquetes/posicionamiento |
 | `conductor/` | ¿CÓMO y CUÁNDO se ejecutó el trabajo? (planes, fases, commits) | Ingeniería | Efímero: el plan se borra al cerrarse |
 | Historial git | ¿Qué código exacto se cambió? | Ingeniería | Permanente |
 
@@ -25,7 +26,8 @@ actualiza solo si el alcance cambia.
 docs/
 ├── README.md           ← esta convención
 ├── requirements/       ← REQ_<CÓDIGO>_<NOMBRE>.md — el QUÉ y el POR QUÉ de cada módulo
-└── guides/             ← GUIDE_<TEMA>.md — el CÓMO operativa (instalar, actualizar, migrar)
+├── guides/             ← GUIDE_<TEMA>.md — el CÓMO operativa (instalar, actualizar, migrar)
+└── sales/              ← material comercial: playbook de venta + assets para clientes
 ```
 
 ## Cuándo se crea un documento
