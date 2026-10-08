@@ -6,9 +6,9 @@
 |:--|:--|
 | Módulo | Instalación on-premise de clientes |
 | Código | GUIDE-INST-CLIENTE |
-| Versión | v1.1 |
+| Versión | v1.4 |
 | Estado | Vigente (probada contra el ensayo E2E del plan PLAN_DEPLOY_ESCALADO_ONPREMISE) |
-| Fecha | 2026-09-29 |
+| Fecha | 2026-10-08 |
 | Audiencia | Implementación / soporte |
 | Requerimiento | [`REQ_DEPLOY_DISTRIBUCION_ONPREMISE.md`](../requirements/REQ_DEPLOY_DISTRIBUCION_ONPREMISE.md) (RF-DEPLOY-001..003, 011..020) · [`REQ_BIPACK_LICENCIAMIENTO_BI.md`](../requirements/REQ_BIPACK_LICENCIAMIENTO_BI.md) (RN-08/09) |
 
@@ -232,10 +232,94 @@ sudo docker compose --profile laptop run --rm --entrypoint sh migrate -c \
 
 ---
 
-## 9. Historia de cambios
+## 9. Desinstalar (empezar de cero)
+
+Para corregir una instalación donde se eligió mal algo de la configuración
+inicial (perfil, hostname, nombre del cliente), para repetir un ensayo, o para
+retirar el sistema de la máquina. **Borra la base de datos completa**: si hay
+datos que valgan, rescatar antes los backups (`/opt/erp/backups/`).
+
+Borrar el contenedor Docker **no alcanza**. La instalación deja cosas en tres
+lugares y hay que limpiar los tres:
+
+1. **Volúmenes Docker** — la base de datos vive en el volumen `erp_erp_pg_data`
+   (y el cache de Redis en `erp_redis_data`), que sobrevive a los contenedores:
+   es un disco aparte que Docker le presta al contenedor. Si solo se borran
+   contenedores, la reinstalación reusa la base vieja: el instalador la detecta
+   como "existente", **no re-seede** roles/sucursal/admin (pasos 8-9) y arrastra
+   justo la configuración que se quería descartar.
+2. **`/opt/erp/`** (o el `ERP_ROOT` que se haya usado) — el stack, los secretos
+   (`.env.docker`), la licencia (`license/`), la CA (`deploy/certs/`), los
+   backups, las credenciales del admin y el `.env` con las decisiones que el
+   instalador **hereda** en una re-corrida: perfil, hostname del certificado,
+   nombre del cliente y puertos (§7). Re-correir `install.sh` sin borrar esto
+   reproduce las mismas elecciones, con Enter las confirma.
+3. **systemd** — el timer del backup diario (`erp-backup.timer`, 02:30).
+
+### 9.1 Borrón y cuenta nueva
+
+```bash
+# 0) SOLO si hay datos que rescatar: llevar los backups a otro lado
+sudo cp -r /opt/erp/backups ~/respaldo-erp/
+
+# 1) bajar TODOS los contenedores del stack y BORRAR los volúmenes
+cd /opt/erp/business_management
+sudo docker compose --profile laptop --profile server down -v --remove-orphans
+
+# 2) borrar la instalación completa (stack, secretos, licencia, CA, backups, credenciales)
+sudo rm -rf /opt/erp
+
+# 3) quitar el backup diario programado
+sudo systemctl disable --now erp-backup.timer 2>/dev/null || true
+sudo rm -f /etc/systemd/system/erp-backup.service /etc/systemd/system/erp-backup.timer
+sudo systemctl daemon-reload
+```
+
+Notas:
+
+- El `down` lleva **ambos perfiles** porque compose solo detiene los servicios
+  del perfil activo: si la instalación previa fue del otro perfil, sus
+  contenedores quedan vivos (mismo caso documentado en §7).
+- El `-v` es lo que borra los volúmenes — la base de datos. Sin `-v` es solo un
+  apagado con eliminación de contenedores.
+- Si el `.env` ya está roto o borrado no importa: el nombre del proyecto es fijo
+  (`name: erp` en el compose) y los perfiles van explícitos en el comando.
+
+Verificar que no quedó nada:
+
+```bash
+sudo docker volume ls | grep erp_    # no debe listar erp_erp_pg_data ni erp_redis_data
+sudo docker ps -a | grep erp         # sin contenedores del stack
+ls /opt/erp                          # no debe existir
+```
+
+Reinstalar: seguir §5 normalmente. La instalación limpia genera **todo nuevo**:
+secretos (JWT + password de DB), admin con otra contraseña (`credentials/`),
+CA con otra clave y evaluación de 30 días desde el primer arranque si el bundle
+no trae licencia. Dos consecuencias a tener en cuenta:
+
+- **Perfil `server` con terminales ya configuradas**: la CA nueva NO es la que
+  las terminales tienen instalada → volver a instalar la CA en cada terminal
+  ([GUIDE_TERMINALES_LOCAL.md](GUIDE_TERMINALES_LOCAL.md)).
+- **Licencia instalada a mano** (flag `--license`, no §2.1): el archivo no está
+  en el bundle → tener la ruta a mano para pasarla de nuevo en la reinstalación.
+
+### 9.2 Antes del borrón: ¿se puede corregir sin desinstalar?
+
+| Qué quedó mal | Alternativa sin borrón |
+|:--|:--|
+| Nombre del cliente | re-corrida con `--client-name "Nombre correcto"` (el instalador lo re-guarda) |
+| Hostname del certificado (server) | re-emitir desde `$ERP_ROOT/business_management`: `bash deploy/scripts/gen-ca.sh --force-server --org "Cliente" nuevo.hostname` (y reinstalar la CA en terminales) |
+| Datos del negocio (razón social, RUC, timbrado, nombre de sucursal) | **NO desinstalar**: cargarlos en *Configuración → Sucursales* (§6 paso 2) |
+| Perfil laptop↔server | posible en caliente con confirmación (§7), pero el borrón es más simple: no deja contenedores del perfil viejo ni CA/puertos a re-crear a mano |
+
+---
+
+## 10. Historia de cambios
 
 | Versión | Fecha | Cambio | Autor |
 |:--|:--|:--|:--|
+| v1.4 | 2026-10-08 | §9 nuevo: desinstalación completa para empezar de cero (los 3 lugares: volúmenes Docker + `/opt/erp` + timer systemd), verificación, consecuencias de la reinstalación limpia (CA/admin/evaluación) y alternativas al borrón (§9.2). Escrito contra `install.sh` y `docker-compose.yml` | renpereiradx + agente |
 | v1.3 | 2026-10-06 | §8: recuperación de base *dirty* del paso 7 (force última versión limpia + re-run) — reproducido y verificado en la VM de prueba | renpereiradx + agente |
 | v1.2 | 2026-10-06 | §2.1 nuevo: cargar licencia + clave pública dentro del bundle (autodetección del wizard) y re-empaquetar el `.tar.gz` | renpereiradx + agente |
 | v1.1 | 2026-09-29 | Alineación con REQ_BIPACK v2.1 / REQ_DEPLOY v0.8 (auditoría): `--license` exige SIEMPRE `--license-public-key` (el ejemplo canónico ahora los lleva juntos), los updates sin licencia activan la evaluación (30 días desde el update), `license/` se entrega con permisos para el rescate web y el smoke lo verifica, instalación de licencia post-pago también desde Configuración → Licencia | renpereiradx + agente (auditoría ZCode) |
