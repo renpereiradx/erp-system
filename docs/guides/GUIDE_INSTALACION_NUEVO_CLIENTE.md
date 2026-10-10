@@ -6,9 +6,9 @@
 |:--|:--|
 | Módulo | Instalación on-premise de clientes |
 | Código | GUIDE-INST-CLIENTE |
-| Versión | v1.4 |
+| Versión | v1.5 |
 | Estado | Vigente (probada contra el ensayo E2E del plan PLAN_DEPLOY_ESCALADO_ONPREMISE) |
-| Fecha | 2026-10-08 |
+| Fecha | 2026-10-10 |
 | Audiencia | Implementación / soporte |
 | Requerimiento | [`REQ_DEPLOY_DISTRIBUCION_ONPREMISE.md`](../requirements/REQ_DEPLOY_DISTRIBUCION_ONPREMISE.md) (RF-DEPLOY-001..003, 011..020) · [`REQ_BIPACK_LICENCIAMIENTO_BI.md`](../requirements/REQ_BIPACK_LICENCIAMIENTO_BI.md) (RN-08/09) |
 
@@ -210,7 +210,9 @@ delta. **Antes de actualizar: verificar que existe el backup de anoche**
 | Síntoma | Causa probable | Qué hacer |
 |:--|:--|:--|
 | `docker compose: command not found` | Falta el plugin compose | `apt install docker-compose-plugin` |
-| El instalador muere en "frontend HTTPS no responde" | Otra cosa ocupa 80/443 | Revisar `ss -tln` y usar `ERP_HTTP_PORT/ERP_HTTPS_PORT` |
+| El instalador corta en el paso 1: "puerto X ya está en uso" | Otra cosa ocupa ese puerto (apache, Tailscale, otro stack) | Es intencional: corta ANTES de escribir nada en disco. Liberar el puerto o correr con el override indicado (`ERP_DB_PORT`, `ERP_BACKEND_PORT`, `ERP_HTTP_PORT`, `ERP_HTTPS_PORT`, `ERP_FRONTEND_PORT`) |
+| El instalador muere en "frontend HTTPS no responde" (paso 12) | El frontend levantó mal por otra causa (los puertos ya se validan en el paso 1) | `docker compose --profile server logs frontend-server` |
+| Instalación cortada a mitad (luz, ctrl-c, o corridas previas a 2026-10-10) | El script es lineal: lo hecho queda hecho | Re-correr `install.sh` (update-aware: hereda perfil/puertos del `.env` previo). Verificar al final `systemctl status erp-backup.timer` — el backup se instala en el paso 2b, temprano, así un corte tardío ya lo dejó programado |
 | Login OK pero sin datos y sin roles | Bundle sin baseline (muy viejo) | Regenerar bundle (`make-release-bundle.sh` lo exige) |
 | El navegador de las terminales da advertencia TLS | CA no instalada en esa terminal | `GUIDE_TERMINALES_LOCAL.md` |
 | Pantalla "Licencia requerida" tras instalar | Evaluación agotada sin licencia | Cargar la licencia desde esa misma pantalla ([RUNBOOK_LICENCIAS.md](RUNBOOK_LICENCIAS.md) §4b); no hace falta SSH |
@@ -319,6 +321,7 @@ no trae licencia. Dos consecuencias a tener en cuenta:
 
 | Versión | Fecha | Cambio | Autor |
 |:--|:--|:--|:--|
+| v1.5 | 2026-10-10 | §8: instalación interrumpida deja backup sin instalar (hallazgo real erp-test 2026-10-08, corte en 11/12 por puertos 80/443 ocupados — el "Extra: backup" era lo último tras el smoke). Corregido en `install.sh` (REQ_DEPLOY v0.11): puertos fatales en el paso 1 y backup en el paso 2b | renpereiradx + agente |
 | v1.4 | 2026-10-08 | §9 nuevo: desinstalación completa para empezar de cero (los 3 lugares: volúmenes Docker + `/opt/erp` + timer systemd), verificación, consecuencias de la reinstalación limpia (CA/admin/evaluación) y alternativas al borrón (§9.2). Escrito contra `install.sh` y `docker-compose.yml` | renpereiradx + agente |
 | v1.3 | 2026-10-06 | §8: recuperación de base *dirty* del paso 7 (force última versión limpia + re-run) — reproducido y verificado en la VM de prueba | renpereiradx + agente |
 | v1.2 | 2026-10-06 | §2.1 nuevo: cargar licencia + clave pública dentro del bundle (autodetección del wizard) y re-empaquetar el `.tar.gz` | renpereiradx + agente |
