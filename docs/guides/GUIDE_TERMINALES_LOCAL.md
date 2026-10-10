@@ -6,7 +6,7 @@
 |:--|:--|
 | Módulo | Terminales del local (cajas, vendedores) |
 | Código | GUIDE-TERMINAL |
-| Versión | v1.2 |
+| Versión | v1.3 |
 | Estado | Vigente (escrita contra el perfil `server` real: proxy `/api` + CA interna; §5 móviles recién documentado — probar en el primer dispositivo real) |
 | Fecha | 2026-09-29 |
 | Audiencia | Implementación / soporte |
@@ -34,7 +34,10 @@ instala la **confianza** (el certificado de la CA interna) y se crea el **usuari
 
 ### 3.2 Confiar en la CA interna
 
-Sin este paso el navegador muestra advertencia de "conexión no segura".
+Sin este paso el navegador muestra advertencia de "conexión no segura". El por
+qué de esa advertencia (y por qué el dev local no la muestra) está explicado en
+[`GUIDE_NAVEGADORES_CERTIFICADOS.md`](GUIDE_NAVEGADORES_CERTIFICADOS.md), con
+los pasos por navegador (Chrome, Edge, Brave, Firefox).
 
 **Windows (Chrome/Edge — sirve para toda la máquina):**
 
@@ -277,6 +280,7 @@ las terminales solo refrescan el navegador.
 
 | Versión | Fecha | Cambio | Autor |
 |:--|:--|:--|:--|
+| v1.3 | 2026-10-10 | §3.2 referencia a la nueva GUIDE_NAVEGADORES_CERTIFICADOS (el por qué de la advertencia + pasos por navegador) — sin cambios de procedimiento | renpereiradx + agente |
 | v1.2 | 2026-09-29 | §5 nuevo: terminales móviles — CA interna paso a paso en Android/iOS (con el paso de confianza de iOS explícito), acceso remoto por app Tailscale (cuenta invitada para el dueño / clave pre-aprobada para tablets), alternativa ts.net de RN-DEPLOY-002 y límites honestos (teléfono = consulta/aprobación, impresión no soportada). FAQ "¿desde casa?" reescrita; §2 y §3.1 mencionan móviles | renpereiradx + agente |
 | v1.1 | 2026-09-23 | §4 navegador: perfil aislado del ERP + políticas opcionales (Windows **y Linux**, setup-terminal-chrome.ps1/.sh); CA en Linux (install-ca-linux.sh); SO de terminal sin asumir Windows | renpereiradx + agente |
 | v1.0 | 2026-09-22 | Primera versión contra la implementación real (CA interna + proxy `/api` + install-ca-windows.ps1) | renpereiradx + agente |
