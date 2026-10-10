@@ -14,8 +14,9 @@
 
 > Esta guía cubre la **máquina de desarrollo** (correr el ERP para programar/probar).
 > Para instalar un **cliente** usar `GUIDE_INSTALACION_NUEVO_CLIENTE.md` (instalador con
-> perfiles `laptop`/`server`). Los dos caminos comparten PostgreSQL y Docker, pero no
-> son lo mismo.
+> perfiles `laptop`/`server`); si la máquina del cliente es **Windows**, el camino
+> soportado es WSL2 + el instalador de siempre: `GUIDE_INSTALACION_WINDOWS.md`.
+> Los dos caminos comparten PostgreSQL y Docker, pero no son lo mismo.
 
 ---
 
@@ -147,5 +148,6 @@ conecta nada. Flujo:
 
 | Versión | Fecha | Cambio | Autor |
 |:--|:--|:--|:--|
+| v1.2 | 2026-10-10 | Nota de la ficha: instalación de cliente sobre Windows → GUIDE_INSTALACION_WINDOWS (WSL2 + instalador) | renpereiradx + agente |
 | v1.1 | 2026-10-06 | Puertos del compose laptop actualizados a los defaults nuevos: frontend `18081`, backend loopback `18080`, PG del stack `5433` (BE `9e998e8`) | renpereiradx + agente |
 | v1.0 | 2026-09-22 | Consolidación desde 3 documentos dispersos (F1 del plan de deploy); borrados los originales | renpereiradx + agente |

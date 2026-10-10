@@ -6,7 +6,7 @@
 |:--|:--|
 | Módulo | Instalación on-premise de clientes |
 | Código | GUIDE-INST-CLIENTE |
-| Versión | v1.6 |
+| Versión | v1.7 |
 | Estado | Vigente (probada contra el ensayo E2E del plan PLAN_DEPLOY_ESCALADO_ONPREMISE) |
 | Fecha | 2026-10-10 |
 | Audiencia | Implementación / soporte |
@@ -20,7 +20,7 @@
 
 | Requisito | Mínimo |
 |:--|:--|
-| SO | Linux x64 (Debian/Ubuntu recomendado). Perfil `laptop` admite cualquier SO con Docker Desktop |
+| SO | Linux x64 (Debian/Ubuntu recomendado). Máquina Windows: Linux en WSL2, solo perfil `laptop` → [`GUIDE_INSTALACION_WINDOWS.md`](GUIDE_INSTALACION_WINDOWS.md) |
 | RAM | 4 GB (8 GB recomendado) |
 | Disco | 20 GB libres (más el crecimiento de la base) |
 | Red | Perfil `server`: IP fija en la red del local (LAN). Perfil `laptop`: sin requisitos |
@@ -66,7 +66,14 @@ Notas:
 
 El bundle es un paquete cerrado con todo: imágenes Docker (backend + frontend),
 compose canónico, migraciones, baseline de schema, seeds RBAC, instalador y
-config nginx del frontend. No necesita internet en el cliente.
+config nginx del frontend.
+
+> **Matiz sobre "offline"**: el bundle trae solo las imágenes del ERP;
+> `postgres:16-alpine` y `redis:7-alpine` las baja Docker al levantar el stack
+> por primera vez. Con internet en la fase de instalación no hace falta nada;
+> cliente 100% offline desde antes de instalar: llevarlas en el pendrive
+> (`docker save` en la oficina → `docker load` en el cliente — receta en
+> [`GUIDE_INSTALACION_WINDOWS.md`](GUIDE_INSTALACION_WINDOWS.md) §4).
 
 ```bash
 # dentro del bundle descomprimido, verificar integridad:
@@ -89,7 +96,7 @@ erp-release-<v>/
 | | `laptop` | `server` |
 |:--|:--|:--|
 | Para | Cliente chico, todo en una máquina | Local con varias terminales / sucursales |
-| Frontend | `http://localhost:8081` **solo en esa máquina** | `https://<hostname>/` (80 → 443) para toda la red |
+| Frontend | `http://localhost:18081` **solo en esa máquina** | `https://<hostname>/` (80 → 443) para toda la red |
 | TLS | No | Sí (CA interna, el instalador la genera) |
 | Exposición | Ninguna (todo loopback) | Solo 80/443; backend/DB loopback; Redis interno |
 | Backup diario | ✅ (script + cron o systemd) | ✅ (script + timer systemd) |
@@ -210,7 +217,7 @@ delta. **Antes de actualizar: verificar que existe el backup de anoche**
 | Síntoma | Causa probable | Qué hacer |
 |:--|:--|:--|
 | `docker compose: command not found` | Falta el plugin compose | `apt install docker-compose-plugin` |
-| El instalador corta en el paso 1: "puerto X ya está en uso" | Otra cosa ocupa ese puerto (apache, Tailscale, otro stack) | Es intencional: corta ANTES de escribir nada en disco. Liberar el puerto o correr con el override indicado (`ERP_DB_PORT`, `ERP_BACKEND_PORT`, `ERP_HTTP_PORT`, `ERP_HTTPS_PORT`, `ERP_FRONTEND_PORT`) |
+| El instalador corta en el paso 1: "puerto X ya está en uso" | Otra cosa ocupa ese puerto (apache, Tailscale, otro stack) | Es intencional: corta ANTES de escribir nada en disco. Liberar el puerto o correr con el override indicado (`ERP_DB_PORT`, `ERP_BACKEND_PORT`, `ERP_HTTP_PORT`, `ERP_HTTPS_PORT`, `ERP_FRONTEND_PORT`). Si el que retiene el puerto es el **propio stack ERP** (update o re-corrida con los contenedores vivos), el instalador lo detecta y sigue: compose recrea sus contenedores (BE `616d551`) |
 | El instalador muere en "frontend HTTPS no responde" (paso 12) | El frontend levantó mal por otra causa (los puertos ya se validan en el paso 1) | `docker compose --profile server logs frontend-server` |
 | Instalación cortada a mitad (luz, ctrl-c, o corridas previas a 2026-10-10) | El script es lineal: lo hecho queda hecho | Re-correr `install.sh` (update-aware: hereda perfil/puertos del `.env` previo). Verificar al final `systemctl status erp-backup.timer` — el backup se instala en el paso 2b, temprano, así un corte tardío ya lo dejó programado |
 | Login OK pero sin datos y sin roles | Bundle sin baseline (muy viejo) | Regenerar bundle (`make-release-bundle.sh` lo exige) |
@@ -321,6 +328,7 @@ no trae licencia. Dos consecuencias a tener en cuenta:
 
 | Versión | Fecha | Cambio | Autor |
 |:--|:--|:--|:--|
+| v1.7 | 2026-10-10 | §2: Windows por WSL2 (GUIDE_INSTALACION_WINDOWS nuevo, perfil laptop). §3: las imágenes base postgres/redis NO viajan en el bundle — matiz sobre el offline. §4: puerto del frontend laptop corregido 8081 → 18081 (era pre-BE `9e998e8`). §8: el chequeo de puertos ya no corta cuando el propio stack ERP retiene el puerto en un update (BE `616d551`) | renpereiradx + agente |
 | v1.6 | 2026-10-10 | §2.1: rutas vendor — custodia y entregas ahora viven bajo `~/licencias/` (`custodia/` + `entregas/`; RUNBOOK v2.3). Backup del vendor = carpeta `~/licencias/` completa a pendrive/bóveda, nunca nube | renpereiradx + agente |
 | v1.5 | 2026-10-10 | §8: instalación interrumpida deja backup sin instalar (hallazgo real erp-test 2026-10-08, corte en 11/12 por puertos 80/443 ocupados — el "Extra: backup" era lo último tras el smoke). Corregido en `install.sh` (REQ_DEPLOY v0.11): puertos fatales en el paso 1 y backup en el paso 2b | renpereiradx + agente |
 | v1.4 | 2026-10-08 | §9 nuevo: desinstalación completa para empezar de cero (los 3 lugares: volúmenes Docker + `/opt/erp` + timer systemd), verificación, consecuencias de la reinstalación limpia (CA/admin/evaluación) y alternativas al borrón (§9.2). Escrito contra `install.sh` y `docker-compose.yml` | renpereiradx + agente |
