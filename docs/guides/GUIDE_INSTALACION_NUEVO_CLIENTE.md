@@ -6,7 +6,7 @@
 |:--|:--|
 | Módulo | Instalación on-premise de clientes |
 | Código | GUIDE-INST-CLIENTE |
-| Versión | v1.7 |
+| Versión | v1.8 |
 | Estado | Vigente (probada contra el ensayo E2E del plan PLAN_DEPLOY_ESCALADO_ONPREMISE) |
 | Fecha | 2026-10-10 |
 | Audiencia | Implementación / soporte |
@@ -64,16 +64,19 @@ Notas:
 
 ## 3. El bundle: qué es y cómo verificarlo
 
-El bundle es un paquete cerrado con todo: imágenes Docker (backend + frontend),
-compose canónico, migraciones, baseline de schema, seeds RBAC, instalador y
-config nginx del frontend.
+El bundle es un paquete cerrado con todo: imágenes Docker (backend + frontend
+**+ las tres de terceros del stack**: postgres, redis y migrate), compose
+canónico, migraciones, baseline de schema, seeds RBAC, instalador y config
+nginx del frontend — desde el fix BE `428a6ff` el arranque del cliente no
+toca internet.
 
-> **Matiz sobre "offline"**: el bundle trae solo las imágenes del ERP;
-> `postgres:16-alpine` y `redis:7-alpine` las baja Docker al levantar el stack
-> por primera vez. Con internet en la fase de instalación no hace falta nada;
-> cliente 100% offline desde antes de instalar: llevarlas en el pendrive
-> (`docker save` en la oficina → `docker load` en el cliente — receta en
-> [`GUIDE_INSTALACION_WINDOWS.md`](GUIDE_INSTALACION_WINDOWS.md) §4).
+> **Bundles emitidos antes del 2026-10-10** no traen las imágenes de
+> terceros: `postgres:16-alpine`, `redis:7-alpine` y `migrate/migrate:v4.18.1`
+> las baja Docker la primera vez que las necesita. Con internet en la fase de
+> instalación no hace falta nada (el instalador avisa cuáles faltan); cliente
+> 100% offline con un bundle viejo: llevarlas en el pendrive (`docker save`
+> en la oficina → `docker load` en el cliente — receta en
+> [`GUIDE_INSTALACION_WINDOWS.md`](GUIDE_INSTALACION_WINDOWS.md) §4 paso 4).
 
 ```bash
 # dentro del bundle descomprimido, verificar integridad:
@@ -86,7 +89,8 @@ Estructura del bundle:
 erp-release-<v>/
 ├── business_management/   # compose, migraciones, seeds, baseline, instalador
 ├── erp-webapp/nginx/      # config nginx del frontend (template + tls.conf)
-└── images/*.tar.gz        # imágenes Docker del release
+└── images/*.tar.gz        # imágenes Docker del release (backend, frontend
+                           #  + postgres/redis/migrate desde el 2026-10-10)
 ```
 
 ---
@@ -293,6 +297,13 @@ Notas:
   apagado con eliminación de contenedores.
 - Si el `.env` ya está roto o borrado no importa: el nombre del proyecto es fijo
   (`name: erp` en el compose) y los perfiles van explícitos en el comando.
+- **El `down` se corre desde `/opt/erp/business_management`** (como arriba) y
+  con el compose canónico del stack. Ojo con las instalaciones de prueba: el
+  `name: erp` del compose define el proyecto **no importa desde qué carpeta
+  se invoque** — un `docker compose -f docker-compose.yml down -v` suelto en
+  otro directorio igual apunta al stack real y borra SUS volúmenes. Para
+  desarmar una prueba: `docker compose -p <proyecto-de-prueba> down -v`, con
+  el nombre de proyecto explícito.
 
 Verificar que no quedó nada:
 
@@ -328,6 +339,7 @@ no trae licencia. Dos consecuencias a tener en cuenta:
 
 | Versión | Fecha | Cambio | Autor |
 |:--|:--|:--|:--|
+| v1.8 | 2026-10-10 | §3: el bundle ahora trae TODAS las imágenes — postgres/redis/migrate incluidas, derivadas del compose (BE `428a6ff`); el instalador las carga antes del primer `up` y avisa si falta alguna (bundle viejo). §9.1: advertencia sobre `down -v` — `name: erp` apunta al stack real desde cualquier directorio; las pruebas se desarman con `-p` explícito | renpereiradx + agente |
 | v1.7 | 2026-10-10 | §2: Windows por WSL2 (GUIDE_INSTALACION_WINDOWS nuevo, perfil laptop). §3: las imágenes base postgres/redis NO viajan en el bundle — matiz sobre el offline. §4: puerto del frontend laptop corregido 8081 → 18081 (era pre-BE `9e998e8`). §8: el chequeo de puertos ya no corta cuando el propio stack ERP retiene el puerto en un update (BE `616d551`) | renpereiradx + agente |
 | v1.6 | 2026-10-10 | §2.1: rutas vendor — custodia y entregas ahora viven bajo `~/licencias/` (`custodia/` + `entregas/`; RUNBOOK v2.3). Backup del vendor = carpeta `~/licencias/` completa a pendrive/bóveda, nunca nube | renpereiradx + agente |
 | v1.5 | 2026-10-10 | §8: instalación interrumpida deja backup sin instalar (hallazgo real erp-test 2026-10-08, corte en 11/12 por puertos 80/443 ocupados — el "Extra: backup" era lo último tras el smoke). Corregido en `install.sh` (REQ_DEPLOY v0.11): puertos fatales en el paso 1 y backup en el paso 2b | renpereiradx + agente |

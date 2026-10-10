@@ -6,8 +6,8 @@
 |:--|:--|
 | Módulo | Instalación on-premise de clientes sobre Windows |
 | Código | GUIDE-INST-WINDOWS |
-| Versión | v1.0 |
-| Estado | Vigente (camino del instalador verificado E2E contra el bundle v1.1.0-7; WSL2/Docker Desktop según GUIDE_ENTORNO_DEV_WINDOWS §4-5) |
+| Versión | v1.1 |
+| Estado | Vigente (instalación limpia + re-corrida verificadas E2E 12/12; desde el fix BE `428a6ff` el bundle trae TODAS las imágenes — base incluidas — y la Fase 1 es 100% offline; WSL2/Docker Desktop según GUIDE_ENTORNO_DEV_WINDOWS §4-5) |
 | Fecha | 2026-10-10 |
 | Audiencia | Implementación / soporte |
 | Guía madre | [`GUIDE_INSTALACION_NUEVO_CLIENTE.md`](GUIDE_INSTALACION_NUEVO_CLIENTE.md) (misma licencia, mismos perfiles, mismo instalador) |
@@ -41,7 +41,7 @@ sobre Linux — [`GUIDE_INSTALACION_NUEVO_CLIENTE.md`](GUIDE_INSTALACION_NUEVO_C
 | Disco | 30 GB libres |
 | Software | WSL2 + Ubuntu, Docker Desktop — nada más: PostgreSQL y Redis corren dentro del stack |
 | Internet | Solo para la **Fase 0** (preparar la máquina). El ERP después funciona offline |
-| Del vendor | El bundle `erp-release-<v>.tar.gz` en un pendrive (+ licencia si ya compró, §5 paso 3; + imágenes base si el cliente no tendrá internet NUNCA, §4 paso 5) |
+| Del vendor | El bundle `erp-release-<v>.tar.gz` en un pendrive (+ licencia si ya compró, §5 paso 3). Desde el fix BE `428a6ff` el bundle trae TODAS las imágenes del stack — las base incluidas; con un bundle emitido antes del 2026-10-10, ver §4 paso 4 |
 
 ---
 
@@ -74,24 +74,26 @@ PowerShell **como administrador** para lo de Windows; terminal Ubuntu para lo de
    sudo apt update && sudo apt install -y rsync
    ```
 
-4. **Imágenes base del stack** (lo único que el bundle NO trae): el bundle
-   lleva las imágenes del backend y del frontend; `postgres:16-alpine` y
-   `redis:7-alpine` las baja Docker al levantar el stack por primera vez.
+4. **Imágenes base del stack — solo bundles emitidos antes del 2026-10-10**:
+   los bundles actuales ya las traen (postgres, redis y migrate viajan dentro
+   de `images/` junto a las del ERP; fix BE `428a6ff`) — no hay que hacer
+   nada. Con un **bundle viejo** y un cliente que quedará 100% offline desde
+   antes de instalar, bajarlas en la oficina, llevarlas en el pendrive y
+   cargarlas ANTES de correr el instalador:
 
-   - ¿La máquina tendrá internet durante la instalación (aunque sea para la
-     Fase 0)? **No hay que hacer nada**: el primer `compose up` las baja solo.
-   - ¿El cliente quedará **100% offline** desde antes de instalar? Bajarlas en
-     la oficina, llevarlas en el pendrive y cargarlas ANTES de correr el
-     instalador:
+   ```bash
+   # oficina (con internet):
+   docker save postgres:16-alpine    | gzip > postgres-16-alpine.tar.gz
+   docker save redis:7-alpine        | gzip > redis-7-alpine.tar.gz
+   docker save migrate/migrate:v4.18.1 | gzip > migrate-v4.18.1.tar.gz
+   # cliente (desde el pendrive, dentro de Ubuntu):
+   docker load -i /mnt/d/postgres-16-alpine.tar.gz
+   docker load -i /mnt/d/redis-7-alpine.tar.gz
+   docker load -i /mnt/d/migrate-v4.18.1.tar.gz
+   ```
 
-     ```bash
-     # oficina (con internet):
-     docker save postgres:16-alpine | gzip > postgres-16-alpine.tar.gz
-     docker save redis:7-alpine    | gzip > redis-7-alpine.tar.gz
-     # cliente (desde el pendrive, dentro de Ubuntu):
-     docker load -i /mnt/d/postgres-16-alpine.tar.gz
-     docker load -i /mnt/d/redis-7-alpine.tar.gz
-     ```
+   (Si la máquina tendrá internet durante la instalación, ni siquiera eso:
+   el instalador avisa qué imágenes faltan y compose las baja solo.)
 
 5. **(Opcional) Capar la RAM de WSL** en laptops de 8 GB — archivo
    `C:\Users\<usuario>\.wslconfig`:
@@ -237,7 +239,7 @@ contenedores. Antes de actualizar: verificar el backup de anoche en
 | `wsl --install` falla / la distro no arranca | Virtualización desactivada | Activar Intel VT-x/AMD-V en BIOS/UEFI + "Plataforma de máquina virtual" en características de Windows |
 | `docker: command not found` dentro de Ubuntu | Docker Desktop sin integración con la distro | Docker Desktop → Settings → Resources → WSL Integration → habilitar Ubuntu |
 | Instalador corta en paso 1: "rsync no instalado" | Ubuntu base sin rsync | `sudo apt install -y rsync` (con internet; si el cliente es 100% offline, instalarlo en Fase 0 con el .deb en el pendrive) |
-| Paso 4/12: `No such image postgres:16-alpine` (o redis) | Cliente sin internet y sin las imágenes base del pendrive | §4 paso 5: `docker load` desde el pendrive y re-correr el instalador (es idempotente) |
+| Paso 4/12 avisa "imágenes ausentes en el daemon" (o `No such image` más adelante) | Bundle emitido antes del 2026-10-10 en un cliente sin internet: las imágenes base no viajaban en el bundle | §4 paso 4: `docker load` desde el pendrive (postgres/redis/migrate) y re-correr el instalador (es idempotente) |
 | `localhost:18081` no abre en Windows | Docker Desktop parado o stack caído | Abrir Docker Desktop; en Ubuntu: `cd /opt/erp/business_management && docker compose --profile laptop ps` |
 | `[aviso] systemd no disponible / timer omitido` en la instalación | Esperado con `ERP_SKIP_SYSTEMD=1` | No es un error: el backup va por el Programador de tareas (§7) |
 | No hubo backup a la hora programada | Laptop apagada / sin sesión iniciada | Activar "iniciar la tarea lo antes posible si se pierde un inicio"; o correr el comando manual de §7 |
@@ -250,4 +252,5 @@ contenedores. Antes de actualizar: verificar el backup de anoche en
 
 | Versión | Fecha | Cambio | Autor |
 |:--|:--|:--|:--|
+| v1.1 | 2026-10-10 | Cerrado de raíz el hallazgo de imágenes base (BE `428a6ff`): el bundle ahora trae TODAS las imágenes (postgres/redis/migrate derivadas del compose) y el instalador las carga ANTES del primer `up`. §4 paso 4 queda como receta solo para bundles viejos (+migrate), §3 y §9 actualizados | renpereiradx + agente |
 | v1.0 | 2026-10-10 | Primera versión: WSL2 como camino soportado para clientes Windows (perfil laptop). Fase 0 con internet + Fase 1 offline, backup por Programador de tareas, ciclo de vida y problemas frecuentes. Incluye el hallazgo de imágenes base (postgres/redis fuera del bundle) y el fix del instalador para updates con stack vivo (BE `616d551`) | renpereiradx + agente |
