@@ -1,4 +1,4 @@
-# RUNBOOK — Licencias BI Pack Premium (2026-09 · v2.2 trial + rescate + terminales)
+# RUNBOOK — Licencias BI Pack Premium (2026-09 · v2.3 rutas unificadas ~/licencias)
 
 **Plan:** [PLAN_BI_PACK_PREMIUM.md](../../conductor/PLAN_BI_PACK_PREMIUM.md) (ADR-1/ADR-4, F6) · **v2.0:** REQ_BIPACK (RF-025..029, RN-08/09)
 **Implementación:** BE `9dd9942` (licencias) + v2.0 2026-09-28 `441046e` (trial/bloqueo/rescate) + v2.1 2026-09-29 (auditoría: permiso `license:write`, licencia vencida→Core, ancla fail-open) · FE `b3ab4eb` + v2.0 `91b41de` (gate de licencia) + v2.1 (instalación desde Configuración, auto-recuperación del gate)
@@ -49,13 +49,15 @@ go build -o /tmp/licensegen ./cmd/licensegen
 
 # 2a. Par de claves — UNA sola vez en la vida del negocio (la "llave maestra"
 #     con la que se firmarán TODAS las licencias de TODOS los clientes):
-/tmp/licensegen keygen -private ~/custodia-licencias/vendor.key -public ~/custodia-licencias/public.key
-chmod 600 ~/custodia-licencias/vendor.key   # solo tu usuario puede leerla
+/tmp/licensegen keygen -private ~/licencias/custodia/vendor.key -public ~/licencias/custodia/public.key
+chmod 600 ~/licencias/custodia/vendor.key   # solo tu usuario puede leerla
 
-# 2a-bis. BACKUP YA: copiar la carpeta ~/custodia-licencias/ a un pendrive o
-#     bóveda FUERA de esta máquina. Si se pierde la privada, no se pueden
-#     emitir licencias nuevas para los clientes que ya la usan; si se filtra,
-#     cualquiera podría fabricarse licencias propias.
+# 2a-bis. BACKUP YA: copiar la carpeta ~/licencias/ COMPLETA (custodia +
+#     entregas) a un pendrive o bóveda FUERA de esta máquina — nunca a la
+#     nube (Dropbox/Drive sync): la privada saldría de tu control. Si se
+#     pierde la privada, no se pueden emitir licencias nuevas para los
+#     clientes que ya la usan; si se filtra, cualquiera podría fabricarse
+#     licencias propias.
 #   → private: hex seed, chmod 600. CUSTODIA FUERA DEL REPO (backup offline del vendedor).
 #   → public:  base64; este valor es el que recibe el cliente.
 
@@ -63,14 +65,14 @@ chmod 600 ~/custodia-licencias/vendor.key   # solo tu usuario puede leerla
 #     sin -days la licencia no vence jamás; decisión de negocio 2026-09-22):
 #   Core+BI (todo el pack):
 /tmp/licensegen issue \
-  -key ~/custodia-licencias/vendor.key \
+  -key ~/licencias/custodia/vendor.key \
   -customer "Cliente Demo Sucursal Centro" \
   -edition core+bi -modules bi \
-  -out ~/entregas/cliente-demo-centro/license.json
+  -out ~/licencias/entregas/cliente-demo-centro/license.json
 #   Core SIN BI (perpetua, BI apagado — REQ_BIPACK v2.0 RF-029):
-# /tmp/licensegen issue -key ~/custodia-licencias/vendor.key \
+# /tmp/licensegen issue -key ~/licencias/custodia/vendor.key \
 #   -customer "Cliente Core" -edition core -modules core \
-#   -out ~/entregas/cliente-core/license.json
+#   -out ~/licencias/entregas/cliente-core/license.json
 # Casos especiales ÚNICAMENTE a pedido (demo/trial con plazo):
 #   -days 365            → vence al año
 #   -expires 2027-09-21T12:00:00Z → fecha fija (gana sobre -days).
@@ -92,15 +94,17 @@ Regla práctica: `-edition core+bi -modules bi` para Premium, `-edition core
 > par = otra "marca" — no hacerlo sin decisión explícita). `issue` se corre una
 > vez por cliente: cada llamada escribe un archivo **independiente** firmado
 > con el **mismo** par de claves, y el comando NO lleva registro de lo emitido
-> — la carpeta `~/entregas/<cliente>/` ES ese registro. Ojo: `-out` sobre un
+> — la carpeta `~/licencias/entregas/<cliente>/` ES ese registro. Ojo: `-out` sobre un
 > archivo existente lo **sobrescribe sin aviso**; un subfolder por cliente lo
 > evita.
 
-> **Roles de las dos carpetas:** `~/custodia-licencias/` es la **bóveda** —
-> solo el par maestro; la privada jamás sale y nada más entra. `~/entregas/
-> <cliente>/` es la **salida** — las licencias que viajan a cada cliente.
-> Regla corta: `-key` siempre apunta a la custodia (lee), `-out` siempre a
-> entregas (escribe).
+> **Roles de las dos carpetas:** todo vive bajo `~/licencias/`.
+> `~/licencias/custodia/` es la **bóveda** — solo el par maestro; la privada
+> jamás sale de esta máquina (salvo backup offline) y nada más entra.
+> `~/licencias/entregas/<cliente>/` es la **salida** — las licencias que
+> viajan a cada cliente. Regla corta: `-key` siempre apunta a la custodia
+> (lee), `-out` siempre a entregas (escribe). El padre `~/licencias/` es la
+> unidad de backup: pendrive/bóveda física, **nunca sync de nube** (§2a-bis).
 
 Entrega al cliente: **`license.json` + la clave pública**. Nunca la privada. La forma más simple de entregarlos es meter ambos DENTRO del bundle (§2c): el instalador los detecta solo.
 
@@ -113,8 +117,8 @@ re-empaquetar. Reemplazar `<v>` por la versión del bundle (ej. `v1.0.0-4-g01ed2
 
 ```bash
 cd ~/dev/erp-system/business_management/dist/erp-release-<v>/
-cp ~/custodia-licencias/public.key business_management/licensing-public.key
-cp ~/entregas/<cliente>/license.json business_management/license.json
+cp ~/licencias/custodia/public.key business_management/licensing-public.key
+cp ~/licencias/entregas/<cliente>/license.json business_management/license.json
 
 cd ..    # re-empaquetar: el .tar.gz viejo no contiene los archivos nuevos
 tar czf erp-release-<v>.tar.gz erp-release-<v>/

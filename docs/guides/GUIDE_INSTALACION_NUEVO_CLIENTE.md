@@ -6,7 +6,7 @@
 |:--|:--|
 | Módulo | Instalación on-premise de clientes |
 | Código | GUIDE-INST-CLIENTE |
-| Versión | v1.5 |
+| Versión | v1.6 |
 | Estado | Vigente (probada contra el ensayo E2E del plan PLAN_DEPLOY_ESCALADO_ONPREMISE) |
 | Fecha | 2026-10-10 |
 | Audiencia | Implementación / soporte |
@@ -42,8 +42,8 @@ re-empaquetar. Reemplazar `<v>` por la versión del bundle.
 cd ~/dev/erp-system/business_management/dist/erp-release-<v>/
 
 # renombrar la pública al nombre que el instalador busca + traer la licencia:
-cp ~/custodia-licencias/public.key business_management/licensing-public.key
-cp ~/entregas/<cliente>/license.json business_management/license.json
+cp ~/licencias/custodia/public.key business_management/licensing-public.key
+cp ~/licencias/entregas/<cliente>/license.json business_management/license.json
 
 # re-empaquetar (el .tar.gz viejo no contiene los archivos agregados):
 cd ..
@@ -321,6 +321,7 @@ no trae licencia. Dos consecuencias a tener en cuenta:
 
 | Versión | Fecha | Cambio | Autor |
 |:--|:--|:--|:--|
+| v1.6 | 2026-10-10 | §2.1: rutas vendor — custodia y entregas ahora viven bajo `~/licencias/` (`custodia/` + `entregas/`; RUNBOOK v2.3). Backup del vendor = carpeta `~/licencias/` completa a pendrive/bóveda, nunca nube | renpereiradx + agente |
 | v1.5 | 2026-10-10 | §8: instalación interrumpida deja backup sin instalar (hallazgo real erp-test 2026-10-08, corte en 11/12 por puertos 80/443 ocupados — el "Extra: backup" era lo último tras el smoke). Corregido en `install.sh` (REQ_DEPLOY v0.11): puertos fatales en el paso 1 y backup en el paso 2b | renpereiradx + agente |
 | v1.4 | 2026-10-08 | §9 nuevo: desinstalación completa para empezar de cero (los 3 lugares: volúmenes Docker + `/opt/erp` + timer systemd), verificación, consecuencias de la reinstalación limpia (CA/admin/evaluación) y alternativas al borrón (§9.2). Escrito contra `install.sh` y `docker-compose.yml` | renpereiradx + agente |
 | v1.3 | 2026-10-06 | §8: recuperación de base *dirty* del paso 7 (force última versión limpia + re-run) — reproducido y verificado en la VM de prueba | renpereiradx + agente |
