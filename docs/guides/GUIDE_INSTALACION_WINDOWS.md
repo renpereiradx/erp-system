@@ -6,9 +6,9 @@
 |:--|:--|
 | Módulo | Instalación on-premise de clientes sobre Windows |
 | Código | GUIDE-INST-WINDOWS |
-| Versión | v1.1 |
+| Versión | v1.2 |
 | Estado | Vigente (instalación limpia + re-corrida verificadas E2E 12/12; desde el fix BE `428a6ff` el bundle trae TODAS las imágenes — base incluidas — y la Fase 1 es 100% offline; WSL2/Docker Desktop según GUIDE_ENTORNO_DEV_WINDOWS §4-5) |
-| Fecha | 2026-10-10 |
+| Fecha | 2026-10-13 |
 | Audiencia | Implementación / soporte |
 | Guía madre | [`GUIDE_INSTALACION_NUEVO_CLIENTE.md`](GUIDE_INSTALACION_NUEVO_CLIENTE.md) (misma licencia, mismos perfiles, mismo instalador) |
 
@@ -145,6 +145,13 @@ nuevos, PostgreSQL, imágenes del bundle, migraciones, seeds, admin, licencia,
 stack, smoke). La instalación vive en `/opt/erp` **dentro de WSL** — a todos
 los efectos, es un servidor Linux más.
 
+> **Si la laptop ya tenía una versión vieja del sistema corriendo en Docker
+> Desktop**, el paso 1b del instalador la va a detectar (WSL y Docker Desktop
+> comparten el mismo motor): pregunta reemplazar (con resguardo de su DB) /
+> instalar en paralelo / cancelar — guía madre §7.1. Para traer los
+> clientes/proveedores del sistema viejo después:
+> [`GUIDE_MIGRACION_DATOS_VIEJOS.md`](GUIDE_MIGRACION_DATOS_VIEJOS.md) §6.
+
 Al terminar: abrir **en el navegador de Windows** `http://localhost:18081`
 (Docker Desktop reenvía el localhost de WSL a Windows — no hay que configurar
 nada). Con licencia quedó activa; sin licencia arranca la evaluación de 30
@@ -242,6 +249,7 @@ contenedores. Antes de actualizar: verificar el backup de anoche en
 | Paso 4/12 avisa "imágenes ausentes en el daemon" (o `No such image` más adelante) | Bundle emitido antes del 2026-10-10 en un cliente sin internet: las imágenes base no viajaban en el bundle | §4 paso 4: `docker load` desde el pendrive (postgres/redis/migrate) y re-correr el instalador (es idempotente) |
 | `localhost:18081` no abre en Windows | Docker Desktop parado o stack caído | Abrir Docker Desktop; en Ubuntu: `cd /opt/erp/business_management && docker compose --profile laptop ps` |
 | `[aviso] systemd no disponible / timer omitido` en la instalación | Esperado con `ERP_SKIP_SYSTEMD=1` | No es un error: el backup va por el Programador de tareas (§7) |
+| Paso 1b pregunta por "stacks ERP preexistentes" | La máquina ya tenía el sistema (u otro ERP del producto) corriendo en Docker Desktop — WSL y Docker Desktop ven el MISMO motor | Decir reemplazar (guarda resguardo de la DB vieja en `/opt/erp/backups/pre-replace-*/`) o paralelo — guía madre §7.1; nunca ignora el stack viejo |
 | No hubo backup a la hora programada | Laptop apagada / sin sesión iniciada | Activar "iniciar la tarea lo antes posible si se pierde un inicio"; o correr el comando manual de §7 |
 | Pantalla "Licencia requerida" tras instalar | Evaluación de 30 días agotada | Igual que Linux: cargar la licencia desde esa pantalla (guía madre §8 / RUNBOOK_LICENCIAS §4b) |
 | Puertos 18080/18081/5433 ocupados | Casi imposible en Windows limpio | Overrides `ERP_BACKEND_PORT` / `ERP_FRONTEND_PORT` / `ERP_DB_PORT` (guía madre §5). Si el que retiene el puerto es el propio stack ERP, el instalador sigue solo |
@@ -252,5 +260,6 @@ contenedores. Antes de actualizar: verificar el backup de anoche en
 
 | Versión | Fecha | Cambio | Autor |
 |:--|:--|:--|:--|
+| v1.2 | 2026-10-13 | §5 nota + §9 fila: el paso 1b del instalador detecta stacks ERP viejos que vivan en Docker Desktop (WSL y Docker Desktop comparten motor) y pregunta reemplazo con resguardo / paralelo / cancelar (REQ_DEPLOY v0.13, guía madre §7.1); enlace a GUIDE_MIGRACION_DATOS_VIEJOS §6 para recuperar clientes/proveedores del sistema viejo | renpereiradx + agente |
 | v1.1 | 2026-10-10 | Cerrado de raíz el hallazgo de imágenes base (BE `428a6ff`): el bundle ahora trae TODAS las imágenes (postgres/redis/migrate derivadas del compose) y el instalador las carga ANTES del primer `up`. §4 paso 4 queda como receta solo para bundles viejos (+migrate), §3 y §9 actualizados | renpereiradx + agente |
 | v1.0 | 2026-10-10 | Primera versión: WSL2 como camino soportado para clientes Windows (perfil laptop). Fase 0 con internet + Fase 1 offline, backup por Programador de tareas, ciclo de vida y problemas frecuentes. Incluye el hallazgo de imágenes base (postgres/redis fuera del bundle) y el fix del instalador para updates con stack vivo (BE `616d551`) | renpereiradx + agente |

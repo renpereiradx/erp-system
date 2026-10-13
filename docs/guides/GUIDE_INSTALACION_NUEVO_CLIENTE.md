@@ -6,11 +6,11 @@
 |:--|:--|
 | Módulo | Instalación on-premise de clientes |
 | Código | GUIDE-INST-CLIENTE |
-| Versión | v1.8 |
+| Versión | v1.9 |
 | Estado | Vigente (probada contra el ensayo E2E del plan PLAN_DEPLOY_ESCALADO_ONPREMISE) |
-| Fecha | 2026-10-10 |
+| Fecha | 2026-10-13 |
 | Audiencia | Implementación / soporte |
-| Requerimiento | [`REQ_DEPLOY_DISTRIBUCION_ONPREMISE.md`](../requirements/REQ_DEPLOY_DISTRIBUCION_ONPREMISE.md) (RF-DEPLOY-001..003, 011..020) · [`REQ_BIPACK_LICENCIAMIENTO_BI.md`](../requirements/REQ_BIPACK_LICENCIAMIENTO_BI.md) (RN-08/09) |
+| Requerimiento | [`REQ_DEPLOY_DISTRIBUCION_ONPREMISE.md`](../requirements/REQ_DEPLOY_DISTRIBUCION_ONPREMISE.md) (RF-DEPLOY-001..003, 011..023) · [`REQ_BIPACK_LICENCIAMIENTO_BI.md`](../requirements/REQ_BIPACK_LICENCIAMIENTO_BI.md) (RN-08/09) |
 
 ---
 
@@ -135,7 +135,10 @@ y secretos intactos).
 
 Qué hace (12 pasos, todos con salida visible):
 
-1. Pre-chequeos (SO Linux, Docker corriendo, disco ≥ 5 GB, puertos libres)
+1. Pre-chequeos (SO Linux, Docker corriendo, disco ≥ 5 GB)
+1b. **Stacks ERP preexistentes**: si en el motor Docker hay contenedores de
+   una instalación vieja u otra instalación (no de esta corrida), pregunta
+   qué hacer — ver §7.1. En máquina limpia ni se nota
 2. Copia el stack a `/opt/erp/` (la instalación vive ahí; el repo queda fuera)
 3. Genera `.env.docker` con **secrets nuevos** (JWT + password de DB aleatorios)
 4. Levanta PostgreSQL (servicio propio con volumen dedicado, solo loopback)
@@ -148,6 +151,10 @@ Qué hace (12 pasos, todos con salida visible):
 11. Levanta el stack completo y espera healthchecks
 12. **Smoke test automático**: health + `/version` + frontend + proxy `/api` (+ redirect HTTPS en server). Si algo falla, el instalador muere con el error visible
 
+(El chequeo de puertos libres corre entre 1b y 2: si el operador elige
+reemplazar un stack viejo en 1b, los puertos que este retenía quedan libres
+para el chequeo.)
+
 Al terminar imprime un resumen con URLs, ubicación de la CA y próximos pasos.
 
 ### Overrides útiles
@@ -156,6 +163,8 @@ Al terminar imprime un resumen con URLs, ubicación de la CA y próximos pasos.
 |:--|:--|
 | Puerto 80/443 ocupado | `ERP_HTTP_PORT=8080 ERP_HTTPS_PORT=8443` antes del comando |
 | Otro PostgreSQL ya existe en el servidor | mover el puerto del stack: `ERP_DB_PORT=5433` |
+| **Máquina con un sistema ERP viejo** | el instalador lo detecta y pregunta (§7.1) — o `--replace-stack` directo |
+| **Instalar en paralelo con otro stack ERP** | wizard opción 2, o a mano: `COMPOSE_PROJECT_NAME=erp-2 ERP_ROOT=/opt/erp-2 ERP_DB_PORT=6433 ERP_BACKEND_PORT=19080 ERP_FRONTEND_PORT=19081` (§7.1) |
 | Instalar sin licencia por ahora | omitir `--license` (queda en evaluación: 30 días full, luego pantalla de rescate) |
 | Activar un cliente que ya pagó (post-evaluación) | cargar el `license.json` desde la pantalla "Licencia requerida" o `curl -X PUT .../api/v1/system/license` ([RUNBOOK_LICENCIAS.md](RUNBOOK_LICENCIAS.md) §4b) |
 | Probar sin tocar `/opt` | `ERP_ROOT=/tmp/erp-test ./install.sh ...` |
@@ -214,6 +223,47 @@ se cargan y el stack se recrea con ellas; las migraciones nuevas se aplican como
 delta. **Antes de actualizar: verificar que existe el backup de anoche**
 (`ls /opt/erp/backups/`) — es la única reversión real (RN-DEPLOY-007).
 
+### 7.1 Máquina con un sistema ERP previo (reemplazo protegido o paralelo)
+
+Escenario: la máquina ya corre un ERP de **otra época** (versión vieja, otra
+instalación, contenedores que quedaron de antes). Instalar el bundle nuevo
+"parece un update", pero no lo es: es una instalación nueva sobre una máquina
+ocupada — y hasta el 2026-10-13 el instalador ni se enteraba: si el stack
+viejo compartía nombre de proyecto (`erp`), `docker compose up` lo
+**reemplazaba en silencio** (así desapareció el stack viejo de la laptop del
+negocio; su DB sobrevivió solo porque vivía en un Postgres nativo fuera de
+Docker).
+
+Desde REQ_DEPLOY v0.13 el paso 1b del instalador inventaría los contenedores
+ERP del motor Docker y, si encuentra alguno que no pertenezca a esta
+instalación, **pregunta**:
+
+1. **Reemplazar** — antes de tocar nada archiva un resguardo en
+   `/opt/erp/backups/pre-replace-<fecha>/` (inventario Docker, `inspect` de
+   los contenedores, config compose si queda su directorio, y `pg_dump`
+   best-effort de su Postgres) y recién ahí retira los contenedores viejos.
+   El volumen del stack viejo solo se borra si su DB quedó dumpeada — sin
+   dump el instalador corta (mejor pararse a mano que pisar datos).
+   **Copiar el resguardo fuera de la máquina**, como cualquier backup.
+2. **Instalar en paralelo** — el stack viejo sigue corriendo; el nuevo usa
+   proyecto (`erp-<sufijo>`), raíz (`/opt/erp-<sufijo>`), puertos (DB 6433,
+   backend 19080, frontend 19081 — en server 28080/28443) y timer de backup
+   (`erp-backup-<sufijo>`) propios. Típico para capacitación con el sistema
+   viejo aún facturando. Cada instalación recuerda su identidad en su
+   `.env` (`COMPOSE_PROJECT_NAME`): `docker compose`, backups y migraciones
+   de cada una apuntan a su propio stack.
+3. **Cancelar**.
+
+En modo automatizado (`--yes` / sin terminal) no hay pregunta: o se pasa
+`--replace-stack` (resguardo + baja de los viejos, igual que la opción 1) o
+el instalador **corta** listando lo detectado. El paralelo automatizado es
+por variables (ver tabla de overrides del §5).
+
+> ¿Reemplazar o empezar de cero con los datos del viejo? Reemplazar instala
+> LIMPIO (sin datos viejos). Para traer clientes/proveedores (o todo) desde
+> el sistema viejo: [`GUIDE_MIGRACION_DATOS_VIEJOS.md`](GUIDE_MIGRACION_DATOS_VIEJOS.md) —
+> export del lado viejo + import idempotente en el nuevo.
+
 ---
 
 ## 8. Problemas frecuentes
@@ -229,6 +279,8 @@ delta. **Antes de actualizar: verificar que existe el backup de anoche**
 | Pantalla "Licencia requerida" tras instalar | Evaluación agotada sin licencia | Cargar la licencia desde esa misma pantalla ([RUNBOOK_LICENCIAS.md](RUNBOOK_LICENCIAS.md) §4b); no hace falta SSH |
 | El rescate web rechaza la licencia (LICENSE_INVALID) | `LICENSE_PUBLIC_KEY` vacía o distinta a la del par vendedor | Cargar la pública correcta en `.env.docker` y recrear el backend |
 | `error: Dirty database version <X>` en el paso 7 | Una migración quedó interrumpida a mitad (terminal cerrada, corte, o un bug de migración — el `20261004190603` con `OWNER TO dev_user` lo causaba; corregido en BE `9a91a32`) | Recuperación *dirty* (abajo) y re-ejecutar el instalador |
+| El paso 1b corta: "stacks ERP ajenos presentes" | En el motor Docker hay contenedores de un ERP viejo/otra instalación y el modo automatizado no decide | Es intencional (RF-DEPLOY-021): usar `--replace-stack` (resguardo + baja), paralelo por variables (§7.1), o retirarlos a mano |
+| Docker Desktop muestra un stack ERP que "ya no existe" en el disco | Instalación paralela desarmada a medias o restos de un reemplazo | `docker compose -p <proyecto> down -v` con el nombre de proyecto explícito (los volúmenes sobreviven a los contenedores); los resguardos de reemplazo viven en `/opt/erp/backups/pre-replace-*/` |
 
 **Recuperación de base *dirty* (paso 7):** forzar la última versión que
 completó y dejar que el instalador re-aplique el delta (las migraciones usan
@@ -282,7 +334,7 @@ sudo docker compose --profile laptop --profile server down -v --remove-orphans
 # 2) borrar la instalación completa (stack, secretos, licencia, CA, backups, credenciales)
 sudo rm -rf /opt/erp
 
-# 3) quitar el backup diario programado
+# 3) quitar el backup diario programado (instalación paralela: erp-backup-<sufijo>)
 sudo systemctl disable --now erp-backup.timer 2>/dev/null || true
 sudo rm -f /etc/systemd/system/erp-backup.service /etc/systemd/system/erp-backup.timer
 sudo systemctl daemon-reload
@@ -295,15 +347,14 @@ Notas:
   contenedores quedan vivos (mismo caso documentado en §7).
 - El `-v` es lo que borra los volúmenes — la base de datos. Sin `-v` es solo un
   apagado con eliminación de contenedores.
-- Si el `.env` ya está roto o borrado no importa: el nombre del proyecto es fijo
-  (`name: erp` en el compose) y los perfiles van explícitos en el comando.
-- **El `down` se corre desde `/opt/erp/business_management`** (como arriba) y
-  con el compose canónico del stack. Ojo con las instalaciones de prueba: el
-  `name: erp` del compose define el proyecto **no importa desde qué carpeta
-  se invoque** — un `docker compose -f docker-compose.yml down -v` suelto en
-  otro directorio igual apunta al stack real y borra SUS volúmenes. Para
-  desarmar una prueba: `docker compose -p <proyecto-de-prueba> down -v`, con
-  el nombre de proyecto explícito.
+- Si el `.env` de la instalación no se puede leer no importa: correr el
+  `down` con `-p` explícito (`docker compose -p erp down -v`) o desde
+  cualquier compose canónico pasando `COMPOSE_PROJECT_NAME`. El nombre de
+  proyecto por defecto sigue siendo `erp` (`name: ${COMPOSE_PROJECT_NAME:-erp}`
+  en el compose); una instalación en PARALELO usa el suyo (guardado en su
+  `.env`) y su borrón es igual pero en su directorio y con su proyecto —
+  **un `down -v` suelto en otro directorio igual apunta al stack cuyo
+  proyecto resuelva**: para desarmar una prueba, siempre `-p` explícito.
 
 Verificar que no quedó nada:
 
@@ -339,6 +390,7 @@ no trae licencia. Dos consecuencias a tener en cuenta:
 
 | Versión | Fecha | Cambio | Autor |
 |:--|:--|:--|:--|
+| v1.9 | 2026-10-13 | §7.1 nuevo: máquina con un sistema ERP previo — paso 1b del instalador (detección de stacks ajenos, reemplazo con resguardo pre-reemplazo, instalación en paralelo con proyecto/raíz/puertos/timer propios, `--replace-stack`). §5: overrides de reemplazo/paralelo; pasos del instalador actualizados (1b). §8: filas de 1b y restos de stacks. §9.1: proyecto parametrizado `name: ${COMPOSE_PROJECT_NAME:-erp}` y timer por instalación. Contra REQ_DEPLOY v0.13 (RF-DEPLOY-021/022) + hallazgo laptop del negocio | renpereiradx + agente |
 | v1.8 | 2026-10-10 | §3: el bundle ahora trae TODAS las imágenes — postgres/redis/migrate incluidas, derivadas del compose (BE `428a6ff`); el instalador las carga antes del primer `up` y avisa si falta alguna (bundle viejo). §9.1: advertencia sobre `down -v` — `name: erp` apunta al stack real desde cualquier directorio; las pruebas se desarman con `-p` explícito | renpereiradx + agente |
 | v1.7 | 2026-10-10 | §2: Windows por WSL2 (GUIDE_INSTALACION_WINDOWS nuevo, perfil laptop). §3: las imágenes base postgres/redis NO viajan en el bundle — matiz sobre el offline. §4: puerto del frontend laptop corregido 8081 → 18081 (era pre-BE `9e998e8`). §8: el chequeo de puertos ya no corta cuando el propio stack ERP retiene el puerto en un update (BE `616d551`) | renpereiradx + agente |
 | v1.6 | 2026-10-10 | §2.1: rutas vendor — custodia y entregas ahora viven bajo `~/licencias/` (`custodia/` + `entregas/`; RUNBOOK v2.3). Backup del vendor = carpeta `~/licencias/` completa a pendrive/bóveda, nunca nube | renpereiradx + agente |
