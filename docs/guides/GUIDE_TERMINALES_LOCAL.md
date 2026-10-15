@@ -6,9 +6,9 @@
 |:--|:--|
 | Módulo | Terminales del local (cajas, vendedores) |
 | Código | GUIDE-TERMINAL |
-| Versión | v1.3 |
+| Versión | v1.4 |
 | Estado | Vigente (escrita contra el perfil `server` real: proxy `/api` + CA interna; §5 móviles recién documentado — probar en el primer dispositivo real) |
-| Fecha | 2026-09-29 |
+| Fecha | 2026-10-15 |
 | Audiencia | Implementación / soporte |
 | Requerimiento | [`REQ_DEPLOY_DISTRIBUCION_ONPREMISE.md`](../requirements/REQ_DEPLOY_DISTRIBUCION_ONPREMISE.md) (RF-DEPLOY-004, 005, 008; RNF-DEPLOY-001) |
 
@@ -73,13 +73,36 @@ advertencias**.
 3. Si el usuario es de una sucursal concreta, el admin le asignó acceso a esa
    sucursal (`GUIDE_SUCURSAL_NUEVA.md` §4) — el usuario trabaja su sucursal.
 
-### 3.4 Checklist final por terminal
+### 3.4 Registro en el sistema (código de vinculación)
+
+Con varias cajas en el local conviene que cada máquina quede **registrada** en
+el sistema: el servidor sabe a qué sucursal pertenece y audita su última
+actividad. El trámite es una vez por máquina y son dos pasos:
+
+1. **Administrador** → Configuración → **Terminales** → "Nueva terminal":
+   nombre (ej. "Caja 1"), sucursal, y copiar el **código de vinculación**
+   (8 caracteres).
+2. **En la máquina de la caja** → Configuración → **Este dispositivo** →
+   pegar el código → **Registrar**. Listo: quienes la usen sin permiso para
+   cambiar de sucursal entran directo a la sucursal asignada.
+
+Sin el paso 2 también funciona: en "Este dispositivo" se puede tocar una
+sucursal para vincular **solo ese navegador** (se pierde si se limpian los
+datos del navegador). El registro con código, en cambio, queda en el servidor.
+Una máquina ya registrada administra su sucursal desde Terminales: "Este
+dispositivo" muestra el estado y permite desvincularla, no cambiarla.
+
+> Sin el pack Premium la edición opera **1 terminal activa por sucursal**
+> (RN-BIPACK-10): la segunda caja de una misma sucursal pide el pack.
+
+### 3.5 Checklist final por terminal
 
 ```
 [ ] Candado sin advertencia en https://<hostname>/
 [ ] Navegador con perfil aislado del ERP (§4) o políticas aplicadas
 [ ] Login con usuario propio (no compartir usuarios entre cajas)
 [ ] Impresora de tickets imprime página de prueba (cajas)
+[ ] Terminal registrada en el sistema (§3.4) si la caja va fija a una sucursal
 [ ] Queda registrada qué máquina es (inventario simple del local)
 ```
 
@@ -280,6 +303,7 @@ las terminales solo refrescan el navegador.
 
 | Versión | Fecha | Cambio | Autor |
 |:--|:--|:--|:--|
+| v1.4 | 2026-10-15 | §3.4 nueva: registro de la terminal en el sistema (Configuración → Terminales + código de vinculación en "Este dispositivo"); checklist actualizado | renpereiradx + agente |
 | v1.3 | 2026-10-10 | §3.2 referencia a la nueva GUIDE_NAVEGADORES_CERTIFICADOS (el por qué de la advertencia + pasos por navegador) — sin cambios de procedimiento | renpereiradx + agente |
 | v1.2 | 2026-09-29 | §5 nuevo: terminales móviles — CA interna paso a paso en Android/iOS (con el paso de confianza de iOS explícito), acceso remoto por app Tailscale (cuenta invitada para el dueño / clave pre-aprobada para tablets), alternativa ts.net de RN-DEPLOY-002 y límites honestos (teléfono = consulta/aprobación, impresión no soportada). FAQ "¿desde casa?" reescrita; §2 y §3.1 mencionan móviles | renpereiradx + agente |
 | v1.1 | 2026-09-23 | §4 navegador: perfil aislado del ERP + políticas opcionales (Windows **y Linux**, setup-terminal-chrome.ps1/.sh); CA en Linux (install-ca-linux.sh); SO de terminal sin asumir Windows | renpereiradx + agente |

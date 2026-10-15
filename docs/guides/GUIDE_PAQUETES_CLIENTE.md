@@ -6,9 +6,9 @@
 |:------|:------|
 | Módulo | Catálogo de paquetes / ediciones del producto |
 | Código | GUIDE-PAQUETES |
-| Versión | v1.0 |
+| Versión | v1.1 |
 | Estado | Vigente |
-| Fecha | 2026-09-29 |
+| Fecha | 2026-10-15 |
 | Audiencia | Comercial, soporte y clientes |
 | Requerimiento | [`REQ_BIPACK_LICENCIAMIENTO_BI.md`](../requirements/REQ_BIPACK_LICENCIAMIENTO_BI.md) (v2.2 — RN-07/08/09/10) |
 
@@ -51,7 +51,7 @@
 - Incluye todo el ERP operativo. El módulo BI queda fuera: el menú
   "Inteligencia de Negocios" no aparece.
 - **Terminales:** cada sucursal puede operar **una terminal activa**. Al
-  intentar registrar o emparejar una segunda terminal en la misma sucursal,
+  intentar registrar o vincular una segunda terminal en la misma sucursal,
   el sistema explica que requiere el pack Premium. Desactivar una terminal
   libera el lugar para otra.
 
@@ -98,4 +98,5 @@ aplicarlo.
 
 | Versión | Fecha | Cambio | Autor |
 |:--|:--|:--|:--|
+| v1.1 | 2026-10-15 | §3.2: vocabulario "registrar o vincular" (antes "emparejar"), alineado con la UI (Configuración → Terminales / Este dispositivo) | renpereiradx + agente |
 | v1.0 | 2026-09-29 | Primera versión: catálogo Evaluación / Core / Core+BI Premium con el límite de terminales por sucursal (REQ_BIPACK v2.2, RN-10) | renpereiradx + agente |
