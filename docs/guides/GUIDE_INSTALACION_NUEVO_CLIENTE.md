@@ -8,7 +8,7 @@
 | Código | GUIDE-INST-CLIENTE |
 | Versión | v1.9 |
 | Estado | Vigente (probada contra el ensayo E2E del plan PLAN_DEPLOY_ESCALADO_ONPREMISE) |
-| Fecha | 2026-10-13 |
+| Fecha | 2026-10-16 |
 | Audiencia | Implementación / soporte |
 | Requerimiento | [`REQ_DEPLOY_DISTRIBUCION_ONPREMISE.md`](../requirements/REQ_DEPLOY_DISTRIBUCION_ONPREMISE.md) (RF-DEPLOY-001..003, 011..023) · [`REQ_BIPACK_LICENCIAMIENTO_BI.md`](../requirements/REQ_BIPACK_LICENCIAMIENTO_BI.md) (RN-08/09) |
 
@@ -254,6 +254,14 @@ instalación, **pregunta**:
    de cada una apuntan a su propio stack.
 3. **Cancelar**.
 
+¿Y si el sistema viejo fue instalado por este mismo instalador en la raíz por
+defecto (`/opt/erp`, proyecto `erp`)? El paso 1b lo clasifica como instalación
+**propia** (un Enter la actualizaría) — por eso el wizard pregunta
+explícitamente **¿actualizar o instalar en paralelo?** antes de empezar:
+responder `2` hace lo mismo que la opción 2 de arriba (sufijo → proyecto,
+raíz `/opt/erp-<sufijo>`, puertos y timer de backup propios, descartando los
+puertos heredados de la instalación que queda viva) sin tocarla.
+
 En modo automatizado (`--yes` / sin terminal) no hay pregunta: o se pasa
 `--replace-stack` (resguardo + baja de los viejos, igual que la opción 1) o
 el instalador **corta** listando lo detectado. El paralelo automatizado es
@@ -390,7 +398,7 @@ no trae licencia. Dos consecuencias a tener en cuenta:
 
 | Versión | Fecha | Cambio | Autor |
 |:--|:--|:--|:--|
-| v1.9 | 2026-10-13 | §7.1 nuevo: máquina con un sistema ERP previo — paso 1b del instalador (detección de stacks ajenos, reemplazo con resguardo pre-reemplazo, instalación en paralelo con proyecto/raíz/puertos/timer propios, `--replace-stack`). §5: overrides de reemplazo/paralelo; pasos del instalador actualizados (1b). §8: filas de 1b y restos de stacks. §9.1: proyecto parametrizado `name: ${COMPOSE_PROJECT_NAME:-erp}` y timer por instalación. Contra REQ_DEPLOY v0.13 (RF-DEPLOY-021/022) + hallazgo laptop del negocio | renpereiradx + agente |
+| v1.9 | 2026-10-13 | §7.1 nuevo: máquina con un sistema ERP previo — paso 1b del instalador (detección de stacks ajenos, reemplazo con resguardo pre-reemplazo, instalación en paralelo con proyecto/raíz/puertos/timer propios, `--replace-stack`). §5: overrides de reemplazo/paralelo; pasos del instalador actualizados (1b). §8: filas de 1b y restos de stacks. §9.1: proyecto parametrizado `name: ${COMPOSE_PROJECT_NAME:-erp}` y timer por instalación. Contra REQ_DEPLOY v0.13 (RF-DEPLOY-021/022) + hallazgo laptop del negocio. **Ampliado 2026-10-16:** el wizard pregunta actualizar-vs-paralelo también cuando la instalación previa es propia en la raíz default (`/opt/erp`) — antes el paralelo solo se ofrecía ante stacks ajenos | renpereiradx + agente |
 | v1.8 | 2026-10-10 | §3: el bundle ahora trae TODAS las imágenes — postgres/redis/migrate incluidas, derivadas del compose (BE `428a6ff`); el instalador las carga antes del primer `up` y avisa si falta alguna (bundle viejo). §9.1: advertencia sobre `down -v` — `name: erp` apunta al stack real desde cualquier directorio; las pruebas se desarman con `-p` explícito | renpereiradx + agente |
 | v1.7 | 2026-10-10 | §2: Windows por WSL2 (GUIDE_INSTALACION_WINDOWS nuevo, perfil laptop). §3: las imágenes base postgres/redis NO viajan en el bundle — matiz sobre el offline. §4: puerto del frontend laptop corregido 8081 → 18081 (era pre-BE `9e998e8`). §8: el chequeo de puertos ya no corta cuando el propio stack ERP retiene el puerto en un update (BE `616d551`) | renpereiradx + agente |
 | v1.6 | 2026-10-10 | §2.1: rutas vendor — custodia y entregas ahora viven bajo `~/licencias/` (`custodia/` + `entregas/`; RUNBOOK v2.3). Backup del vendor = carpeta `~/licencias/` completa a pendrive/bóveda, nunca nube | renpereiradx + agente |
