@@ -35,26 +35,17 @@
 
 Para que el instalador **autodetecte** la pareja, ambos archivos viajan DENTRO
 del bundle, en `business_management/` y con esos nombres exactos. La
-autodetección funciona en **todos los modos** del instalador (wizard con
-confirmación [S/n]; `--yes`/sin terminal la toma en silencio) y valida la
-forma de la pareja antes de instalar — corta con mensaje claro si la "clave
-pública" es en realidad la privada (hex), si la licencia no tiene
-payload/signature o si la clave no es base64 de 32 bytes.
+autodetección funciona **sin ningún flag** en todos los modos del instalador
+(wizard con confirmación [S/n]; `--yes`/sin terminal la toma en silencio),
+igual en Linux que en Windows/WSL2, y valida la forma de la pareja antes de
+instalar — corta con mensaje claro si la "clave pública" es en realidad la
+privada (hex), si la licencia no tiene payload/signature o si la clave no es
+base64 de 32 bytes; si la clave llegó con otro nombre (ej. `public.key`), el
+wizard avisa cuál es el nombre exacto que busca.
 
-**Al emitir el bundle (recomendado):** pasarle la pareja a
-`make-release-bundle.sh` — queda embebida Y cubierta por `SHA256SUMS`:
-
-```bash
-cd ~/dev/erp-system/business_management
-./deploy/scripts/make-release-bundle.sh \
-  --license ~/licencias/entregas/<cliente>/license.json \
-  --license-public-key ~/licencias/custodia/public.key
-# cliente sin compra aún: solo --license-public-key (evaluación + rescate web listo)
-```
-
-**Bundle ya emitido sin los flags:** copiar a mano y re-empaquetar (el
-`.tar.gz` original no contiene los archivos agregados). Reemplazar `<v>` por
-la versión del bundle.
+**Flujo normal — copiar a mano y re-empaquetar** (el `.tar.gz` que genera
+`make-release-bundle.sh` no trae la pareja). Reemplazar `<v>` por la versión
+del bundle:
 
 ```bash
 cd ~/dev/erp-system/business_management/dist/erp-release-<v>/
@@ -71,13 +62,15 @@ tar czf erp-release-<v>.tar.gz erp-release-<v>/
 Notas:
 
 - `sha256sum -c SHA256SUMS` en el cliente sigue pasando: el manifiesto verifica
-  solo los archivos que lista; los agregados se ignoran (con los flags de
-  emisión, la pareja QUEDA cubierta por el manifiesto).
+  solo los archivos que lista; los agregados se ignoran.
 - ¿El cliente aún no compró? Se puede omitir el `license.json` (evaluación de
   30 días), pero **incluir igual la clave pública**: el rescate web del día del
   bloqueo la necesita.
 - Los flags `--license` / `--license-public-key` del instalador (§5) son
   equivalentes; meterlos en el bundle solo ahorra tipearlos.
+- Opcional (evita el re-tar): `make-release-bundle.sh --license <archivo>
+  --license-public-key <clave>` embebe la pareja al emitir y la cubre por
+  `SHA256SUMS`; el copiado manual de arriba es el flujo normal.
 
 ---
 
@@ -417,7 +410,7 @@ no trae licencia. Dos consecuencias a tener en cuenta:
 
 | Versión | Fecha | Cambio | Autor |
 |:--|:--|:--|:--|
-| v2.0 | 2026-10-19 | §2.1 reescrito contra REQ_DEPLOY v0.14 (RF-DEPLOY-024): emisión del bundle con `make-release-bundle.sh --license/--license-public-key` como camino recomendado (la pareja queda cubierta por `SHA256SUMS`; solo-clave-pública permitido para rescate web sin compra), copiado manual + re-tar como alternativa para bundles ya emitidos. La autodetección del instalador ahora funciona en TODOS los modos (antes `--yes`/sin TTY ignoraba la pareja embebida y la instalación quedaba ERP Core para siempre) y valida la forma de los archivos antes de instalar | renpereiradx + agente |
+| v2.0 | 2026-10-19 | §2.1 contra REQ_DEPLOY v0.14 (RF-DEPLOY-024): la autodetección del instalador ahora funciona en TODOS los modos sin flags (antes `--yes`/sin TTY ignoraba la pareja embebida y la instalación quedaba ERP Core para siempre) e igual en Linux que Windows/WSL2; validación temprana de la forma (privada por error, JSON sin payload/signature, base64≠32B) y aviso del wizard si la clave llegó con otro nombre (`public.key`). Flags opcionales de emisión `--license/--license-public-key` en `make-release-bundle.sh` (cubren `SHA256SUMS`, evitan el re-tar) — el copiado manual sigue siendo el flujo normal | renpereiradx + agente |
 | v1.9 | 2026-10-13 | §7.1 nuevo: máquina con un sistema ERP previo — paso 1b del instalador (detección de stacks ajenos, reemplazo con resguardo pre-reemplazo, instalación en paralelo con proyecto/raíz/puertos/timer propios, `--replace-stack`). §5: overrides de reemplazo/paralelo; pasos del instalador actualizados (1b). §8: filas de 1b y restos de stacks. §9.1: proyecto parametrizado `name: ${COMPOSE_PROJECT_NAME:-erp}` y timer por instalación. Contra REQ_DEPLOY v0.13 (RF-DEPLOY-021/022) + hallazgo laptop del negocio. **Ampliado 2026-10-16:** el wizard pregunta actualizar-vs-paralelo también cuando la instalación previa es propia en la raíz default (`/opt/erp`) — antes el paralelo solo se ofrecía ante stacks ajenos | renpereiradx + agente |
 | v1.8 | 2026-10-10 | §3: el bundle ahora trae TODAS las imágenes — postgres/redis/migrate incluidas, derivadas del compose (BE `428a6ff`); el instalador las carga antes del primer `up` y avisa si falta alguna (bundle viejo). §9.1: advertencia sobre `down -v` — `name: erp` apunta al stack real desde cualquier directorio; las pruebas se desarman con `-p` explícito | renpereiradx + agente |
 | v1.7 | 2026-10-10 | §2: Windows por WSL2 (GUIDE_INSTALACION_WINDOWS nuevo, perfil laptop). §3: las imágenes base postgres/redis NO viajan en el bundle — matiz sobre el offline. §4: puerto del frontend laptop corregido 8081 → 18081 (era pre-BE `9e998e8`). §8: el chequeo de puertos ya no corta cuando el propio stack ERP retiene el puerto en un update (BE `616d551`) | renpereiradx + agente |

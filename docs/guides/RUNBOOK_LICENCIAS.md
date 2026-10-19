@@ -108,35 +108,22 @@ Regla práctica: `-edition core+bi -modules bi` para Premium, `-edition core
 
 Entrega al cliente: **`license.json` + la clave pública**. Nunca la privada. La forma más simple de entregarlos es meter ambos DENTRO del bundle (§2c): el instalador los detecta solo.
 
-### 2c. Cargar licencia + clave en el bundle (recomendado — autodetección)
+### 2c. Cargar licencia + clave en el bundle (flujo normal — autodetección)
 
 El instalador busca la pareja dentro del bundle, en `business_management/`,
 con esos nombres exactos (`license.json` y `licensing-public.key`), y la
-detecta solo en **todos los modos**: wizard (confirma con [S/n]) y
-`--yes`/sin terminal (la toma en silencio). Además **valida la forma** de la
-pareja antes de instalar — se corta con mensaje claro si el archivo de la
-"clave pública" es en realidad la privada (hex), si la licencia no tiene
-payload/signature o si la clave no es base64 de 32 bytes. La verificación de
-la FIRMA sigue siendo del backend al arrancar.
+detecta solo **sin ningún flag**: en el wizard pregunta por cada archivo
+detectado ([S/n], Enter acepta) y en modo `--yes`/sin terminal la toma en
+silencio. Mismo comportamiento en Linux y en Windows/WSL2 (es el mismo
+instalador). Además valida la forma de la pareja antes de instalar — corta
+con mensaje claro si la "clave pública" es en realidad la privada (hex), si
+la licencia no tiene payload/signature o si la clave no es base64 de 32
+bytes; y si la clave llegó con OTRO nombre (ej. `public.key` de la
+custodia), el wizard lo avisa con el nombre exacto que busca. La
+verificación de la FIRMA sigue siendo del backend al arrancar.
 
-**Camino A — al emitir el bundle (desde 2026-10-19, recomendado):** los flags
-de `make-release-bundle.sh` embeben la pareja y la dejan cubierta por el
-manifiesto de integridad (sin copia manual ni re-empaquetado):
-
-```bash
-cd ~/dev/erp-system/business_management
-./deploy/scripts/make-release-bundle.sh \
-  --license ~/licencias/entregas/<cliente>/license.json \
-  --license-public-key ~/licencias/custodia/public.key
-```
-
-- Cliente sin licencia todavía: omitir `--license` y pasar SOLO
-  `--license-public-key` — el cliente arranca en evaluación de 30 días y el
-  rescate web queda habilitado para el día de la compra.
-
-**Camino B — bundle ya emitido (manual):** el `.tar.gz` que genera
-`make-release-bundle.sh` sin flags NO trae la pareja: copiarla y
-re-empaquetar. Reemplazar `<v>` por la versión del bundle (ej. `v1.0.0-4-g01ed28a`).
+El `.tar.gz` que genera `make-release-bundle.sh` NO trae la pareja: copiarla
+y re-empaquetar. Reemplazar `<v>` por la versión del bundle (ej. `v1.0.0-4-g01ed28a`).
 
 ```bash
 cd ~/dev/erp-system/business_management/dist/erp-release-<v>/
@@ -148,11 +135,16 @@ tar czf erp-release-<v>.tar.gz erp-release-<v>/
 ```
 
 - `sha256sum -c SHA256SUMS` en el cliente sigue dando OK: el manifiesto
-  verifica solo los archivos listados; los agregados se ignoran (con el
-  Camino A, en cambio, la pareja QUEDA cubierta por el manifiesto).
+  verifica solo los archivos listados; los agregados se ignoran.
 - Cliente sin licencia todavía: incluir **igual** la clave pública (habilita
   el rescate web cuando compre); sin `license.json` arranca la evaluación de
   30 días.
+- Instalar desde la carpeta DESCOMPRIMIDA (pendrive ya extraído) no requiere
+  re-tar; re-empaquetar solo si se distribuye el `.tar.gz`.
+- Opcional (evita el re-tar): `make-release-bundle.sh --license <archivo>
+  --license-public-key <clave>` embebe la pareja al emitir y la deja cubierta
+  por `SHA256SUMS`; también acepta solo la clave pública. El copiado manual
+  de arriba es el flujo normal.
 - Detalle completo del lado del cliente: [`GUIDE_INSTALACION_NUEVO_CLIENTE.md`](GUIDE_INSTALACION_NUEVO_CLIENTE.md) §2.1 y §5.
 
 ## 3. Instalación (servidor del CLIENTE)
