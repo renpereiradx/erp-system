@@ -6,9 +6,9 @@
 |:--|:--|
 | Módulo | Instalación on-premise de clientes sobre Windows |
 | Código | GUIDE-INST-WINDOWS |
-| Versión | v1.2 |
-| Estado | Vigente (instalación limpia + re-corrida verificadas E2E 12/12; desde el fix BE `428a6ff` el bundle trae TODAS las imágenes — base incluidas — y la Fase 1 es 100% offline; WSL2/Docker Desktop según GUIDE_ENTORNO_DEV_WINDOWS §4-5) |
-| Fecha | 2026-10-13 |
+| Versión | v1.3 |
+| Estado | Vigente (instalación limpia + re-corrida verificadas E2E 12/12; desde el fix BE `428a6ff` el bundle trae TODAS las imágenes — base incluidas — y la Fase 1 es 100% offline; WSL2/Docker Desktop según GUIDE_ENTORNO_DEV_WINDOWS §4-5; desde REQ_DEPLOY v0.14 la licencia/clave embebidas en el bundle se autodetectan en TODOS los modos del instalador) |
+| Fecha | 2026-10-19 |
 | Audiencia | Implementación / soporte |
 | Guía madre | [`GUIDE_INSTALACION_NUEVO_CLIENTE.md`](GUIDE_INSTALACION_NUEVO_CLIENTE.md) (misma licencia, mismos perfiles, mismo instalador) |
 
@@ -131,14 +131,17 @@ sudo ERP_SKIP_SYSTEMD=1 ./business_management/deploy/scripts/install.sh
   Windows (§7), no desde systemd dentro de WSL (la distro se duerme cuando no
   la usamos y un timer ahí no es confiable). Con la variable, el instalador
   avisa "timer omitido" y sigue — es lo esperado.
-- Alternativa sin preguntas (los flags de la guía madre §5):
+- Alternativa sin preguntas (los flags de la guía madre §5). Si el bundle
+  trae la licencia embebida (guía madre §2.1), NO hace falta pasar los flags
+  de licencia — el instalador la detecta solo también en este modo:
 
   ```bash
   sudo ERP_SKIP_SYSTEMD=1 ./business_management/deploy/scripts/install.sh \
-      --profile laptop --client-name "<Cliente>" \
-      --license ~/ruta/license.json \
-      --license-public-key ~/ruta/licensing-public.key --yes
+      --profile laptop --client-name "<Cliente>" --yes
   ```
+
+  (Con la licencia FUERA del bundle: agregar `--license ~/ruta/license.json
+  --license-public-key ~/ruta/licensing-public.key`.)
 
 El instalador corre sus 12 pasos idénticos a Linux (pre-chequeos, secrets
 nuevos, PostgreSQL, imágenes del bundle, migraciones, seeds, admin, licencia,
@@ -252,6 +255,7 @@ contenedores. Antes de actualizar: verificar el backup de anoche en
 | Paso 1b pregunta por "stacks ERP preexistentes" | La máquina ya tenía el sistema (u otro ERP del producto) corriendo en Docker Desktop — WSL y Docker Desktop ven el MISMO motor | Decir reemplazar (guarda resguardo de la DB vieja en `/opt/erp/backups/pre-replace-*/`) o paralelo — guía madre §7.1; nunca ignora el stack viejo |
 | No hubo backup a la hora programada | Laptop apagada / sin sesión iniciada | Activar "iniciar la tarea lo antes posible si se pierde un inicio"; o correr el comando manual de §7 |
 | Pantalla "Licencia requerida" tras instalar | Evaluación de 30 días agotada | Igual que Linux: cargar la licencia desde esa pantalla (guía madre §8 / RUNBOOK_LICENCIAS §4b) |
+| Instaló en evaluación pese a que el bundle traía la licencia | Instalador anterior al 2026-10-19 (REQ_DEPLOY v0.14) corrido con `--yes`: ignoraba la pareja embebida — o los archivos llegaron con otros nombres (`license.json`/`licensing-public.key` exactos en `business_management/`) | Instalador del bundle nuevo, o `--license`/`--license-public-key` explícitos, o cargar la licencia desde *Configuración → Licencia* / pantalla de bloqueo |
 | Puertos 18080/18081/5433 ocupados | Casi imposible en Windows limpio | Overrides `ERP_BACKEND_PORT` / `ERP_FRONTEND_PORT` / `ERP_DB_PORT` (guía madre §5). Si el que retiene el puerto es el propio stack ERP, el instalador sigue solo |
 
 ---
@@ -260,6 +264,7 @@ contenedores. Antes de actualizar: verificar el backup de anoche en
 
 | Versión | Fecha | Cambio | Autor |
 |:--|:--|:--|:--|
+| v1.3 | 2026-10-19 | §5: el modo flags/`--yes` también autodetecta la licencia/clave embebidas en el bundle (REQ_DEPLOY v0.14, RF-DEPLOY-024 — antes solo el wizard las veía y un `--yes` dejaba la instalación sin `LICENSE_PUBLIC_KEY`); flags de licencia solo si viajan fuera del bundle. §9 fila nueva para instalaciones viejas/nombres equivocados | renpereiradx + agente |
 | v1.2 | 2026-10-13 | §5 nota + §9 fila: el paso 1b del instalador detecta stacks ERP viejos que vivan en Docker Desktop (WSL y Docker Desktop comparten motor) y pregunta reemplazo con resguardo / paralelo / cancelar (REQ_DEPLOY v0.13, guía madre §7.1); enlace a GUIDE_MIGRACION_DATOS_VIEJOS §6 para recuperar clientes/proveedores del sistema viejo | renpereiradx + agente |
 | v1.1 | 2026-10-10 | Cerrado de raíz el hallazgo de imágenes base (BE `428a6ff`): el bundle ahora trae TODAS las imágenes (postgres/redis/migrate derivadas del compose) y el instalador las carga ANTES del primer `up`. §4 paso 4 queda como receta solo para bundles viejos (+migrate), §3 y §9 actualizados | renpereiradx + agente |
 | v1.0 | 2026-10-10 | Primera versión: WSL2 como camino soportado para clientes Windows (perfil laptop). Fase 0 con internet + Fase 1 offline, backup por Programador de tareas, ciclo de vida y problemas frecuentes. Incluye el hallazgo de imágenes base (postgres/redis fuera del bundle) y el fix del instalador para updates con stack vivo (BE `616d551`) | renpereiradx + agente |
