@@ -10,3 +10,4 @@
 
 # Artefactos
 *.tar.gz
+/node_modules/

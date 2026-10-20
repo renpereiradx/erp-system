@@ -68,6 +68,7 @@ chmod 600 ~/licencias/custodia/vendor.key   # solo tu usuario puede leerla
   -key ~/licencias/custodia/vendor.key \
   -customer "Cliente Demo Sucursal Centro" \
   -edition core+bi -modules bi \
+  -days 3 \
   -out ~/licencias/entregas/cliente-demo-centro/license.json
 #   Core SIN BI (perpetua, BI apagado — REQ_BIPACK v2.0 RF-029):
 # /tmp/licensegen issue -key ~/licencias/custodia/vendor.key \
@@ -80,10 +81,10 @@ chmod 600 ~/licencias/custodia/vendor.key   # solo tu usuario puede leerla
 
 **Flags de edición y módulos (qué significa cada uno):**
 
-| Flag | Valores | Qué hace |
-|:--|:--|:--|
-| `-edition` | `core` · `core+bi` (default) | Etiqueta **comercial**: es el texto que muestra *Configuración → Licencia* del cliente. Es **informativo** — no prende ni apaga nada. El backend solo exige que no venga vacío, pero usar únicamente estos dos valores del catálogo ([`GUIDE_PAQUETES_CLIENTE.md`](GUIDE_PAQUETES_CLIENTE.md)): cualquier otro string se mostraría tal cual en la pantalla del cliente. |
-| `-modules` | `bi` · `core` | El que **manda** de verdad: con `bi` el pack BI queda habilitado y las terminales POS no tienen límite; sin `bi` la instalación corre como ERP Core con 1 terminal POS activa por sucursal (RN-10). |
+| Flag       | Valores                      | Qué hace                                                                                                                                                                                                                                                                                                                                                                |
+| :--------- | :--------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-edition` | `core` · `core+bi` (default) | Etiqueta **comercial**: es el texto que muestra _Configuración → Licencia_ del cliente. Es **informativo** — no prende ni apaga nada. El backend solo exige que no venga vacío, pero usar únicamente estos dos valores del catálogo ([`GUIDE_PAQUETES_CLIENTE.md`](GUIDE_PAQUETES_CLIENTE.md)): cualquier otro string se mostraría tal cual en la pantalla del cliente. |
+| `-modules` | `bi` · `core`                | El que **manda** de verdad: con `bi` el pack BI queda habilitado y las terminales POS no tienen límite; sin `bi` la instalación corre como ERP Core con 1 terminal POS activa por sucursal (RN-10).                                                                                                                                                                     |
 
 Regla práctica: `-edition core+bi -modules bi` para Premium, `-edition core
 -modules core` para Core — siempre ambos alineados con lo que compró el cliente.
@@ -245,18 +246,18 @@ cliente: al vencer, bloqueo con rescate web.
 
 ## 8. Troubleshooting
 
-| Síntoma | Causa probable | Acción |
-|:--------|:---------------|:-------|
-| `status:"none"` con archivo presente | `LICENSE_FILE` apunta a otra ruta / permisos | Verificar ruta y usuario del servicio |
-| `status:"invalid"` — signature verification failed | Licencia de otro cliente, o archivo editado a mano | Re-emitir (§2b) |
-| `status:"invalid"` — public key not configured | Falta `LICENSE_PUBLIC_KEY` | Cargar la pública y reiniciar |
-| `status:"expired"` | Venció (+grace consumido) | Renovar (§4) |
-| 403 `MODULE_NOT_LICENSED` con licencia `active` | `modules` de la licencia no incluye `"bi"` | Re-emitir con `-modules bi` |
-| FE no muestra BI tras renovar | Entitlements en cache de sesión | Re-login o esperar al 403+refresh (revocación en caliente) |
-| Pantalla "Licencia requerida" (todo bloqueado) | Evaluación agotada sin licencia | Rescate web (§4b): cargar `license.json` desde la propia pantalla |
-| PUT de licencia → 400 `LICENSE_INVALID` | Firma inválida / clave pública incorrecta / archivo corrupto | Verificar que la pública sea la del par vendedor; re-emitir (§2b) |
-| PUT de licencia → 400 "public key not configured" | `LICENSE_PUBLIC_KEY` vacía | Cargar la pública en `.env.docker` y recrear el contenedor backend |
-| Evaluación ya vencida en un install recién actualizado | El ancla `system_installation` se sembró al aplicar la migración | Normal: 30 días desde el update. Activación adelantada vía §4b |
+| Síntoma                                                | Causa probable                                                   | Acción                                                             |
+| :----------------------------------------------------- | :--------------------------------------------------------------- | :----------------------------------------------------------------- |
+| `status:"none"` con archivo presente                   | `LICENSE_FILE` apunta a otra ruta / permisos                     | Verificar ruta y usuario del servicio                              |
+| `status:"invalid"` — signature verification failed     | Licencia de otro cliente, o archivo editado a mano               | Re-emitir (§2b)                                                    |
+| `status:"invalid"` — public key not configured         | Falta `LICENSE_PUBLIC_KEY`                                       | Cargar la pública y reiniciar                                      |
+| `status:"expired"`                                     | Venció (+grace consumido)                                        | Renovar (§4)                                                       |
+| 403 `MODULE_NOT_LICENSED` con licencia `active`        | `modules` de la licencia no incluye `"bi"`                       | Re-emitir con `-modules bi`                                        |
+| FE no muestra BI tras renovar                          | Entitlements en cache de sesión                                  | Re-login o esperar al 403+refresh (revocación en caliente)         |
+| Pantalla "Licencia requerida" (todo bloqueado)         | Evaluación agotada sin licencia                                  | Rescate web (§4b): cargar `license.json` desde la propia pantalla  |
+| PUT de licencia → 400 `LICENSE_INVALID`                | Firma inválida / clave pública incorrecta / archivo corrupto     | Verificar que la pública sea la del par vendedor; re-emitir (§2b)  |
+| PUT de licencia → 400 "public key not configured"      | `LICENSE_PUBLIC_KEY` vacía                                       | Cargar la pública en `.env.docker` y recrear el contenedor backend |
+| Evaluación ya vencida en un install recién actualizado | El ancla `system_installation` se sembró al aplicar la migración | Normal: 30 días desde el update. Activación adelantada vía §4b     |
 
 ## 9. Verificación E2E ejecutada (2026-09-21, dev)
 
