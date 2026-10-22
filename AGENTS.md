@@ -1,7 +1,7 @@
 # AGENTS.md — ERP System (Monorepo)
 
 Instrucciones para agentes AI de coding que trabajen en este workspace.
-Última actualización: 2026-10-07
+Última actualización: 2026-10-22
 
 ---
 
@@ -250,6 +250,7 @@ hermes project show erp-system        # Estado del workspace
    - Vite :5173 es de vida larga por diseño (reuso entre sesiones). Una segunda instancia salta a :5174 y el backend rechaza CORS (solo permite 5173/3000): matar la previa, no convivir.
    - `pkill -f <patrón>` puede matchear la propia shell que lo ejecuta si el patrón viaja en su línea de comando (zsh -c …): anclar (`^/ruta/bin`) o matar por PID.
 9. **Versionado**: al cerrar un hito verificado, taggear `vX.Y.Z` en AMBOS repos y sincronizar `package.json`. Convención completa en la sección **Versionado y Releases**.
+10. **Criterio de decisión UX + DX + AX**: ante dos o más alternativas válidas, elegir la que eleve a la vez las tres experiencias — usuario (UX), desarrollador (DX) y agente (AX) — sin romper nada.
 
 ---
 
