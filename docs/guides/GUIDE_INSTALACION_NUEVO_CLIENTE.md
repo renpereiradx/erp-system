@@ -115,7 +115,7 @@ erp-release-<v>/
 | Frontend | `http://localhost:18081` **solo en esa máquina** | `https://<hostname>/` (80 → 443) para toda la red |
 | TLS | No | Sí (CA interna, el instalador la genera) |
 | Exposición | Ninguna (todo loopback) | Solo 80/443; backend/DB loopback; Redis interno |
-| Backup diario | ✅ (script + cron o systemd) | ✅ (script + timer systemd) |
+| Backup diario | ✅ (script + systemd/cron; en Windows/WSL: tarea del Programador de tareas) | ✅ (script + timer systemd) |
 
 > Regla: si hoy es laptop pero el cliente va a crecer, instalar `server` directo
 > en una PC dedicada — migrar después es un trámite (`GUIDE_MIGRACION_LAPTOP_A_SERVIDOR`),
@@ -358,6 +358,14 @@ sudo rm -rf /opt/erp
 sudo systemctl disable --now erp-backup.timer 2>/dev/null || true
 sudo rm -f /etc/systemd/system/erp-backup.service /etc/systemd/system/erp-backup.timer
 sudo systemctl daemon-reload
+```
+
+En instalaciones **Windows/WSL** no hay timer: el backup lo agenda la tarea
+"ERP backup diario" del Programador de tareas (la crea el instalador,
+RF-DEPLOY-025) — quitarla desde PowerShell de Windows:
+
+```powershell
+Unregister-ScheduledTask -TaskName 'ERP backup diario' -Confirm:$false
 ```
 
 Notas:

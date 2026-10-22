@@ -124,19 +124,20 @@ sha256sum -c SHA256SUMS
 
 # 3. instalar (wizard interactivo; licencia autodetectada si viaja en el
 #    bundle — ver guía madre §2.1)
-sudo ERP_SKIP_SYSTEMD=1 ./business_management/deploy/scripts/install.sh
+sudo ./business_management/deploy/scripts/install.sh
 ```
 
-- **`ERP_SKIP_SYSTEMD=1` es a propósito**: el backup diario se programa desde
-  Windows (§7), no desde systemd dentro de WSL (la distro se duerme cuando no
-  la usamos y un timer ahí no es confiable). Con la variable, el instalador
-  avisa "timer omitido" y sigue — es lo esperado.
+- **El backup diario se agenda solo**: al detectar WSL, el instalador crea la
+  tarea "ERP backup diario" en el Programador de tareas de Windows (§7) — un
+  timer systemd dentro de WSL no dispara porque la distro se duerme cuando no
+  la usamos. Ya no hace falta `ERP_SKIP_SYSTEMD=1` ni crear la tarea a mano;
+  la variable queda solo como opt-out total (ni tarea ni timer).
 - Alternativa sin preguntas (los flags de la guía madre §5). Si el bundle
   trae la licencia embebida (guía madre §2.1), NO hace falta pasar los flags
   de licencia — el instalador la detecta solo también en este modo:
 
   ```bash
-  sudo ERP_SKIP_SYSTEMD=1 ./business_management/deploy/scripts/install.sh \
+  sudo ./business_management/deploy/scripts/install.sh \
       --profile laptop --client-name "<Cliente>" --yes
   ```
 
@@ -189,12 +190,29 @@ días (REQ_BIPACK v2.0).
 
 El script de backup ya quedó instalado en `/opt/erp/backup.sh` (dump diario
 con retención de 30 días). Lo que cambia respecto a Linux es **quién lo
-despierta**: en Windows es el Programador de tareas, llamando a WSL.
+despierta**: en Windows es el Programador de tareas, llamando a WSL — un
+timer systemd dentro de WSL no dispara porque la distro se duerme al cerrar
+sus terminales.
+
+**La tarea la crea el instalador solo** (paso 2b, al detectar WSL): tarea
+"ERP backup diario", diaria a las **12:30** (hora con la laptop seguro
+encendida; configurable con `ERP_BACKUP_TIME=HH:MM` antes de instalar),
+acción `wsl.exe -d <distro> -u root --exec /opt/erp/backup.sh`, con
+arranque en batería y recuperación de inicios perdidos. En instalaciones
+paralelas, una tarea por instalación ("ERP backup diario (erp-2)").
+
+Verificación post-instalación (Programador de tareas → Biblioteca → tarea
+"ERP backup diario"): el estado debe decir "Listo" y la próxima ejecución
+de hoy o mañana. Re-correr el instalador (update) **no pisa** una tarea ya
+existente: si el operador ajustó la hora a mano, se conserva.
+
+**Crear la tarea a mano** solo si el instalador avisó "interop
+deshabilitado" (powershell.exe inaccesible desde WSL) o se instaló con
+`ERP_SKIP_SYSTEMD=1`:
 
 1. **Programador de tareas → Crear tarea básica**: nombre "ERP backup diario".
-2. **Desencadenador**: diario, a una hora con la máquina encendida (en un
-   local comercial, el mediodía suele ser más realista que las 02:30).
-   Marcar **"Iniciar la tarea lo antes posible si se pierde un inicio
+2. **Desencadenador**: diario, a una hora con la máquina encendida. Marcar
+   **"Iniciar la tarea lo antes posible si se pierde un inicio
    programado"** (lo recupera si la laptop estaba apagada).
 3. **Acción**:
    - Programa: `wsl.exe`
@@ -251,9 +269,9 @@ contenedores. Antes de actualizar: verificar el backup de anoche en
 | Instalador corta en paso 1: "rsync no instalado" | Ubuntu base sin rsync | `sudo apt install -y rsync` (con internet; si el cliente es 100% offline, instalarlo en Fase 0 con el .deb en el pendrive) |
 | Paso 4/12 avisa "imágenes ausentes en el daemon" (o `No such image` más adelante) | Bundle emitido antes del 2026-10-10 en un cliente sin internet: las imágenes base no viajaban en el bundle | §4 paso 4: `docker load` desde el pendrive (postgres/redis/migrate) y re-correr el instalador (es idempotente) |
 | `localhost:18081` no abre en Windows | Docker Desktop parado o stack caído | Abrir Docker Desktop; en Ubuntu: `cd /opt/erp/business_management && docker compose --profile laptop ps` |
-| `[aviso] systemd no disponible / timer omitido` en la instalación | Esperado con `ERP_SKIP_SYSTEMD=1` | No es un error: el backup va por el Programador de tareas (§7) |
+| `[aviso] WSL sin acceso a powershell.exe` / `systemd no disponible / timer omitido` en la instalación | Instalador viejo (pre v1.1.0-26, no creaba la tarea), o interop deshabilitado en el WSL (`interop=false` en `/etc/wsl.conf`), o instalación con `ERP_SKIP_SYSTEMD=1` | Verificar en el Programador de tareas que exista "ERP backup diario" (§7); si no está, crearla a mano (§7 pasos 1-4) o re-correr el instalador del bundle nuevo (no pisa la existente) |
 | Paso 1b pregunta por "stacks ERP preexistentes" | La máquina ya tenía el sistema (u otro ERP del producto) corriendo en Docker Desktop — WSL y Docker Desktop ven el MISMO motor | Decir reemplazar (guarda resguardo de la DB vieja en `/opt/erp/backups/pre-replace-*/`) o paralelo — guía madre §7.1; nunca ignora el stack viejo |
-| No hubo backup a la hora programada | Laptop apagada / sin sesión iniciada | Activar "iniciar la tarea lo antes posible si se pierde un inicio"; o correr el comando manual de §7 |
+| No hubo backup a la hora programada | Laptop apagada / sin sesión iniciada a la hora (12:30) | La tarea ya recupera inicios perdidos (arranca al primer inicio de sesión siguiente); si aun así no corrió, probar el comando manual de §7 y revisar que Docker Desktop esté abierto |
 | Pantalla "Licencia requerida" tras instalar | Evaluación de 30 días agotada | Igual que Linux: cargar la licencia desde esa pantalla (guía madre §8 / RUNBOOK_LICENCIAS §4b) |
 | Instaló en evaluación pese a que el bundle traía la licencia | Instalador anterior al 2026-10-19 (REQ_DEPLOY v0.14) corrido con `--yes`: ignoraba la pareja embebida — o los archivos llegaron con otros nombres (`license.json`/`licensing-public.key` exactos en `business_management/`) | Instalador del bundle nuevo, o `--license`/`--license-public-key` explícitos, o cargar la licencia desde *Configuración → Licencia* / pantalla de bloqueo |
 | Puertos 18080/18081/5433 ocupados | Casi imposible en Windows limpio | Overrides `ERP_BACKEND_PORT` / `ERP_FRONTEND_PORT` / `ERP_DB_PORT` (guía madre §5). Si el que retiene el puerto es el propio stack ERP, el instalador sigue solo |
@@ -264,6 +282,7 @@ contenedores. Antes de actualizar: verificar el backup de anoche en
 
 | Versión | Fecha | Cambio | Autor |
 |:--|:--|:--|:--|
+| v1.4 | 2026-10-22 | §5/§7: el instalador agenda el backup SOLO — al detectar WSL crea la tarea "ERP backup diario" del Programador de tareas vía `powershell.exe` (interop; 12:30, arranque en batería, recuperación de inicios perdidos, hora configurable con `ERP_BACKUP_TIME`; una tarea por instalación paralela; re-corridas no pisan una tarea existente). Cae el requisito manual de `ERP_SKIP_SYSTEMD=1` + tarea a mano (quedan como opt-out y como fallback si el interop está deshabilitado). §9 filas actualizadas (REQ_DEPLOY v0.15, RF-DEPLOY-025; origen: instalación real en laptop del cliente con el backup sin agendar) | renpereiradx + agente |
 | v1.3 | 2026-10-19 | §5: el modo flags/`--yes` también autodetecta la licencia/clave embebidas en el bundle (REQ_DEPLOY v0.14, RF-DEPLOY-024 — antes solo el wizard las veía y un `--yes` dejaba la instalación sin `LICENSE_PUBLIC_KEY`); flags de licencia solo si viajan fuera del bundle. §9 fila nueva para instalaciones viejas/nombres equivocados | renpereiradx + agente |
 | v1.2 | 2026-10-13 | §5 nota + §9 fila: el paso 1b del instalador detecta stacks ERP viejos que vivan en Docker Desktop (WSL y Docker Desktop comparten motor) y pregunta reemplazo con resguardo / paralelo / cancelar (REQ_DEPLOY v0.13, guía madre §7.1); enlace a GUIDE_MIGRACION_DATOS_VIEJOS §6 para recuperar clientes/proveedores del sistema viejo | renpereiradx + agente |
 | v1.1 | 2026-10-10 | Cerrado de raíz el hallazgo de imágenes base (BE `428a6ff`): el bundle ahora trae TODAS las imágenes (postgres/redis/migrate derivadas del compose) y el instalador las carga ANTES del primer `up`. §4 paso 4 queda como receta solo para bundles viejos (+migrate), §3 y §9 actualizados | renpereiradx + agente |
