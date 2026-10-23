@@ -1,7 +1,7 @@
 # AGENTS.md — ERP System (Monorepo)
 
 Instrucciones para agentes AI de coding que trabajen en este workspace.
-Última actualización: 2026-10-22
+Última actualización: 2026-10-23
 
 ---
 
@@ -216,6 +216,36 @@ hermes kanban create --board erp      # Crear tarea nueva
 hermes project show erp-system        # Estado del workspace
 ~/.hermes/scripts/init-feature.sh <backend|frontend> <feature_name> # Inicializar tríada conductor
 ```
+
+---
+
+## Skills del Workspace
+
+Skills instaladas en este workspace (`.zcode/skills/`, espejo `.agents/skills/`). Cargarlas con la Skill tool antes de escribir código:
+
+| Skill                         | Alcance / Cuándo                                                       | Rol                 |
+| :---------------------------- | :--------------------------------------------------------------------- | :------------------ |
+| `ponytail`                    | TODA tarea de código: escribir, fixear, refactorizar, revisar, elegir dependencias | **Default global**  |
+| `vercel-react-best-practices` | React en `erp-webapp/`: features, hooks, listas, data fetching, refactors | Dominio: perf FE    |
+| `frontend-design`             | UI nueva o rediseño visual (dirección estética, tipografía)              | Dominio: diseño UI  |
+
+### Prioridad y convivencia
+
+> **`ponytail` es el modo default** de este workspace para cualquier tarea de código (backend,
+> frontend, scripts, docs de ingeniería). No esperar a que el usuario la pida: el cambio mínimo
+> que resuelve el problema completo y una respuesta que se lee de una sola pasada. Niveles:
+> `/ponytail lite|full|ultra` (default `full`).
+
+> **No compiten, se componen.** `ponytail` decide **CUÁNTO** código (el diff mínimo que cierra el
+> alcance real, incluyendo llamadores y tests que tu cambio rompe); las skills de dominio deciden
+> **CÓMO** (patrones `rerender-*`/`rendering-*`/`bundle-*` de vercel; dirección estética de
+> frontend-design + `DESIGN.md`). El diff ganador es el más corto que cumple TODAS las reglas
+> del dominio — minimal jamás significa descuidado.
+
+> **`ponytail` nunca recorta**: validación en fronteras de confianza, manejo de errores que
+> previene pérdida de datos, seguridad, accesibilidad, i18n, tests de lógica no trivial (Regla
+> General 4) ni nada que el owner pidió explícitamente. Ante conflicto, las reglas de este
+> AGENTS.md y las skills de dominio ganan a la pereza.
 
 ---
 
