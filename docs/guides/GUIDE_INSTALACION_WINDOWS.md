@@ -6,9 +6,9 @@
 |:--|:--|
 | Módulo | Instalación on-premise de clientes sobre Windows |
 | Código | GUIDE-INST-WINDOWS |
-| Versión | v1.3 |
+| Versión | v1.5 |
 | Estado | Vigente (instalación limpia + re-corrida verificadas E2E 12/12; desde el fix BE `428a6ff` el bundle trae TODAS las imágenes — base incluidas — y la Fase 1 es 100% offline; WSL2/Docker Desktop según GUIDE_ENTORNO_DEV_WINDOWS §4-5; desde REQ_DEPLOY v0.14 la licencia/clave embebidas en el bundle se autodetectan en TODOS los modos del instalador) |
-| Fecha | 2026-10-19 |
+| Fecha | 2026-10-29 |
 | Audiencia | Implementación / soporte |
 | Guía madre | [`GUIDE_INSTALACION_NUEVO_CLIENTE.md`](GUIDE_INSTALACION_NUEVO_CLIENTE.md) (misma licencia, mismos perfiles, mismo instalador) |
 
@@ -206,6 +206,14 @@ Verificación post-instalación (Programador de tareas → Biblioteca → tarea
 de hoy o mañana. Re-correr el instalador (update) **no pisa** una tarea ya
 existente: si el operador ajustó la hora a mano, se conserva.
 
+**Copia externa (3-2-1)**: vive DENTRO del mismo `backup.sh` — no hay tarea
+extra. Si en el wizard se eligió destino (pendrive montado en WSL, otra
+máquina por Tailscale o nube S3), cada corrida de la tarea cifra el dump y
+lo copia afuera; si el destino no está disponible (laptop sin el pendrive),
+la corrida avisa y sigue — el backup local nunca se ve afectado. Cambiar el
+destino después: `sudo /opt/erp/backup-config.sh offsite ...` (guía madre
+§6.4; probar con `offsite test`).
+
 **Crear la tarea a mano** solo si el instalador avisó "interop
 deshabilitado" (powershell.exe inaccesible desde WSL) o se instaló con
 `ERP_SKIP_SYSTEMD=1`:
@@ -282,6 +290,7 @@ contenedores. Antes de actualizar: verificar el backup de anoche en
 
 | Versión | Fecha | Cambio | Autor |
 |:--|:--|:--|:--|
+| v1.5 | 2026-10-29 | §7 nota nueva: la copia externa cifrada del backup (regla 3-2-1, RF-DEPLOY-027) corre DENTRO de la misma tarea del Programador — sin tarea extra; destinos pendrive/Tailscale/nube S3 elegibles en el wizard y cambiables con `/opt/erp/backup-config.sh`; si el destino no está disponible la corrida avisa sin romper el backup local (detalle en guía madre §6.4). Ficha v1.3→v1.5 (v1.4 no se había reflejado en la ficha) | renpereiradx + agente |
 | v1.4 | 2026-10-22 | §5/§7: el instalador agenda el backup SOLO — al detectar WSL crea la tarea "ERP backup diario" del Programador de tareas vía `powershell.exe` (interop; 12:30, arranque en batería, recuperación de inicios perdidos, hora configurable con `ERP_BACKUP_TIME`; una tarea por instalación paralela; re-corridas no pisan una tarea existente). Cae el requisito manual de `ERP_SKIP_SYSTEMD=1` + tarea a mano (quedan como opt-out y como fallback si el interop está deshabilitado). §9 filas actualizadas (REQ_DEPLOY v0.15, RF-DEPLOY-025; origen: instalación real en laptop del cliente con el backup sin agendar) | renpereiradx + agente |
 | v1.3 | 2026-10-19 | §5: el modo flags/`--yes` también autodetecta la licencia/clave embebidas en el bundle (REQ_DEPLOY v0.14, RF-DEPLOY-024 — antes solo el wizard las veía y un `--yes` dejaba la instalación sin `LICENSE_PUBLIC_KEY`); flags de licencia solo si viajan fuera del bundle. §9 fila nueva para instalaciones viejas/nombres equivocados | renpereiradx + agente |
 | v1.2 | 2026-10-13 | §5 nota + §9 fila: el paso 1b del instalador detecta stacks ERP viejos que vivan en Docker Desktop (WSL y Docker Desktop comparten motor) y pregunta reemplazo con resguardo / paralelo / cancelar (REQ_DEPLOY v0.13, guía madre §7.1); enlace a GUIDE_MIGRACION_DATOS_VIEJOS §6 para recuperar clientes/proveedores del sistema viejo | renpereiradx + agente |

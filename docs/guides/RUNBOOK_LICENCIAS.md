@@ -60,6 +60,13 @@ chmod 600 ~/licencias/custodia/vendor.key   # solo tu usuario puede leerla
 #     licencias propias.
 #   → private: hex seed, chmod 600. CUSTODIA FUERA DEL REPO (backup offline del vendedor).
 #   → public:  base64; este valor es el que recibe el cliente.
+#
+# 2a-ter. CLAVES DE BACKUP OFFSITE por cliente (RF-DEPLOY-027): cada
+#     instalación con copia externa de backups genera en el cliente
+#     /opt/erp/backups/.offsite.key. Copiarla a
+#     ~/licencias/custodia/<cliente>/offsite.key EN LA MISMA VISITA (el
+#     instalador lo avisa): sin ella, las copias externas de ese cliente
+#     SON ILEGIBLES y no hay forma de recuperarlas.
 
 # 2b. Emitir la licencia de un cliente (MODELO NORMAL: compra única, PERPETUA —
 #     sin -days la licencia no vence jamás; decisión de negocio 2026-09-22):

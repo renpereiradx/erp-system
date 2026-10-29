@@ -6,9 +6,9 @@
 |:--|:--|
 | Módulo | Instalación on-premise de clientes |
 | Código | GUIDE-INST-CLIENTE |
-| Versión | v2.0 |
+| Versión | v2.1 |
 | Estado | Vigente (probada contra el ensayo E2E del plan PLAN_DEPLOY_ESCALADO_ONPREMISE) |
-| Fecha | 2026-10-19 |
+| Fecha | 2026-10-29 |
 | Audiencia | Implementación / soporte |
 | Requerimiento | [`REQ_DEPLOY_DISTRIBUCION_ONPREMISE.md`](../requirements/REQ_DEPLOY_DISTRIBUCION_ONPREMISE.md) (RF-DEPLOY-001..003, 011..024) · [`REQ_BIPACK_LICENCIAMIENTO_BI.md`](../requirements/REQ_BIPACK_LICENCIAMIENTO_BI.md) (RN-08/09) |
 
@@ -194,9 +194,23 @@ Al terminar imprime un resumen con URLs, ubicación de la CA y próximos pasos.
    elegir esa sucursal al entrar y **cargar los datos reales del negocio** (nombre,
    RUC, timbrado vigente) en *Configuración → Sucursales* antes de facturar.
 3. **Distribuir la CA a las terminales** → [`GUIDE_TERMINALES_LOCAL.md`](GUIDE_TERMINALES_LOCAL.md).
-4. **Configurar backup externo**: el backup diario vive en `/opt/erp/backups/`
-   (30 días de retención). Copiarlo fuera de la máquina (disco externo/nube) —
-   el backup en el mismo disco no salva ante robo/fuego.
+4. **Backup externo (regla 3-2-1)**: el backup diario vive en `/opt/erp/backups/`
+   (30 días de retención). Si se eligió destino en el instalador (pregunta del
+   wizard "Copiar los backups fuera de la máquina"), **cada corrida copia además
+   el dump cifrado fuera de la máquina**: pendrive/disco montado, otra máquina
+   por Tailscale (rsync+SSH) o nube S3-compatible (rclone, incluido en el bundle).
+   Se activa o cambia después sin re-instalar con `/opt/erp/backup-config.sh`
+   (`offsite test` lo prueba, `offsite status` muestra el historial). Sin destino
+   elegido, la copia externa sigue siendo manual como antes.
+   **La clave de cifrado (`/opt/erp/backups/.offsite.key`) va a la custodia del
+   vendor** (`~/licencias/custodia/<cliente>/`, RUNBOOK §2a-bis): sin ella las
+   copias externas SON ILEGIBLES. Restaurar desde una copia externa (con la clave
+   del cliente en mano):
+   ```bash
+   openssl enc -d -aes-256-cbc -pbkdf2 -pass file:.offsite.key \
+       -in erp-FECHA.sql.gz.enc | gunzip > restaurar.sql.gz
+   # …y después el restore normal (mismo camino que --restore del instalador)
+   ```
 5. Si es perfil `laptop`: **cifrado de disco activado** (BitLocker/LUKS) — exigirlo
    al cliente antes de cargar datos reales.
 6. Registrar el cliente en el **inventario de instalaciones**: cliente, versión
@@ -418,6 +432,7 @@ no trae licencia. Dos consecuencias a tener en cuenta:
 
 | Versión | Fecha | Cambio | Autor |
 |:--|:--|:--|:--|
+| v2.1 | 2026-10-29 | §6.4 reescrito: la copia externa del backup ya es AUTOMÁTICA y opcional (REQ_DEPLOY v0.18/v0.19, RF-DEPLOY-027) — pregunta del wizard con tres destinos (pendrive/disco montado, otra máquina por Tailscale, nube S3 con rclone del bundle), siempre CIFRADA (openssl aes-256-cbc, clave por instalación), configurable post-install con `/opt/erp/backup-config.sh` (test/status/key) y heredada en updates; fallar la subida jamás rompe el backup local (histórico en `backups/offsite.log`). Receta de descifre para restaurar desde una copia externa + custodia de la clave junto a las licencias (RUNBOOK §2a-bis) | renpereiradx + agente |
 | v2.0 | 2026-10-19 | §2.1 contra REQ_DEPLOY v0.14 (RF-DEPLOY-024): la autodetección del instalador ahora funciona en TODOS los modos sin flags (antes `--yes`/sin TTY ignoraba la pareja embebida y la instalación quedaba ERP Core para siempre) e igual en Linux que Windows/WSL2; validación temprana de la forma (privada por error, JSON sin payload/signature, base64≠32B) y aviso del wizard si la clave llegó con otro nombre (`public.key`). Flags opcionales de emisión `--license/--license-public-key` en `make-release-bundle.sh` (cubren `SHA256SUMS`, evitan el re-tar) — el copiado manual sigue siendo el flujo normal | renpereiradx + agente |
 | v1.9 | 2026-10-13 | §7.1 nuevo: máquina con un sistema ERP previo — paso 1b del instalador (detección de stacks ajenos, reemplazo con resguardo pre-reemplazo, instalación en paralelo con proyecto/raíz/puertos/timer propios, `--replace-stack`). §5: overrides de reemplazo/paralelo; pasos del instalador actualizados (1b). §8: filas de 1b y restos de stacks. §9.1: proyecto parametrizado `name: ${COMPOSE_PROJECT_NAME:-erp}` y timer por instalación. Contra REQ_DEPLOY v0.13 (RF-DEPLOY-021/022) + hallazgo laptop del negocio. **Ampliado 2026-10-16:** el wizard pregunta actualizar-vs-paralelo también cuando la instalación previa es propia en la raíz default (`/opt/erp`) — antes el paralelo solo se ofrecía ante stacks ajenos | renpereiradx + agente |
 | v1.8 | 2026-10-10 | §3: el bundle ahora trae TODAS las imágenes — postgres/redis/migrate incluidas, derivadas del compose (BE `428a6ff`); el instalador las carga antes del primer `up` y avisa si falta alguna (bundle viejo). §9.1: advertencia sobre `down -v` — `name: erp` apunta al stack real desde cualquier directorio; las pruebas se desarman con `-p` explícito | renpereiradx + agente |
