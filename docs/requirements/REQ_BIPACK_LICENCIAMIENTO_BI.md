@@ -6,9 +6,9 @@
 |:------|:------|
 | Módulo | Licenciamiento de módulos — pack "BI Premium" |
 | Código | BIPACK |
-| Versión del documento | v2.4 |
-| Estado | Implementado (F0-F6, 2026-09-21) · v1.1 estadísticas relacionales (2026-09-22) · v2.0 modelo de evaluación y rescate (2026-09-28) · v2.1 correcciones de auditoría (2026-09-29) · v2.2 límite de terminales sin pack (RN-10) · v2.3 evaluación acortada a 30 días (2026-10-07) · v2.4 analítica de compras agregada (PLAN_ANALITICA_COMPRAS, 2026-10-22) — trazabilidad en las tablas RF/RN |
-| Fecha | 2026-10-22 (v2.4) |
+| Versión del documento | v2.5 |
+| Estado | Implementado (F0-F6, 2026-09-21) · v1.1 estadísticas relacionales (2026-09-22) · v2.0 modelo de evaluación y rescate (2026-09-28) · v2.1 correcciones de auditoría (2026-09-29) · v2.2 límite de terminales sin pack (RN-10) · v2.3 evaluación acortada a 30 días (2026-10-07) · v2.4 analítica de compras agregada (PLAN_ANALITICA_COMPRAS, 2026-10-22) · **v2.5 cuota de sucursales por licencia (PROPUESTA 2026-10-30 — ver RF-036/RN-12)** — trazabilidad en las tablas RF/RN |
+| Fecha | 2026-10-30 (v2.5) |
 | Fuentes | [conductor/PLAN_BI_PACK_PREMIUM.md](../conductor/PLAN_BI_PACK_PREMIUM.md) (plan + decisiones ADR 1-7) · [guides/RUNBOOK_LICENCIAS.md](../guides/RUNBOOK_LICENCIAS.md) (operación) |
 | Implementación | Backend `9dd9942` + `146172c` · v2.0: `441046e` · Frontend `b3ab4eb` + `26178ff` · v2.0: `91b41de` · Wrapper `809b549` + v2.0 `d95489b` · v2.1 (auditoría): correcciones del 2026-09-29 |
 | Audiencia | Dirección, comerciales, soporte, ingeniería |
@@ -42,6 +42,7 @@ aparece en caliente, al segundo.
 | Ventas, compras, inventario, caja, pedidos | ✅ | ✅ |
 | Facturación electrónica SIFEN y sus dashboards fiscales | ✅ | ✅ |
 | Usuarios, roles y permisos | ✅ | ✅ |
+| Sucursales activas | 1 incluida (MAIN); +1 por sucursal adicional pagada | 1 incluida (MAIN); +1 por sucursal adicional pagada |
 | Dashboards e indicadores (KPIs, alertas, tendencias) | ❌ | ✅ |
 | Reportes financieros (resultados, flujo de caja, IVA, libros) | ❌ | ✅ |
 | Analíticas de ventas, inventario y rentabilidad | ❌ | ✅ |
@@ -191,6 +192,7 @@ Complementos del modelo de estados:
 | RF-BIPACK-033 | El sistema debe desglosar las compras por categoría (participación, órdenes, unidades, producto principal) y por producto paginado y ordenable server-side (monto, unidades, nombre, última compra). | Obligatorio | Implementado | `GET /purchase-analytics/by-category(+dr)` · `by-product(+dr)` con sort validado 400 fuera de whitelist; pantalla FE Productos y Categorías |
 | RF-BIPACK-034 | El sistema debe desglosar las compras por proveedor (monto, órdenes, orden promedio, última compra; paginado y ordenable server-side) y por usuario comprador. | Obligatorio | Implementado | `GET /purchase-analytics/by-supplier(+dr)` · `by-buyer(+dr)`; pantalla FE Proveedores y Compradores |
 | RF-BIPACK-035 | El sistema debe comparar dos ventanas de compras (período vs su ventana previa equivalente, o dos rangos explícitos) en monto, órdenes, unidades, orden promedio y proveedores, con variaciones relativas y rangos mostrados inclusivos. | Obligatorio | Implementado | `GET /purchase-analytics/compare`; pantalla FE Comparativa; ventanas a medias son 400 (BR-4b) |
+| RF-BIPACK-036 | **(v2.5, propuesto)** La licencia debe declarar una cuota de sucursales activas (`branch_limit` dentro del payload firmado; ausente = ilimitado — compatibilidad con licencias ya emitidas). Crear (`POST`) o reactivar una sucursal por encima de la cuota responde 403 `LICENSE_BRANCH_LIMIT` con mensaje comercial; desactivar una sucursal libera su lugar; la evaluación y el desarrollo quedan sin límite. La cuota es **independiente del pack BI** (existe Core multi-sucursal). Una sucursal inactiva no debe ser operable vía `X-Branch-ID` (403 `BRANCH_INACTIVE` — fix de hueco latente incluido). El snapshot `/system/license` expone `branch_limit` + `active_branches` (contrato aditivo). | Obligatorio | Propuesto (2026-10-30) | Plan `conductor/PLAN_BRANCH_QUOTA_LICENCIAS_2026-10-30.md`; gates espejo de RN-10 |
 
 ## 7. Requerimientos no funcionales
 
@@ -220,6 +222,7 @@ Complementos del modelo de estados:
 | RN-BIPACK-09 | **Rescate web** (v2.0): PUT `/api/v1/system/license` (**permiso `license:write`**, enmienda v2.1 — el GET sigue auth-only) acepta el archivo de licencia textual, lo verifica criptográficamente ANTES de persistir (inválido → 400 `LICENSE_INVALID`, estado intacto) y lo escribe atómicamente en el path del mount (compose sin `:ro`). Es el procedimiento estándar de activación post-venta: el técnico carga la licencia desde el navegador, sin SSH. | El bloqueo total deja el sistema inusable pero el servidor vivo: la puerta de rescate es lo único que necesita un cliente que acaba de pagar. La verificación previa impide que un upload basura pise una licencia buena. | Vigente |
 | RN-BIPACK-10 | **Terminales por sucursal (v2.2):** sin el pack BI la instalación opera **1 terminal POS activa por sucursal**; el pack Premium (Core+BI, o la evaluación vigente) habilita terminales adicionales. El límite aplica al registro, la mudanza/reactivación, el emparejamiento y la OPERACIÓN (la terminal incumbente —la primera activa de la sucursal— sigue; las demás responden 403 `LICENSE_TERMINAL_LIMIT`). Desactivar una terminal libera su lugar. El chequeo de operación es best-effort (un fallo de conteo deja pasar, como el touch de auditoría). | Decisión del dueño (2026-09-29): las terminales adicionales son un diferencial del pack Premium; cierra el hueco de registrar varias terminales durante la evaluación y seguir operándolas con Core. | Vigente |
 | RN-BIPACK-11 | **Alcance de los agregados de compras** (v2.4): los KPIs y desgloses de `/purchase-analytics/*` se computan sobre órdenes **COMPLETED en moneda base** (mismo criterio que los drill-downs RF-023/024); las PENDING viajan aparte (`pending_orders`/`pending_amount`) y las compras en otra moneda se excluyen informando el conteo (`excluded_other_currency`). La semana es rolling (últimos 7 días), igual que ventas. | Paridad con el criterio ya vendido de los drill-downs: mezclar recibidas con pendientes o sumar monedas sin convertir produciría cifras que no cierran contra ningún reporte. | Vigente |
+| RN-BIPACK-12 | **Cuota de sucursales por licencia (v2.5, propuesta):** ambas ediciones incluyen **1 sucursal activa** (MAIN la consume); cada sucursal adicional se paga y se habilita re-emitiendo la licencia con cuota mayor (rescate web, en caliente). La cuota cuenta sucursales ACTIVAS (desactivar libera), aplica también en modo Core degradado, es ortogonal al pack BI (Core multi-sucursal vendible) y no existe durante la evaluación. Licencias emitidas sin el campo quedan ilimitadas para siempre (RN-07). Si la instalación excede la cuota (p. ej. sucursales creadas durante la evaluación), la card de Licencia lo señala — seguimiento comercial, nunca bloqueo de datos operativos. | Decisión del dueño (2026-10-30): el precio escala por sucursal en ambas ediciones; el control ya probado del límite de terminales (RN-10) se replica sobre la creación de sucursales. | Propuesta (2026-10-30) |
 
 ## 9. Preguntas frecuentes
 
@@ -260,6 +263,12 @@ global avisa a todos los usuarios.
 El BI se bloquea de inmediato, pero basta con restaurar el archivo: nada se pierde y el módulo
 vuelve al segundo siguiente.
 
+**¿Puedo tener varias sucursales sin el pack BI? (v2.5, propuesta)**
+Sí: la cuota de sucursales es independiente del pack. Cada edición incluye 1 sucursal
+activa (la principal); cada sucursal adicional se paga y se habilita al instante con una
+licencia re-emitida (carga web, sin reinstalar). Sin pack BI cada sucursal opera 1
+terminal POS (RN-10); con el pack, terminales ilimitadas.
+
 **¿Comprar el BI más adelante sale igual que comprarlo desde el inicio?**
 Técnicamente es idéntico (misma instalación, misma licencia). La diferencia de precio, si la
 hubiera, es política comercial (RN-05), no del sistema.
@@ -286,6 +295,7 @@ hubiera, es política comercial (RN-05), no del sistema.
 | Bloqueo total | Estado post-evaluación sin licencia: solo login/logout/refresh y `/system/license` responden; el resto devuelve 403 `LICENSE_EXPIRED`. |
 | Rescate web | Carga del archivo de licencia desde el navegador (pantalla de bloqueo o PUT `/system/license`), con verificación previa de firma. |
 | `system_installation` | Tabla de fila única con `first_boot_at`: el ancla del trial, sembrada por migración y baseline. |
+| `branch_limit` | Campo del payload firmado que declara cuántas sucursales ACTIVAS incluye la licencia (v2.5); ausente = ilimitado. Se habilita una más re-emitiendo la licencia (rescate web). |
 
 ## 11. Trazabilidad
 
@@ -304,6 +314,7 @@ hubiera, es política comercial (RN-05), no del sistema.
 
 | Versión | Fecha | Cambio | Autor |
 |:--------|:------|:-------|:------|
+| v2.5 | 2026-10-30 | **Cuota de sucursales por licencia (RF-036, RN-12 — PROPUESTA):** `branch_limit` en el payload firmado (ausente = ilimitado), gate 403 `LICENSE_BRANCH_LIMIT` en crear/reactivar sucursal (cuenta activas; desactivar libera), ortogonal al pack BI (Core multi-sucursal), evaluación sin límite; fix incluido: sucursal inactiva operable vía `X-Branch-ID` → 403 `BRANCH_INACTIVE`; snapshot `/system/license` expone cuota. Plan: `business_management/conductor/PLAN_BRANCH_QUOTA_LICENCIAS_2026-10-30.md` | renpereiradx + agente |
 | v2.4 | 2026-10-22 | **Analítica de compras agregada** (RF-BIPACK-031..035, RN-11): paridad del grupo de compras con ventas — KPIs con comparación real, tendencias con perfil horario/semanal, desgloses por categoría/producto/proveedor/comprador y comparativa de ventanas. 19 rutas GET nuevas bajo `/purchase-analytics` (mismo `biChain analytics:read`), anti-duplicación multi-línea y whitelists de sort desde el día uno; 5 pantallas FE (nav Compras 7 hojas). Plan: `conductor/PLAN_ANALITICA_COMPRAS_2026-10-22.md` | renpereiradx + agente |
 | v2.3 | 2026-10-07 | **Evaluación acortada de 90 a 30 días** (RN-08 enmendada): decisión comercial del dueño. Default del routes bridge `90→30 días` (`routes/licensing_bridge.go`), `LICENSE_TRIAL_DAYS=30` en `.env.docker` generado por `install.sh`, umbral del aviso FE de fin de evaluación recalibrado (≤10 días — con 30 el banner sería permanente durante TODA la evaluación; licencias firmadas siguen avisando a ≤30). Instalaciones en evaluación al momento del cambio ven su ventana acortarse al vencer los 30 días desde SU primer arranque. Docs alineados: GUIDE_PAQUETES v1.1, RUNBOOK, GUIDE_INSTALACION, GUIDE_HOSTING, REQ_DEPLOY v0.10 | renpereiradx + agente |
 | v2.2 | 2026-09-29 | **Límite de terminales por sucursal (RN-10, RF-030):** sin el pack BI la instalación opera 1 terminal activa por sucursal — gates en `devices.Service` (Create/Update/Pair con `CountActiveByBranch`/`HasActiveOlderInBranch`) y en `DeviceBranchMiddleware` (operación: la incumbente sigue, las demás 403 `LICENSE_TERMINAL_LIMIT`, best-effort). `licensing.Service.TerminalLimitPerBranch()` expone la allowance (0 = ilimitado; dev fail-open = ilimitado). FE: aviso comercial en Terminales sin pack BI (`devices.limit.notice`). Catálogo de paquetes para el cliente: `docs/guides/GUIDE_PAQUETES_CLIENTE.md`. | renpereiradx + agente |
