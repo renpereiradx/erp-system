@@ -1,7 +1,7 @@
 # RUNBOOK — Licencias BI Pack Premium (2026-10 · v2.5 cuota de sucursales · rutas unificadas ~/licencias)
 
 **Plan:** [PLAN_BI_PACK_PREMIUM.md](../../conductor/PLAN_BI_PACK_PREMIUM.md) (ADR-1/ADR-4, F6) · **v2.0:** REQ_BIPACK (RF-025..029, RN-08/09)
-**Implementación:** BE `9dd9942` (licencias) + v2.0 2026-09-28 `441046e` (trial/bloqueo/rescate) + v2.1 2026-09-29 (auditoría: permiso `license:write`, licencia vencida→Core, ancla fail-open) · FE `b3ab4eb` + v2.0 `91b41de` (gate de licencia) + v2.1 (instalación desde Configuración, auto-recuperación del gate)
+**Implementación:** BE `9dd9942` (licencias) + v2.0 2026-09-28 `441046e` (trial/bloqueo/rescate) + v2.1 2026-09-29 (auditoría: permiso `license:write`, licencia vencida→Core, ancla fail-open) + **v2.5 2026-10-30 `9d23dec`/FE `71c1507` (cuota de sucursales, §4c)** · FE `b3ab4eb` + v2.0 `91b41de` (gate de licencia) + v2.1 (instalación desde Configuración, auto-recuperación del gate)
 **Audiencia:** vendedor / ops — emisión, instalación, evaluación, bloqueo, rescate web, renovación y deploy prod.
 
 ---
@@ -30,6 +30,12 @@
 - Una licencia firmada pero VENCIDA (demo) **degrada a Core**: BI apagado, ERP operativo —
   no bloquea el sistema ni re-regala la evaluación (v2.1). Solo la evaluación agotada sin
   licencia bloquea; el reloj del trial siempre corre desde el primer arranque.
+- **Sucursales (v2.5, RN-BIPACK-12):** toda instalación opera **1 sucursal ACTIVA** (MAIN
+  la consume) — evaluación incluida. Cada sucursal adicional se paga y viaja en el campo
+  firmado `branch_limit` (`-branches` al emitir; default 1). Crear o REACTIVAR una
+  sucursal por encima de la cuota responde 403 `LICENSE_BRANCH_LIMIT`; desactivar libera
+  el lugar. La cuota es independiente del pack BI (existe Core multi-sucursal) y las
+  licencias emitidas antes de v2.5 quedan **ilimitadas** (§4c situación F).
 
 ## 2. Emisión (máquina del VENDEDOR — la clave privada jamás viaja)
 
@@ -218,19 +224,95 @@ después de probar:
 Requisito: `LICENSE_PUBLIC_KEY` configurada (el instalador la pide; sin ella el backend no
 puede verificar NINGUNA licencia ni rescatar).
 
-## 4c. Habilitar una sucursal adicional (v2.5 — RN-BIPACK-12)
+## 4c. Sucursales — pasos por situación (v2.5 — RN-BIPACK-12)
 
-1. Cobrar la sucursal y re-emitir la licencia del cliente (§2b) con `-branches`
-   incremented en 1 (misma edición y módulos que ya tiene).
-2. Enviar el archivo y que el admin lo cargue desde **Configuración → Licencia →
-   Instalar licencia** (rescate web, §4b) — aplica en caliente, sin SSH.
-3. Verificar: la card muestra _Sucursales activas: N de N+1_ y el alta de la
-   sucursal pasa. Desactivar una sucursal libera su lugar (reactivar consume
-   cuota igual que crear).
+La cuota de sucursales activas viaja firmada en el campo `branch_limit` (`-branches` al
+emitir, default 1). Contar la sucursal MAIN dentro del número: `-branches 2` = MAIN + 1
+sucursal adicional. Regla de oro: **crear y reactivar consumen lugar; desactivar libera.**
 
-> La evaluación corre con 1 sucursal: un prospecto que necesita probar
-> multi-sucursal recibe una licencia evaluativa con `-branches N` (caso
-> especial, con plazo) o la compra base ya con la cuota pactada.
+### A. Venta nueva (cualquier edición)
+
+1. Cerrar la edición (`core` o `core+bi`) y cuántas sucursales activas incluye la compra.
+2. Emitir (§2b) con `-branches` = sucursales compradas. Ejemplos:
+   - Core una sucursal: `-edition core -modules core` (el default 1 alcanza; explícito `-branches 1` si preferís).
+   - Core 3 sucursales (multi-sucursal SIN BI): `-edition core -modules core -branches 3`.
+   - Premium 2 sucursales: `-edition core+bi -modules bi -branches 2`.
+3. Entregar e instalar como siempre (§3/§4b) — nada extra en la instalación.
+4. Verificar en el cliente: Configuración → Licencia muestra _Sucursales activas: 1 de 3_.
+
+### B. Cliente con el sistema andando quiere abrir otra sucursal
+
+1. Cobrar la sucursal adicional.
+2. Re-emitir (§2b) la MISMA edición y módulos con `-branches` aumentado en 1
+   (ej.: tenía `-branches 2` → ahora `-branches 3`). Perpetua, sin `-days`.
+3. Enviar el `license.json` nuevo (correo/pendrive).
+4. El admin del cliente lo carga en **Configuración → Licencia → "Instalar licencia…"**
+   (o por la pantalla de bloqueo si hubiera bloqueo). Aplica en caliente, sin SSH.
+5. Verificar: la card pasa a _N de N+1_ y el alta de la sucursal en
+   Configuración → Sucursales responde 201.
+
+### C. Mudanza de local (mismo negocio, otra dirección) — NO se paga sucursal extra
+
+1. El admin crea la sucursal NUEVA en Configuración → Sucursales (consume el lugar que
+   libera el paso 2; si la cuota está justa, hacer primero el paso 2).
+2. El admin DESACTIVA la sucursal vieja (menú ⋯ → Desactivar). Requisito previo: ningún
+   usuario puede tenerla como sucursal predeterminada (reasignar antes).
+3. Listo: la cuota cuenta solo activas — mudanza dentro de la misma cuota, sin re-emitir.
+4. Las terminales de la sucursal vieja dejan de operar con 403 `BRANCH_INACTIVE`
+   (§8): re-vincularlas a la sucursal nueva o crear terminales nuevas allí.
+
+### D. Reabrir una sucursal desactivada
+
+1. Reactivar consume cuota igual que crear: si hay lugar libre, el admin la reactiva
+   (menú ⋯ → activar) y listo.
+2. Si NO hay lugar: es la situación B — cobrar y re-emitir con `-branches` mayor, cargar
+   la licencia y recién entonces reactivar.
+
+### E. Prospecto en evaluación que necesita probar multi-sucursal
+
+La evaluación corre con **1 sucursal** (MAIN). Dos caminos:
+
+- **Compra pactada:** cerrar la venta base ya con la cuota que necesita (`-branches N`,
+  situación A) — el reloj de evaluación se corta al instalar la licencia.
+- **Demo extendida:** emitir una licencia EVALUATIVA con plazo (`-days`), `-branches N` y
+  los módulos de la edición que interesa mostrar. Es un caso especial con vencimiento:
+  al vencer degrada a Core (no bloquea) y el cliente decide.
+
+### F. Instalación existente con licencia PRE-v2.5 (sin `branch_limit`)
+
+Las licencias emitidas antes del 2026-10-30 no traen el campo: la instalación queda
+**sin límite de sucursales para siempre** (la compra perpetua no se retro-limita). Para
+pasar un cliente existente al modelo por sucursal:
+
+1. Acordar la comercialmente (cuántas sucursales paga, precio por extra).
+2. Re-emitir con `-branches` = sucursales acordadas (misma edición/módulos/vigencia).
+3. El cliente carga la nueva licencia (situación B, pasos 3-5) — la anterior queda
+   reemplazada y la cuota empieza a regir.
+4. Si la instalación ya tiene MÁS sucursales activas que la nueva cuota: nada se rompe
+   ni se bloquea — solo no podrá crear/reactivar más hasta regularizar; la card de
+   Licencia muestra el exceso para conversarlo con el cliente.
+
+### G. Soporte: el cliente reporta "no puedo crear una sucursal"
+
+1. Pedirle una captura de **Configuración → Licencia** (muestra _Sucursales activas:
+   N de M_ y la edición) o consultar el snapshot:
+   `curl -s -H "Authorization: Bearer <token>" http://localhost:5050/api/v1/system/license`
+   → leer `branch_limit` y `mode`.
+2. Si `N ≥ M`: es cuota alcanzada (403 `LICENSE_BRANCH_LIMIT`) → situación B (vender la
+   sucursal) o C (mudanza/reorganización sin costo).
+3. Si el cliente "desactivó una sucursal y sigue sin poder": la nueva activa ya ocupó el
+   lugar, o intenta REACTIVAR otra (situación D — reactivar consume cuota).
+4. Nunca pedirle editar el archivo de licencia: el campo va firmado, editarlo invalida
+   la licencia entera. La única vía es una licencia re-emitida por el vendedor.
+
+### H. Terminal responde 403 `BRANCH_INACTIVE`
+
+La sucursal de esa terminal está desactivada (el sistema lo hace a propósito: una
+sucursal "cerrada" no puede seguir vendiendo por sus cajas). Caminos:
+
+1. Era un error → reactivar la sucursal (consume cuota, situación D).
+2. Mudanza → situación C, paso 4: re-vincular o recrear la terminal en la nueva.
+3. Cierre definitivo → retirar la terminal (desactivarla en Configuración → Terminales).
 
 ## 5. Revocación / baja del pack
 

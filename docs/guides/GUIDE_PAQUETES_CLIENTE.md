@@ -48,6 +48,9 @@
 - El reloj no se reinicia: reinstalar o borrar la licencia no devuelve días.
 - En los últimos 10 días aparece un aviso en pantalla con los días
   restantes.
+- **Sucursales:** durante la evaluación opera **1 sucursal** (la principal),
+  igual que la compra base. Para probar con varias (o abrirlas en serio) se
+  paga la cuota correspondiente y se carga la licencia — ver §4.
 - **Al vencer:** el sistema se bloquea por completo (no se pierde ningún dato).
   Se desbloquea al cargar la licencia comprada — ver §4.
 - En Configuración → Licencia se ve el estado y los días restantes.
@@ -62,12 +65,18 @@
   intentar registrar o vincular una segunda terminal en la misma sucursal,
   el sistema explica que requiere el pack Premium. Desactivar una terminal
   libera el lugar para otra.
+- **Sucursales:** incluye **1 sucursal activa** (la principal). Core
+  multi-sucursal existe: cada sucursal adicional se paga y se habilita al
+  instante cargando la licencia re-emitida (ver §4). Desactivar una
+  sucursal libera su lugar.
 
 ### 3.3 ERP Core + BI Premium
 
 - La compra completa: todo lo del Core **más** el paquete de inteligencia de
   negocios (dashboards, analíticas relacionales, rentabilidad, pronósticos,
   auditoría) y **terminales sin límite** en todas las sucursales.
+- **Sucursales:** igual que Core — incluye **1 activa** y cada adicional se
+  paga (la cuota de sucursales y el pack BI se compran por separado).
 - También perpetuo: se paga una vez.
 
 ## 4. Cómo se activa o cambia de paquete
@@ -76,6 +85,9 @@
 |:----------|:----------|
 | Compró (o evaluación vencida) | El proveedor envía el `license.json` por correo. Un administrador lo carga desde **Configuración → Licencia → "Instalar licencia…"**, o desde la pantalla de bloqueo si el sistema ya está bloqueado. Aplica al instante, sin reiniciar ni visitar el servidor. |
 | Quiere subir de Core a Core+BI | Igual: se carga la nueva licencia y el módulo BI (y las terminales extra) se habilitan en caliente. |
+| **Quiere abrir otra sucursal** | Se paga la sucursal adicional y el proveedor envía una licencia re-emitida. Un administrador la carga en **Configuración → Licencia → "Instalar licencia…"** y la nueva sucursal se puede crear al instante (sin reinstall ni visita técnica). La card de Licencia muestra _Sucursales activas: N de M_. |
+| **Se muda de local** | No se paga nada extra: crear la sucursal nueva y **desactivar** la vieja (Configuración → Sucursales). La cuota cuenta solo sucursales activas, así que el lugar queda libre. Ojo: antes de desactivar, ningún usuario debe tener la vieja como su sucursal predeterminada. Las terminales de la vieja dejan de funcionar (aviso "sucursal desactivada") — vincularlas de nuevo a la nueva. |
+| **No puede crear/reactivar una sucursal** (aviso amarillo en Sucursales o error _"admite N sucursal(es) activa(s)"_) | La instalación llegó a su cuota. Llamar al proveedor: o se compra otra sucursal (licencia re-emitida), o se desactiva una sucursal que ya no se usa para liberar el lugar. Nadie del lado del cliente puede subir el límite: el número viaja firmado dentro de la licencia. |
 | Cambió de computadora (laptop → servidor) | La licencia viaja con la instalación; no hay que re-emitirla (ver [`GUIDE_MIGRACION_LAPTOP_A_SERVIDOR.md`](GUIDE_MIGRACION_LAPTOP_A_SERVIDOR.md)). |
 | Instalación nueva con licencia ya comprada | El instalador acepta `--license` + `--license-public-key` (ver [`GUIDE_INSTALACION_NUEVO_CLIENTE.md`](GUIDE_INSTALACION_NUEVO_CLIENTE.md) §5). |
 

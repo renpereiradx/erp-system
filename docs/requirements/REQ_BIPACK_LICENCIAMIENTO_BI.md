@@ -92,7 +92,8 @@ Complementos del modelo de estados:
 
 ### 3.4 El ciclo comercial completo
 
-1. **Venta**: el cliente compra Core o Core+BI (precios fuera de este documento — ver RN-05).
+1. **Venta**: el cliente compra Core o Core+BI y cuántas sucursales activas incluye
+   (1 base; las extra se pagan — RN-12; precios fuera de este documento — ver RN-05).
 2. **Emisión**: el proveedor genera la licencia con `licensegen` (del lado suyo, con su clave
    privada) y se la entrega al cliente.
 3. **Instalación**: se copia el archivo al servidor y se activa el control
@@ -100,7 +101,8 @@ Complementos del modelo de estados:
 4. **Uso**: el sistema verifica la licencia en cada consulta BI. No necesita internet: todo
    es local, no hay "llamadas a casa" ni telemetría.
 5. **Renovación / upgrade**: nueva licencia sobre la anterior — en caliente (solo para
-   licencias con plazo; la venta normal no vence, RN-07).
+   licencias con plazo; la venta normal no vence, RN-07). Ídem para habilitar una
+   sucursal adicional (v2.5): re-emisión con cuota mayor cargada desde la web.
 6. **Baja**: retirar el archivo bloquea el BI al instante; el Core sigue igual para siempre.
 
 ### 3.5 ¿Dónde vive la licencia y quién la controla?
