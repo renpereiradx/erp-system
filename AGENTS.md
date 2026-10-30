@@ -1,7 +1,7 @@
 # AGENTS.md — ERP System (Monorepo)
 
 Instrucciones para agentes AI de coding que trabajen en este workspace.
-Última actualización: 2026-10-23
+Última actualización: 2026-10-30
 
 ---
 
@@ -281,6 +281,16 @@ Skills instaladas en este workspace (`.zcode/skills/`, espejo `.agents/skills/`)
    - `pkill -f <patrón>` puede matchear la propia shell que lo ejecuta si el patrón viaja en su línea de comando (zsh -c …): anclar (`^/ruta/bin`) o matar por PID.
 9. **Versionado**: al cerrar un hito verificado, taggear `vX.Y.Z` en AMBOS repos y sincronizar `package.json`. Convención completa en la sección **Versionado y Releases**.
 10. **Criterio de decisión UX + DX + AX**: ante dos o más alternativas válidas, elegir la que eleve a la vez las tres experiencias — usuario (UX), desarrollador (DX) y agente (AX) — sin romper nada.
+11. **Pruebas con Docker: CERO residuo** — todo contenedor/volumen/red que una prueba levante (deploy, `compose up`, smoke) se elimina AL TERMINAR esa prueba, en la misma sesión. Nunca dejar un stack de prueba vivo "por si acaso": agentes corriendo pruebas de deploy en paralelo llenaron el disco con stacks olvidados (incidente de espacio 2026-10-30, reportado por el owner). Teardown SIEMPRE con proyecto explícito — jamás un `down` pelado (`name: erp` apunta al stack real `/opt/erp` desde cualquier directorio; incidente 2026-10-10):
+
+   ```bash
+   docker compose -p <proyecto-de-prueba> down -v --remove-orphans   # -p EXPLÍCITO siempre
+   docker ps -a --filter label=com.docker.compose.project=<proyecto>  # verificar que no quedó nada
+   docker system df                                                    # detectar fuga de espacio
+   ```
+
+   - Si la prueba cargó imágenes (`docker load`), `docker rmi` las que solo usaba la prueba.
+   - Para probar `install.sh`/`make-release-bundle.sh` NO hace falta Docker real: usar el harness de shims (docker-shim en PATH que loggea y contesta respuestas canned; receta en REQ_DEPLOY v0.19/historia v0.5) — el daemon ni se entera.
 
 ---
 
