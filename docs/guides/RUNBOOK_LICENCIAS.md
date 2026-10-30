@@ -1,4 +1,4 @@
-# RUNBOOK — Licencias BI Pack Premium (2026-09 · v2.3 rutas unificadas ~/licencias)
+# RUNBOOK — Licencias BI Pack Premium (2026-10 · v2.5 cuota de sucursales · rutas unificadas ~/licencias)
 
 **Plan:** [PLAN_BI_PACK_PREMIUM.md](../../conductor/PLAN_BI_PACK_PREMIUM.md) (ADR-1/ADR-4, F6) · **v2.0:** REQ_BIPACK (RF-025..029, RN-08/09)
 **Implementación:** BE `9dd9942` (licencias) + v2.0 2026-09-28 `441046e` (trial/bloqueo/rescate) + v2.1 2026-09-29 (auditoría: permiso `license:write`, licencia vencida→Core, ancla fail-open) · FE `b3ab4eb` + v2.0 `91b41de` (gate de licencia) + v2.1 (instalación desde Configuración, auto-recuperación del gate)
@@ -81,6 +81,11 @@ chmod 600 ~/licencias/custodia/vendor.key   # solo tu usuario puede leerla
 # /tmp/licensegen issue -key ~/licencias/custodia/vendor.key \
 #   -customer "Cliente Core" -edition core -modules core \
 #   -out ~/licencias/entregas/cliente-core/license.json
+#   Core MULTI-SUCURSAL sin BI (v2.5: la cuota de sucursales es independiente
+#   del pack — N sucursales activas, 1 terminal POS por sucursal):
+# /tmp/licensegen issue -key ~/licencias/custodia/vendor.key \
+#   -customer "Cliente 3 sucursales" -edition core -modules core -branches 3 \
+#   -out ~/licencias/entregas/cliente-3-sucursales/license.json
 # Casos especiales ÚNICAMENTE a pedido (demo/trial con plazo):
 #   -days 365            → vence al año
 #   -expires 2027-09-21T12:00:00Z → fecha fija (gana sobre -days).
@@ -92,6 +97,7 @@ chmod 600 ~/licencias/custodia/vendor.key   # solo tu usuario puede leerla
 | :--------- | :--------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `-edition` | `core` · `core+bi` (default) | Etiqueta **comercial**: es el texto que muestra _Configuración → Licencia_ del cliente. Es **informativo** — no prende ni apaga nada. El backend solo exige que no venga vacío, pero usar únicamente estos dos valores del catálogo ([`GUIDE_PAQUETES_CLIENTE.md`](GUIDE_PAQUETES_CLIENTE.md)): cualquier otro string se mostraría tal cual en la pantalla del cliente. |
 | `-modules` | `bi` · `core`                | El que **manda** de verdad: con `bi` el pack BI queda habilitado y las terminales POS no tienen límite; sin `bi` la instalación corre como ERP Core con 1 terminal POS activa por sucursal (RN-10).                                                                                                                                                                     |
+| `-branches` | número ≥ 0 (**default 1**)   | **v2.5 (RN-12):** cuota de sucursales ACTIVAS de la instalación. Toda edición incluye 1 (MAIN); cada sucursal adicional pagada sube el número (§4c). `-branches 0` = ilimitadas (acuerdos especiales). El campo viaja firmado: nadie en la instalación puede subirlo.                                                                                                    |
 
 Regla práctica: `-edition core+bi -modules bi` para Premium, `-edition core
 -modules core` para Core — siempre ambos alineados con lo que compró el cliente.
@@ -212,6 +218,20 @@ después de probar:
 Requisito: `LICENSE_PUBLIC_KEY` configurada (el instalador la pide; sin ella el backend no
 puede verificar NINGUNA licencia ni rescatar).
 
+## 4c. Habilitar una sucursal adicional (v2.5 — RN-BIPACK-12)
+
+1. Cobrar la sucursal y re-emitir la licencia del cliente (§2b) con `-branches`
+   incremented en 1 (misma edición y módulos que ya tiene).
+2. Enviar el archivo y que el admin lo cargue desde **Configuración → Licencia →
+   Instalar licencia** (rescate web, §4b) — aplica en caliente, sin SSH.
+3. Verificar: la card muestra _Sucursales activas: N de N+1_ y el alta de la
+   sucursal pasa. Desactivar una sucursal libera su lugar (reactivar consume
+   cuota igual que crear).
+
+> La evaluación corre con 1 sucursal: un prospecto que necesita probar
+> multi-sucursal recibe una licencia evaluativa con `-branches N` (caso
+> especial, con plazo) o la compra base ya con la cuota pactada.
+
 ## 5. Revocación / baja del pack
 
 - **Inmediata (remoto no posible por diseño):** pedir al cliente borrar `license.json` — o
@@ -263,6 +283,8 @@ cliente: al vencer, bloqueo con rescate web.
 | FE no muestra BI tras renovar                          | Entitlements en cache de sesión                                  | Re-login o esperar al 403+refresh (revocación en caliente)         |
 | Pantalla "Licencia requerida" (todo bloqueado)         | Evaluación agotada sin licencia                                  | Rescate web (§4b): cargar `license.json` desde la propia pantalla  |
 | PUT de licencia → 400 `LICENSE_INVALID`                | Firma inválida / clave pública incorrecta / archivo corrupto     | Verificar que la pública sea la del par vendedor; re-emitir (§2b)  |
+| Alta/reactivar sucursal → 403 `LICENSE_BRANCH_LIMIT`   | La instalación está en su cuota de sucursales activas (v2.5)     | Vender la sucursal adicional y re-emitir con `-branches` mayor (§4c) |
+| Terminal → 403 `BRANCH_INACTIVE`                       | La sucursal de esa terminal está desactivada                     | Reactivar la sucursal (consume cuota) o retirar la terminal       |
 | PUT de licencia → 400 "public key not configured"      | `LICENSE_PUBLIC_KEY` vacía                                       | Cargar la pública en `.env.docker` y recrear el contenedor backend |
 | Evaluación ya vencida en un install recién actualizado | El ancla `system_installation` se sembró al aplicar la migración | Normal: 30 días desde el update. Activación adelantada vía §4b     |
 

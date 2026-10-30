@@ -22,6 +22,7 @@
 | **Duración** | **30 días** desde la primera instalación | **Perpetua** (no vence nunca) | **Perpetua** (no vence nunca) |
 | **Módulos ERP** (ventas, compras, inventario, producción, fiscal/SIFEN, caja, clientes, proveedores) | ✔ Todos | ✔ Todos | ✔ Todos |
 | **Módulo BI** (dashboards, analíticas de ventas/compras/inventario, rentabilidad, pronósticos, auditoría) | ✔ Todos durante la evaluación | ✘ No incluido | ✔ Todos |
+| **Sucursales activas** | **1 (la principal)** | 1 incluida; cada adicional se paga | 1 incluida; cada adicional se paga |
 | **Terminales POS por sucursal** | Sin límite | **1 terminal activa por sucursal** | Sin límite |
 | **Precio** | Gratis | Ver comercial | Ver comercial |
 | **Requiere archivo de licencia** | No — arranca solo | Sí (`license.json` edición Core) | Sí (`license.json` edición Core+BI) |
@@ -29,6 +30,13 @@
 > El límite de terminales es por SUCURSAL: cada sucursal de una instalación Core
 > opera una terminal activa. Con el pack Premium se agregan todas las que el
 > negocio necesite (RN-BIPACK-10).
+>
+> **Sucursales (v2.5, RN-BIPACK-12):** toda instalación —Evaluación, Core o
+> Core+BI— opera **1 sucursal activa** (la principal). Cada sucursal adicional
+> se paga y se habilita al instante con una licencia re-emitida (el cliente la
+> carga desde Configuración → Licencia, sin reinstalar). La cuota es
+> independiente del pack BI: existe **Core multi-sucursal** sin inteligencia
+> de negocios. Desactivar una sucursal libera su lugar.
 
 ## 3. Cómo funciona cada paquete
 
@@ -79,11 +87,19 @@ aplicarlo.
 
 - **¿La evaluación tiene alguna función recortada?** No: durante los 30 días el
   sistema es idéntico al pack Premium, terminales incluidas. Es el producto
-  real, para evaluarlo de verdad.
+  real, para evaluarlo de verdad. **Sucursales:** la evaluación opera 1
+  sucursal (la principal), igual que la compra base — las sucursales extra se
+  habilitan pagando, con el sistema ya comprado o durante la evaluación
+  (queda activo al instalar la licencia).
 - **¿Qué pasa si dejamos pasar los 30 días?** El sistema se bloquea, pero los
   datos quedan intactos. Al cargar la licencia comprada todo vuelve al segundo.
 - **¿El Core vence algún día?** No. Las licencias compradas (Core y Premium)
   son perpetuas: no hay renovación ni suscripción.
+- **¿Podemos abrir una segunda sucursal sin comprar el BI?** Sí: la cuota de
+  sucursales es independiente del pack (Core multi-sucursal). Cada sucursal
+  adicional se paga una vez y se habilita al instante cargando la licencia
+  re-emitida; sin pack BI, cada sucursal mantiene su límite de 1 terminal
+  POS activa.
 - **¿Podemos tener 2 terminales en la sucursal principal con Core?** No: Core
   incluye 1 terminal activa por sucursal. Las terminales adicionales necesitan
   el pack Premium. Puede desactivarse una terminal para habilitar otra.
@@ -95,6 +111,8 @@ aplicarlo.
   transacciones.
 
 ## 6. Historia de cambios
+
+| v1.2 | 2026-10-30 | **Cuota de sucursales (REQ_BIPACK v2.5, RN-12):** toda instalación opera 1 sucursal activa; cada adicional se paga y se habilita con licencia re-emitida cargada desde la web. Core multi-sucursal sin BI. Evaluación = 1 sucursal (cierra la fuga del trial) | renpereiradx + agente |
 
 | Versión | Fecha | Cambio | Autor |
 |:--|:--|:--|:--|
