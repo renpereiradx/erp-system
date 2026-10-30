@@ -289,6 +289,7 @@ Skills instaladas en este workspace (`.zcode/skills/`, espejo `.agents/skills/`)
    docker system df                                                    # detectar fuga de espacio
    ```
 
+   - Si la prueba **compiló** imágenes (`docker build`/`docker compose build`), limpiar también el build cache — es el mayor comedor de disco de las pruebas de deploy (incidente 2026-10-30: 12.9 GB de cache acumulado, 11.7 GB recuperables): `docker builder prune` al terminar la sesión de pruebas.
    - Si la prueba cargó imágenes (`docker load`), `docker rmi` las que solo usaba la prueba.
    - Para probar `install.sh`/`make-release-bundle.sh` NO hace falta Docker real: usar el harness de shims (docker-shim en PATH que loggea y contesta respuestas canned; receta en REQ_DEPLOY v0.19/historia v0.5) — el daemon ni se entera.
 
