@@ -6,8 +6,9 @@
 |:------|:------|
 | Documento | Guía comercial de venta (playbook) |
 | Código | SALES-001 |
-| Versión | v1.4 |
+| Versión | v1.5 |
 | Fecha | 2026-10-31 |
+| Marca de producto | **CDGC** (Code Dynamic · Gestión Comercial) — el producto se nombra "CDGC" en todo material; el descriptor "Sistema de Gestión Comercial" acompaña, no reemplaza. Arena Connect pasa a **CDAC** (Code Dynamic · Arena Connect) |
 | Proveedor | **Code Dynamic** — estudio de desarrollo de software (contacto: +595 995 639 582 · codedynamicdev@gmail.com) |
 | Audiencia | Owner / comercial (leer antes de cada reunión) |
 | Fuente de verdad funcional | `docs/requirements/` + código (todo lo listado acá existe HOY) |
@@ -247,6 +248,7 @@ Nunca atar una fecha ("este año", "el mes que viene") — vender lo que existe 
 
 | Versión | Fecha | Cambio | Autor |
 |:--|:--|:--|:--|
+| v1.5 | 2026-10-31 | Marca de producto: el sistema se nombra **CDGC** (Code Dynamic · Gestión Comercial) en todo el material de venta; el descriptor "Sistema de Gestión Comercial" acompaña a la marca. Los nombres de edición (Evaluación / ERP Core / ERP Core + BI Premium) no cambian en esta versión | renpereiradx + agente |
 | v1.4 | 2026-10-31 | Alineado con REQ_BIPACK v2.5: cuota de sucursales por licencia (§8 nueva fila "Sucursales": Evaluación = 1, Core/Premium según licencia; entrega por re-emisión con cupo mayor) y evaluación de 30 días en 1 sucursal aclarada en el pitch. Migración: la carga inicial NO va incluida — solo se muestra el funcionamiento del sistema; soporte de carga de inventario se cotiza aparte (§7 + nota interna §8). §7 "mi gente": respuesta directa (se opera desde el primer día, sin capacitación). §5: ventas e inventario en lenguaje de resultado — eliminados "código de barras o por nombre" y "se descuenta solo" (copy trivial) | renpereiradx + agente |
 | v1.3 | 2026-10-07 | Terminología: "stock" → "inventario (stock)" en todo el material de venta (módulo del flyer ahora "Inventario (stock)"); reservas más visibles: en el listado de capacidades del flyer y §5 reformulado como "manejo de reservas con agenda"; fix acento "electrónicamente" en pitch corto | renpereiradx + agente |
 | v1.2 | 2026-10-07 | Evaluación 90→30 días (REQ_BIPACK v2.3); proveedor **Code Dynamic** con contacto real en ficha; módulo Reservas como fila propia en §5 (verificado: stock reservado + agenda acopladas a ventas); flyer regenerado (30 días, contacto real, módulos Reservas y Multi-moneda) | renpereiradx + agente |
