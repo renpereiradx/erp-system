@@ -6,8 +6,8 @@
 |:------|:------|
 | Documento | Guía comercial de venta (playbook) |
 | Código | SALES-001 |
-| Versión | v1.3 |
-| Fecha | 2026-10-07 |
+| Versión | v1.4 |
+| Fecha | 2026-10-31 |
 | Proveedor | **Code Dynamic** — estudio de desarrollo de software (contacto: +595 995 639 582 · codedynamicdev@gmail.com) |
 | Audiencia | Owner / comercial (leer antes de cada reunión) |
 | Fuente de verdad funcional | `docs/requirements/` + código (todo lo listado acá existe HOY) |
@@ -40,13 +40,14 @@ pasamos a decir "ERP completo" sin cambiar nada más.
 
 ## 3. Elevator pitch (30 segundos, para decir literal)
 
-> "Es un sistema de gestión para comercios. Usted vende por código de barras o por
-> búsqueda, el inventario (stock) se descuenta solo y por sucursal, compra a proveedores, emite
-> factura electrónica de SIFEN, controla caja y cuentas de clientes, y ve en una sola
-> pantalla qué vendió, qué le conviene reponer y quién le debe.
+> "Es un sistema de gestión para comercios. Ventas en el mostrador que cobran en segundos,
+> compras a proveedores, inventario con control por sucursal — usted sabe cuánto stock hay
+> en cada local y en total, sin llamar por teléfono —, factura electrónica de SIFEN, caja y
+> cuentas de clientes; y en una sola pantalla ve qué vendió, qué le conviene reponer y quién
+> le debe.
 > Se instala en su propia computadora — sus datos quedan en su negocio — y no paga
-> mensualidad: se compra una vez. Y puede probarlo gratis por 30 días, completo,
-> antes de decidir."
+> mensualidad: se compra una vez. Y puede probarlo gratis por 30 días, completo, en una
+> sucursal, antes de decidir."
 
 Versión ultra-corta (10 segundos, para WhatsApp):
 
@@ -82,8 +83,8 @@ Cada fila: **qué decir** (beneficio) → qué es en realidad (para que usted se
 
 | Qué decir al cliente | Qué es por dentro |
 |:--|:--|
-| "Vendé rápido: escaneás el código o buscás por nombre, cobrás e imprimís el ticket. También pedidos de mostrador, presupuestos imprimibles y reservas con agenda." | Módulo Ventas: POS con carrito, atajos de teclado, presupuestos, reservas acopladas |
-| "El inventario (stock) se descuenta solo, sucursal por sucursal. Transferís mercadería entre locales con control y veés cada movimiento." | Inventario multi-sucursal: stock con alcance por sucursal, transferencias con permisos, movimientos |
+| "Cobrá en segundos, incluso en hora pico: el ticket sale impreso y el saldo queda en la cuenta del cliente. También pedidos de mostrador, presupuestos imprimibles y reservas con agenda." | Módulo Ventas: POS con carrito, atajos de teclado, presupuestos, reservas acopladas |
+| "Cuánto stock hay en cada local y en total, sin llamar por teléfono. Transferís mercadería entre sucursales con control de cada movimiento." | Inventario multi-sucursal: stock con alcance por sucursal, transferencias con permisos, movimientos |
 | "Comprás a proveedores con órdenes y recibís la mercadería que actualiza el stock. Llevás lo que les debés y hasta cuánto te queda pagar." | Compras: órdenes, requisiciones, pagos a proveedores, cuentas por pagar con antigüedad |
 | "Factura electrónica de SIFEN desde el mismo sistema, con los libros fiscales listos para su contador." | SIFEN: facturación electrónica, libros legales IVA compras/ventas, tasas de IVA |
 | "Caja: apertura, movimientos, cierre del día. Sabés lo que entró y lo que salió, en cada sucursal." | Finanzas operativas: caja, movimientos, flujo de caja |
@@ -148,17 +149,19 @@ Cada fila: **qué decir** (beneficio) → qué es en realidad (para que usted se
 > propuesta formal.)*
 
 **"Estoy con Excel / otro sistema, ¿cómo migro?"**
-> "La carga inicial la hacemos juntos: productos con sus precios y stock inicial,
-> clientes y proveedores. Usted me pasa la lista y queda funcionando." *(Verificar
-> formato antes de prometer importación automática — hoy la carga es asistida.)*
+> "Le mostramos el funcionamiento del sistema de punta a punta. La carga de sus datos
+> —productos, precios y stock inicial— la hace usted con su gente; si prefiere delegarla,
+> el soporte de carga de inventario se cotiza aparte." *(Nunca prometer carga inicial
+> incluida: es un servicio aparte con precio.)*
 
 **"¿Y si no me gusta?"**
 > "Lo prueba 30 días gratis, completo. Si a mitad de camino decide que no, sus datos
 > se exportan y no debe nada."
 
 **"¿Mi gente lo va a poder usar? No son de computadora."**
-> "La caja se opera con teclado: buscar, cantidad, cobrar. Hay guías escritas paso a
-> paso para no técnicos, y las terminales se configuran una sola vez."
+> "Sí. La caja se usa en segundos y cualquiera de su gente la opera desde el primer día,
+> sin capacitación. Hay guías escritas paso a paso para no técnicos, y las terminales se
+> configuran una sola vez."
 
 ---
 
@@ -168,6 +171,7 @@ Cada fila: **qué decir** (beneficio) → qué es en realidad (para que usted se
 |:--|:--|:--|:--|
 | Qué es | El sistema completo para probar | La compra estándar | El paquete más completo |
 | Duración | 30 días gratis | **Perpetua** | **Perpetua** |
+| Sucursales | **1** (para la prueba) | **Según la licencia** — cuota declarada al emitir (REQ_BIPACK v2.5) | **Según la licencia** — cuota declarada al emitir |
 | Módulos de gestión | Todos | Todos | Todos |
 | BI (dashboards, analítica) | Sí, durante la prueba | No | Sí |
 | Terminales POS | Sin límite | 1 activa por sucursal | Sin límite |
@@ -178,10 +182,13 @@ Cómo se entrega (para contarlo con seguridad):
 - Al comprar se envía un archivo de licencia firmado digitalmente; se carga desde
   Configuración → Licencia y aplica al instante, sin reinstalar.
 - De Core a Premium se sube después cargando la nueva licencia (se habilita en caliente).
+- La cuota de sucursales va dentro de la licencia firmada: una sucursal adicional = re-emisión
+  con cupo mayor, cargada desde la web, sin reinstalar (REQ_BIPACK v2.5).
 - La licencia viaja si cambia la máquina (laptop → servidor), no se re-emite.
 
 *Nota interna:* precios a definir por el owner. Sugerencia de modelo: Core = precio base
-único; Premium = adicional fijo; instalación/carga inicial incluidas en el primer año.
+según la cuota de sucursales; Premium = adicional fijo; instalación incluida en el primer
+año; el soporte de carga de inventario se cotiza aparte (nunca prometerlo incluido).
 
 ---
 
@@ -240,6 +247,7 @@ Nunca atar una fecha ("este año", "el mes que viene") — vender lo que existe 
 
 | Versión | Fecha | Cambio | Autor |
 |:--|:--|:--|:--|
+| v1.4 | 2026-10-31 | Alineado con REQ_BIPACK v2.5: cuota de sucursales por licencia (§8 nueva fila "Sucursales": Evaluación = 1, Core/Premium según licencia; entrega por re-emisión con cupo mayor) y evaluación de 30 días en 1 sucursal aclarada en el pitch. Migración: la carga inicial NO va incluida — solo se muestra el funcionamiento del sistema; soporte de carga de inventario se cotiza aparte (§7 + nota interna §8). §7 "mi gente": respuesta directa (se opera desde el primer día, sin capacitación). §5: ventas e inventario en lenguaje de resultado — eliminados "código de barras o por nombre" y "se descuenta solo" (copy trivial) | renpereiradx + agente |
 | v1.3 | 2026-10-07 | Terminología: "stock" → "inventario (stock)" en todo el material de venta (módulo del flyer ahora "Inventario (stock)"); reservas más visibles: en el listado de capacidades del flyer y §5 reformulado como "manejo de reservas con agenda"; fix acento "electrónicamente" en pitch corto | renpereiradx + agente |
 | v1.2 | 2026-10-07 | Evaluación 90→30 días (REQ_BIPACK v2.3); proveedor **Code Dynamic** con contacto real en ficha; módulo Reservas como fila propia en §5 (verificado: stock reservado + agenda acopladas a ventas); flyer regenerado (30 días, contacto real, módulos Reservas y Multi-moneda) | renpereiradx + agente |
 | v1.0 | 2026-10-07 | Primera versión: posicionamiento, pitch, módulos, objeciones, demo, paquetes | agente + renpereiradx |
